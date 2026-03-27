@@ -1,0 +1,5 @@
+dmoj/database/
+dmoj/logs/
+dmoj/media/
+dmoj/problems/
+dmoj/environment/*.env
