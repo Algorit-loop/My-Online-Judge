@@ -10,14 +10,15 @@
 # SECURITY WARNING: keep the secret key used in production secret!
 # You may use this command to generate a key:
 # python3 -c 'from django.core.management.utils import get_random_secret_key;print(get_random_secret_key())'
-SECRET_KEY = os.environ.get('SECRET_KEY', '')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'algoritxxx-secret-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', '0') == '1'
 HOST = os.environ.get('HOST', 'localhost')
 
 # Uncomment and set to the domain names this site is intended to serve.
 # You must do this once you set DEBUG to False.
-ALLOWED_HOSTS = [HOST]
+# ALLOWED_HOSTS = [HOST]
+ALLOWED_HOSTS = ['*']
 
 # Optional apps that DMOJ can make use of.
 INSTALLED_APPS += ()
@@ -49,7 +50,12 @@ DATABASES = {
 
 # Sessions.
 # Documentation: <https://docs.djangoproject.com/en/3.2/topics/http/sessions/>
-#SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+# ---- tao them -----
+SESSION_COOKIE_AGE = 3600 * 24 * 4  # 1 giờ
+SESSION_SAVE_EVERY_REQUEST = True  # Reset mỗi lần user có hoạt động
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Không xóa session khi tắt trình duyệt
+# ---------------------
 
 # Internationalization.
 # Documentation: <https://docs.djangoproject.com/en/3.2/topics/i18n/>
@@ -83,12 +89,12 @@ STATICFILES_FINDERS += ('compressor.finders.CompressorFinder',)
 
 # The following block is included for your convenience, if you want
 # to use Gmail.
-#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-#EMAIL_USE_TLS = True
-#EMAIL_HOST = 'smtp.gmail.com'
-#EMAIL_HOST_USER = '<your account>@gmail.com'
-#EMAIL_HOST_PASSWORD = '<your password>'
-#EMAIL_PORT = 587
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'nguyenducnha10022004@gmail.com'
+EMAIL_HOST_PASSWORD = 'wmsy vhzm vpux nojp'
+EMAIL_PORT = 587
 
 # To use Mailgun, uncomment this block.
 # You will need to run `pip install django-mailgun` to get `MailgunBackend`.
@@ -108,7 +114,7 @@ STATICFILES_FINDERS += ('compressor.finders.CompressorFinder',)
 ADMINS = ()
 
 # The sender for the aforementioned emails.
-SERVER_EMAIL = 'VNOJ: VNOI Online Judge <vnoj@vnoi.info>'
+SERVER_EMAIL = 'ALOJ: Algorit Online Judge <aloj@onlinejudge.com>'
 
 
 ################################################
@@ -126,7 +132,18 @@ STATIC_ROOT = '/assets/static/'
 STATIC_URL = '/static/'
 
 # Uncomment to use hashed filenames with the cache framework.
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+# STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
+# Use hashed filenames with the cache framework.
+# Custom storage class to avoid errors when referenced files (e.g. source maps) are missing.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "dmoj.storage.LenientManifestStaticFilesStorage",
+    },
+}
 
 DMOJ_RESOURCES = '/assets/resources/'
 
@@ -135,10 +152,10 @@ DMOJ_RESOURCES = '/assets/resources/'
 ############################################
 
 ## DMOJ site display settings.
-SITE_NAME = 'VNOJ'
+SITE_NAME = 'Algorit Online Judge'
 SITE_FULL_URL = os.environ.get('SITE_FULL_URL', 'http://localhost/')
-SITE_LONG_NAME = 'VNOJ: VNOI Online Judge'
-SITE_ADMIN_EMAIL = 'leduythuc@vnoi.info'
+SITE_LONG_NAME = 'ALOJ: Algorit Online Judge'
+SITE_ADMIN_EMAIL = 'aloj@onlinejudge.com'
 TERMS_OF_SERVICE_URL = None
 
 ## Media files settings.
@@ -188,8 +205,10 @@ EVENT_DAEMON_POST = os.environ.get('EVENT_DAEMON_POST', 'ws://wsevent:15101/')
 
 # These are the publicly accessed interface configurations.
 # They should match those used by the script.
-EVENT_DAEMON_GET = 'ws://{host}/event/'.format(host=HOST)
-EVENT_DAEMON_GET_SSL = 'wss://{host}/event/'.format(host=HOST)
+# EVENT_DAEMON_GET = 'ws://{host}/event/'.format(host=HOST)
+# EVENT_DAEMON_GET_SSL = 'wss://{host}/event/'.format(host=HOST)
+EVENT_DAEMON_GET = '/event/'
+EVENT_DAEMON_GET_SSL = '/event/'
 EVENT_DAEMON_POLL = '/channels/'
 # i.e. the path to /channels/ exposed by the daemon, through whatever proxy setup you have.
 
@@ -238,11 +257,11 @@ TIMEZONE_MAP = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Blue_M
 #DMOJ_PDF_PDFOID_URL = '<URL to your pdfoid install>.'
 
 # Directory to cache the PDF.
-#DMOJ_PDF_PROBLEM_CACHE = '/home/dmoj-uwsgi/pdfcache'
+DMOJ_PDF_PROBLEM_CACHE = '/pdfcache'
 
 # Path to use for nginx's X-Accel-Redirect feature.
 # Should be an internal location mapped to the above directory.
-#DMOJ_PDF_PROBLEM_INTERNAL = '/pdfcache'
+DMOJ_PDF_PROBLEM_INTERNAL = '/pdfcache'
 
 ## Data download settings.
 # Uncomment to allow users to download their data
@@ -320,6 +339,9 @@ LOGGING = {
 #SOCIAL_AUTH_GITHUB_SECURE_KEY = ''
 #SOCIAL_AUTH_GITHUB_SECURE_SECRET = ''
 
+#SOCIAL_AUTH_DROPBOX_OAUTH2_KEY = ''
+#SOCIAL_AUTH_DROPBOX_OAUTH2_SECRET = ''
+
 ## ======== Custom Configuration ========
 # You may add whatever Django configuration you would like here.
 # Do try to keep it separate so you can quickly patch in new settings.
@@ -327,3 +349,10 @@ LOGGING = {
 FILE_UPLOAD_PERMISSIONS = 0o644
 
 VNOJ_CP_TICKET = 5
+
+# REGISTRATION_OPEN = False
+
+DMOJ_PASSWORD_RESET_LIMIT_COUNT = 5
+DMOJ_PASSWORD_RESET_LIMIT_WINDOW = 3600
+
+# DMOJ_OFFICIAL_CONTEST_MODE = True ???
