@@ -6748,24 +6748,24 @@ msgstr ""
 msgid "Judge feedback"
 msgstr ""
 
-#: templates/submission/status-testcases.html:148
+#: templates/submission/status-testcases.html:168
 msgid "Resources:"
 msgstr ""
 
-#: templates/submission/status-testcases.html:157
+#: templates/submission/status-testcases.html:172
 msgid "Maximum single-case runtime:"
 msgstr ""
 
-#: templates/submission/status-testcases.html:162
+#: templates/submission/status-testcases.html:176
 msgid "Final pretest score:"
 msgstr ""
 
-#: templates/submission/status-testcases.html:164
+#: templates/submission/status-testcases.html:178
 msgid "Final score:"
 msgstr ""
 
-#: templates/submission/status-testcases.html:171
-#: templates/submission/status-testcases.html:175
+#: templates/submission/status-testcases.html:185
+#: templates/submission/status-testcases.html:189
 #, python-format
 msgid "%(points)s/%(total)s points"
 msgstr ""

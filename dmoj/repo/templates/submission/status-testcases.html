@@ -166,12 +166,15 @@
             {% if submission.result != "AB" %}
                 {% if can_view_testcase_status %}
                     <b>{{ _('Resources:') }}</b>
-                    {% if submission.result == "TLE" %}
-                        <span>---,</span>
+                    {% if submission.total_time %}
+                        <span title="{{ submission.total_time }}s">{{ submission.total_time|floatformat(3) }}s,</span>
                     {% else %}
                         <span title="{{ submission.time }}s">{{ submission.time|floatformat(3) }}s,</span>
                     {% endif %}
                     {{ submission.memory|kbdetailformat }}
+                    <br>
+                    <b>{{ _('Maximum single-case runtime:') }}</b>
+                    <span title="{{ submission.time }}s">{{ submission.time|floatformat(3) }}s</span>
                     <br>
                 {% endif %}
                 {% if is_pretest %}

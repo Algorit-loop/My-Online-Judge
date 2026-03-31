@@ -432,6 +432,7 @@ class JudgeHandler(ZlibPacketHandler):
 
         submission.status = 'D'
         submission.time = time
+        submission.total_time = total_time
         submission.memory = memory
         submission.points = sub_points
         submission.result = status_codes[status]

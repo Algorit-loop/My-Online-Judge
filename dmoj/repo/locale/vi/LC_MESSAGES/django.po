@@ -7393,16 +7393,20 @@ msgstr "Phản hồi từ trình chấm"
 msgid "Resources:"
 msgstr "Tài nguyên:"
 
-#: templates/submission/status-testcases.html:178
+#: templates/submission/status-testcases.html:172
+msgid "Maximum single-case runtime:"
+msgstr "Thời gian của test case lâu nhất:"
+
+#: templates/submission/status-testcases.html:176
 msgid "Final pretest score:"
 msgstr "Điểm pretest:"
 
-#: templates/submission/status-testcases.html:180
+#: templates/submission/status-testcases.html:178
 msgid "Final score:"
 msgstr "Điểm cuối cùng:"
 
-#: templates/submission/status-testcases.html:187
-#: templates/submission/status-testcases.html:191
+#: templates/submission/status-testcases.html:185
+#: templates/submission/status-testcases.html:189
 #, python-format
 msgid "%(points)s/%(total)s points"
 msgstr "%(points)s/%(total)s điểm"
@@ -7976,9 +7980,6 @@ msgstr "Nếu tài khoản của bạn được tạo bằng đăng nhập Googl
 
 #~ msgid "Version Matrix"
 #~ msgstr "Phiên bản của trình chấm"
-
-#~ msgid "Maximum single-case runtime:"
-#~ msgstr "Thời gian chạy test lâu nhất:"
 
 #: templates/problem/data.html
 msgid "Your file is"
