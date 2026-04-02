@@ -15,15 +15,14 @@ size_pack = struct.Struct('!I')
 
 
 def _post_update_submission(submission, done=False):
-    if submission.problem.is_public:
-        event.post('submissions', {'type': 'done-submission' if done else 'update-submission',
-                                   'id': submission.id,
-                                   'contest': submission.contest_key,
-                                   'user': submission.user_id, 'problem': submission.problem_id,
-                                   'status': submission.status, 'language': submission.language.key,
-                                   'organizations':
-                                   [x[0] for x in submission.user.organizations.get_queryset().values_list('id')],
-                                   })
+    event.post('submissions', {'type': 'done-submission' if done else 'update-submission',
+                               'id': submission.id,
+                               'contest': submission.contest_key,
+                               'user': submission.user_id, 'problem': submission.problem_id,
+                               'status': submission.status, 'language': submission.language.key,
+                               'organizations':
+                               [x[0] for x in submission.user.organizations.get_queryset().values_list('id')],
+                               })
 
 
 def judge_request(packet, reply=True):

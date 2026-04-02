@@ -660,16 +660,15 @@ class JudgeHandler(ZlibPacketHandler):
 
     def _post_update_submission(self, id, state, done=False):
         data = self._get_submission_cache(id)
-        if data['problem__is_public']:
-            event.post('submissions', {
-                'type': 'done-submission' if done else 'update-submission',
-                'state': state, 'id': id,
-                'contest': data['contest_object_id'],
-                'user': data['user_id'], 'problem': data['problem_id'],
-                'status': data['status'], 'language': data['language__key'],
-                'organizations':
-                [x[0] for x in Profile.objects.get(id=data['user_id']).organizations.values_list('id')],
-            })
+        event.post('submissions', {
+            'type': 'done-submission' if done else 'update-submission',
+            'state': state, 'id': id,
+            'contest': data['contest_object_id'],
+            'user': data['user_id'], 'problem': data['problem_id'],
+            'status': data['status'], 'language': data['language__key'],
+            'organizations':
+            [x[0] for x in Profile.objects.get(id=data['user_id']).organizations.values_list('id')],
+        })
 
     def on_cleanup(self):
         db.connection.close()

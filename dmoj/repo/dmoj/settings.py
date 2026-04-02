@@ -709,7 +709,7 @@ BRIDGED_DJANGO_ADDRESS = [('localhost', 9998)]
 BRIDGED_DJANGO_CONNECT = None
 
 # Event Server configuration
-EVENT_DAEMON_USE = False
+EVENT_DAEMON_USE = True
 EVENT_DAEMON_POST = 'ws://localhost:9997/'
 EVENT_DAEMON_GET = 'ws://localhost:9996/'
 EVENT_DAEMON_POLL = '/channels/'
