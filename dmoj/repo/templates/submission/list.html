@@ -151,9 +151,8 @@
                 var organization_filter = $.map($('select#organization option[selected]'), _collect);
 
                 var table = $('#submissions-table');
-                var statistics = $("#statistics-table");
                 var doing_ajax = false;
-                var first = parseInt(table.find('>div:first-child').attr('id'));
+                var first = parseInt(table.find('>tr:first-child').attr('id'));
 
                 var update_submission = function (message, force) {
                     if (language_filter.length && 'language' in message &&
@@ -166,14 +165,14 @@
                         message.organizations.indexOf(parseInt(organization_filter[0])) == -1)
                         return;
                     var id = message.id;
-                    var row = table.find('div#' + id);
+                    var row = table.find('tr#' + id);
                     if (row.length < 1) {
                         if (id < first)
                             return;
                         first = id;
-                        row = $('<div>', {id: id, 'class': 'submission-row'}).hide().prependTo(table);
-                        if (table.find('>div').length >= {{ paginator.per_page }})
-                            table.find('>div:last-child').slideUp('slow', function () {
+                        row = $('<tr>', {id: id, 'class': 'submission-row'}).hide().prependTo(table);
+                        if (table.find('>tr').length >= {{ paginator.per_page }})
+                            table.find('>tr:last-child').slideUp('slow', function () {
                                 $(this).remove();
                             });
                     }
@@ -237,7 +236,6 @@
                         } else if (message.type == 'done-submission') {
                             update_submission(message, true);
 
-                            if (!statistics.length) return;
                             if ($('body').hasClass('window-hidden'))
                                 return stats_outdated = true;
                             update_stats();
@@ -265,6 +263,32 @@
             });
         </script>
     {% endif %}
+    <script type="text/javascript">
+        $(function () {
+            // Dropdown toggle for filter and statistics buttons
+            function setupDropdown(btnId, dropdownId) {
+                var $btn = $('#' + btnId);
+                var $dropdown = $('#' + dropdownId);
+                $btn.on('click', function (e) {
+                    e.stopPropagation();
+                    // Close other dropdowns
+                    $('.dropdown-box').not($dropdown).removeClass('open');
+                    $('.toolbar-btn').not($btn).removeClass('active');
+                    $dropdown.toggleClass('open');
+                    $btn.toggleClass('active');
+                });
+                $dropdown.on('click', function (e) {
+                    e.stopPropagation();
+                });
+            }
+            setupDropdown('btn-filter', 'dropdown-filter');
+            setupDropdown('btn-stats', 'dropdown-stats');
+            $(document).on('click', function () {
+                $('.dropdown-box').removeClass('open');
+                $('.toolbar-btn').removeClass('active');
+            });
+        });
+    </script>
 {% endblock %}
 
 {% block title_ruler %}{% endblock %}
@@ -276,14 +300,6 @@
 {% block media %}
     {% if perms.judge.change_submission and perms.judge.rejudge_submission %}
         <style>
-            td.sub-prop, col.sub-prop {
-                width: 22%
-            }
-
-            col.sub-info, td.sub-info {
-                width: 78%
-            }
-
             #status, #language {
                 visibility: hidden;
             }
@@ -308,93 +324,112 @@
 {% endblock %}
 
 {% block body %}
-    {% if page_obj.has_other_pages() %}
-        <div class="top-pagination-bar">{% include "list-pages.html" %}</div>
-    {% endif %}
-
-    <div id="common-content">
-        <div id="content-right" class="submission">
-            <div class="info-float">
-                <div class="sidebox">
-                    <h3>{{ _('Filter submissions') }} <i class="fa fa-search"></i></h3>
-                    <div class="sidebox-content">
-                        <form id="filter-form" name="form" action="{{ first_page_href }}" method="get">
+    <div class="submission-toolbar">
+        <div class="toolbar-left">
+            {% if page_obj.has_other_pages() %}
+                <div class="pagination-inline">{% include "list-pages.html" %}</div>
+            {% endif %}
+        </div>
+        <div class="toolbar-right">
+            <div class="dropdown-wrapper">
+                <button class="toolbar-btn" id="btn-filter" type="button">
+                    <i class="fa fa-filter"></i> {{ _('Filter') }}
+                </button>
+                <div class="dropdown-box" id="dropdown-filter">
+                    <form id="filter-form" name="form" action="{{ first_page_href }}" method="get">
+                        <div class="filter-form-group">
+                            <label for="status"><i>{{ _('Status') }}</i></label>
+                            <select id="status" name="status"{% if not is_in_low_power_mode %} multiple{% endif %}>
+                                {% if is_in_low_power_mode %}
+                                    <option value="">{{ _('All') }}</option>
+                                    <option disabled="disabled">---</option>
+                                {% endif %}
+                                {% for id, name in all_statuses %}
+                                    <option {% if id in selected_statuses %}selected{% endif %}
+                                            value="{{ id }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-form-group">
+                            <label for="language"><i>{{ _('Language') }}</i></label>
+                            <select id="language" name="language"{% if not is_in_low_power_mode %} multiple{% endif %}>
+                                {% if is_in_low_power_mode %}
+                                    <option value="">{{ _('All') }}</option>
+                                    <option disabled="disabled">---</option>
+                                {% endif %}
+                                {% for code, name in all_languages %}
+                                    <option {% if code in selected_languages %}selected{% endif %}
+                                            value="{{ code }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if not organization and not is_in_low_power_mode %}
                             <div class="filter-form-group">
-                                <label for="status"><i>{{ _('Status') }}</i></label>
-                                <select id="status" name="status"{% if not is_in_low_power_mode %} multiple{% endif %}>
-                                    {% if is_in_low_power_mode %}
-                                        <option value="">{{ _('All') }}</option>
-                                        <option disabled="disabled">---</option>
-                                    {% endif %}
-                                    {% for id, name in all_statuses %}
-                                        <option {% if id in selected_statuses %}selected{% endif %}
-                                                value="{{ id }}">{{ name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="filter-form-group">
-                                <label for="language"><i>{{ _('Language') }}</i></label>
-                                <select id="language" name="language"{% if not is_in_low_power_mode %} multiple{% endif %}>
-                                    {% if is_in_low_power_mode %}
-                                        <option value="">{{ _('All') }}</option>
-                                        <option disabled="disabled">---</option>
-                                    {% endif %}
-                                    {% for code, name in all_languages %}
-                                        <option {% if code in selected_languages %}selected{% endif %}
+                                <label for="organization"><i>{{ _('Organization') }}</i></label>
+                                <select id="organization" name="organization">
+                                    <option value="">{{ _('All') }}</option>
+                                    <option disabled="disabled">---</option>
+                                    {% for code, name in all_organizations %}
+                                        <option {% if code == selected_organization %}selected{% endif %}
                                                 value="{{ code }}">{{ name }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            {% if not organization and not is_in_low_power_mode %}
-                                <div class="filter-form-group">
-                                    <label for="organization"><i>{{ _('Organization') }}</i></label>
-                                    <select id="organization" name="organization">
-                                        <option value="">{{ _('All') }}</option>
-                                        <option disabled="disabled">---</option>
-                                        {% for code, name in all_organizations %}
-                                            <option {% if code == selected_organization %}selected{% endif %}
-                                                    value="{{ code }}">{{ name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            {% endif %}
-                            <div class="form-submit-group">
-                                <a id="go" onclick="form.submit()" class="button">{{ _('Go') }}</a>
-                            </div>
-                        </form>
-                    </div>
-                    <div id="statistics-table">
-                        <h3>{{ _('Statistics') }} <i class="fa fa-pie-chart"></i></h3>
-                        <div class="sidebox-content">
-                            <div id="status-graph">
-                                <canvas width="230" height="170"></canvas>
-                            </div>
-                            <div class="total">
-                                {{ _('Total:') }} <span id="total-submission-count"></span>
-                            </div>
+                        {% endif %}
+                        <div class="form-submit-group">
+                            <a id="go" onclick="form.submit()" class="button">{{ _('Go') }}</a>
                         </div>
+                    </form>
+                </div>
+            </div>
+            <div class="dropdown-wrapper">
+                <button class="toolbar-btn" id="btn-stats" type="button">
+                    <i class="fa fa-pie-chart"></i> {{ _('Statistics') }}
+                </button>
+                <div class="dropdown-box" id="dropdown-stats">
+                    <div id="status-graph">
+                        <canvas width="230" height="170"></canvas>
+                    </div>
+                    <div class="total">
+                        {{ _('Total:') }} <span id="total-submission-count"></span>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div id="content-left" class="submission">
-            <div class="ws-closed">
-                <a href="javascript:void(0)">{{ _('You were disconnected. Refresh to show latest updates.') }}</a>
-            </div>
+    <div class="ws-closed">
+        <a href="javascript:void(0)">{{ _('You were disconnected. Refresh to show latest updates.') }}</a>
+    </div>
 
-            <div id="submissions-table">
+    <div class="submissions-table-wrapper">
+        <table class="submissions-table">
+            <thead>
+                <tr>
+                    <th class="col-time">{{ _('Time') }}<sup class="small">UTC+7</sup></th>
+                    <th class="col-user">{{ _('Username') }}</th>
+                    {% if show_problem %}
+                        <th class="col-problem">{{ _('Problem') }}</th>
+                    {% endif %}
+                    <th class="col-lang">{{ _('Language') }}</th>
+                    <th class="col-result">{{ _('Result') }}</th>
+                    <th class="col-exectime">{{ _('Execution time') }}</th>
+                    <th class="col-memory">{{ _('Memory') }}</th>
+                </tr>
+            </thead>
+            <tbody id="submissions-table">
                 {% set profile_id = request.profile.id if request.user.is_authenticated else 0 %}
                 {% for submission in submissions %}
-                    <div class="submission-row" id="{{ submission.id }}">
+                    <tr class="submission-row" id="{{ submission.id }}">
                         {% with problem_name=show_problem and (submission.problem.i18n_name or submission.problem.name) %}
                             {% include "submission/row.html" %}
                         {% endwith %}
-                    </div>
+                    </tr>
                 {% endfor %}
-            </div>
-        </div>
+            </tbody>
+        </table>
     </div>
+
     {% if page_obj.has_other_pages() %}
         <div class="bottom-pagination-bar">{% include "list-pages.html" %}</div>
     {% endif %}
