@@ -6633,7 +6633,7 @@ msgstr ""
 
 #: templates/problem/submission-diff.html:113
 msgid "Result"
-msgstr "kết quả"
+msgstr "Kết quả"
 
 #: templates/problem/submission-diff.html:115
 msgid "Date"
@@ -7992,3 +7992,11 @@ msgstr "Giới hạn tối đa là 100 MB."
 #: templates/problem/data.html
 msgid "File too large!"
 msgstr "File quá lớn!"
+
+#: templates/submission/list.html
+msgid "Execution time"
+msgstr "Thời gian"
+
+#: templates/submission/list.html
+msgid "Memory"
+msgstr "Bộ nhớ"

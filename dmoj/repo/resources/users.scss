@@ -158,6 +158,60 @@ img.user-gravatar {
 }
 
 .pp-table {
+    .submission-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75em;
+        padding: 6px 8px;
+        border-bottom: 1px solid $color_primary10;
+        transition: background 0.15s;
+
+        &:hover {
+            background: $color_primary10;
+        }
+    }
+
+    .sub-result {
+        flex: 0 0 110px;
+        border-radius: 6px;
+        padding: 4px 8px;
+        text-align: center;
+        font-size: 0.85em;
+
+        .score {
+            font-weight: 700;
+            font-size: 1.05em;
+        }
+
+        .state {
+            font-size: 0.85em;
+            opacity: 0.85;
+        }
+    }
+
+    .sub-main {
+        flex: 1;
+        min-width: 0;
+
+        .name {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .time {
+            font-size: 0.8em;
+            color: $color_primary50;
+        }
+    }
+
+    div.sub-pp {
+        flex: 0 0 140px;
+        text-align: right;
+        border-left: none;
+    }
+
     .pp {
         font-weight: 600;
         font-size: 1.4em;
@@ -165,13 +219,7 @@ img.user-gravatar {
 
     .pp-weighted {
         color: $color_primary50;
-    }
-
-    div.sub-pp {
-        text-align: right;
-        min-width: unset;
-        width: unset;
-        border-left: none;
+        font-size: 0.8em;
     }
 }
 

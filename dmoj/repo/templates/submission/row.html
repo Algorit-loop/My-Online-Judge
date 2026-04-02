@@ -19,8 +19,11 @@
 <td class="col-lang">
     {{ submission.language.short_display_name }}
 </td>
+<td class="col-state">
+    <span class="case-{{ submission.result_class }}">{{ submission.long_status }}</span>
+</td>
 <td class="col-result">
-    <div class="result-cell {{ submission.result_class }}">
+    <div class="result-cell">
         {%- if submission.is_graded -%}
             {%- if submission.status in ('IE', 'CE', 'AB') -%}
                 <div class="result-bar">
@@ -31,7 +34,7 @@
             {%- else -%}
                 {% set pct = (submission.case_points / submission.case_total * 100) if submission.case_total else 0 %}
                 <div class="result-bar">
-                    <div class="result-bar-fill result-bar-{{ submission.result_class }}" style="width: {{ pct|floatformat(1) }}%">
+                    <div class="result-bar-fill result-bar-{{ submission.result_class }}" style="width: {{ (pct + 0.5)|int }}%">
                         <span class="result-text">{{ submission.case_points|floatformat(-3) }} / {{ submission.case_total|floatformat(0) }}</span>
                     </div>
                 </div>
