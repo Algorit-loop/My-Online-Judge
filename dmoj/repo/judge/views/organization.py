@@ -399,7 +399,6 @@ class CreateOrganization(PermissionRequiredMixin, TitleMixin, CreateView):
             # slug is show in url
             # short_name is show in ranking
             org.short_name = org.slug[:20]
-            org.free_credit = org.monthly_free_credit_limit
             add_admin_to_group(form)
             # don't need to org.save, the form.save() in `add_admin_to_group` will do it
             return HttpResponseRedirect(self.get_success_url())
@@ -610,18 +609,10 @@ class MonthlyCreditUsageOrganization(LoginRequiredMixin, TitleMixin, AdminOrgani
         cost_chart = get_lines_chart(days, {
             _('Cost (thousand vnd)'): [
                 round(
-                    max(0, credit - settings.VNOJ_MONTHLY_FREE_CREDIT) / sec_per_hour * settings.VNOJ_PRICE_PER_HOUR, 3,
+                    credit / sec_per_hour * settings.VNOJ_PRICE_PER_HOUR, 3,
                 ) for credit in used_credits
             ],
         })
-
-        free_credit = int(self.organization.free_credit)
-
-        context['free_credit'] = {
-            'hour': free_credit // sec_per_hour,
-            'minute': (free_credit % sec_per_hour) // 60,
-            'second': free_credit % 60,
-        }
 
         paid_credit = int(self.organization.paid_credit)
 

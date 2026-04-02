@@ -22,7 +22,6 @@ def organization_monthly_reset():
             consumed_credit=org.current_consumed_credit,
         )
         usage.save()
-        org.free_credit = org.monthly_free_credit_limit
         org.current_consumed_credit = 0
         org.save()
 

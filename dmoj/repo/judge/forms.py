@@ -460,14 +460,10 @@ class OrganizationForm(ModelForm):
             return credit * 3600
         return None
 
-    def clean_monthly_free_credit_limit(self):
-        credit = self.cleaned_data.get('monthly_free_credit_limit')
-        return credit
-
     class Meta:
         model = Organization
         fields = [
-            'name', 'slug', 'paid_credit', 'monthly_free_credit_limit', 'is_open',
+            'name', 'slug', 'paid_credit', 'is_open',
             'about', 'logo_override_image', 'admins',
         ]
         widgets = {'about': MartorWidget(attrs={'data-markdownfy-url': reverse_lazy('organization_preview')})}
@@ -486,17 +482,14 @@ class OrganizationForm(ModelForm):
 
         if instance is not None:
             initial['paid_credit'] = round(instance.paid_credit / 3600, 5)
-            initial['monthly_free_credit_limit'] = round(instance.monthly_free_credit_limit, 5)
         else:
             initial['paid_credit'] = 0
-            initial['monthly_free_credit_limit'] = settings.VNOJ_MONTHLY_FREE_CREDIT
 
         super().__init__(*args, **kwargs)
 
         if request and not request.user.has_perm('judge.organization_admin'):
             self.fields.pop('admins')
             self.fields.pop('paid_credit')
-            self.fields.pop('monthly_free_credit_limit')
 
 
 class SocialAuthMixin:

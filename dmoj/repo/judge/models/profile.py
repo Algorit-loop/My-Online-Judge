@@ -67,16 +67,6 @@ class Organization(models.Model):
     member_count = models.IntegerField(default=0)
     current_consumed_credit = models.FloatField(default=0, help_text='Total used credit this month')
     paid_credit = models.FloatField(default=0, help_text=_('Remaining purchased credits'), db_column='available_credit')
-    free_credit = models.FloatField(
-        default=0,
-        help_text=_('Remaining free credits for the current month'),
-        db_column='monthly_credit',
-    )
-    monthly_free_credit_limit = models.FloatField(
-        verbose_name=_('monthly free credit limit (seconds)'),
-        default=settings.VNOJ_MONTHLY_FREE_CREDIT,
-        help_text=_('Amount of free credits (in seconds) allocated each month. Default: 10800 = 3 hours.'),
-    )
 
     _pp_table = [pow(settings.VNOJ_ORG_PP_STEP, i) for i in range(settings.VNOJ_ORG_PP_ENTRIES)]
 
@@ -123,21 +113,13 @@ class Organization(models.Model):
         return reverse('organization_users', args=[self.slug])
 
     def has_credit_left(self):
-        return self.paid_credit + self.free_credit > 0
+        return self.paid_credit > 0
 
     def consume_credit(self, consumed):
-        # reduce credit in free credit first
-        # then reduce the left to available credit
-        if self.free_credit >= consumed:
-            self.free_credit -= consumed
-        else:
-            consumed -= self.free_credit
-            self.free_credit = 0
-            # paid credit can be negative if we don't enable the monthly credit limitation
-            self.paid_credit -= consumed
-
+        # paid credit can be negative if we don't enable the monthly credit limitation
+        self.paid_credit -= consumed
         self.current_consumed_credit += consumed
-        self.save(update_fields=['free_credit', 'paid_credit', 'current_consumed_credit'])
+        self.save(update_fields=['paid_credit', 'current_consumed_credit'])
 
     class Meta:
         ordering = ['name']

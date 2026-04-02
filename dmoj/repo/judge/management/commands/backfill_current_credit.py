@@ -36,8 +36,6 @@ class Command(BaseCommand):
             .aggregate(Sum('credit'))['credit__sum'] or 0
         )
 
-        org.free_credit = org.monthly_free_credit_limit
-
         org.consume_credit(credit_problem + credit_contest)
 
     def handle(self, *args, **options):
