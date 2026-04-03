@@ -658,6 +658,9 @@ class SubmissionListOrganization(InfinitePaginationMixin, PrivateOrganizationMix
         if not self.is_in_organization_subdomain():
             context['title'] = self.organization.name
             context['content_title'] = self.organization.name
+        # context['dynamic_update'] = True  
+        # Only update dynamically on the first page, otherwise it will cause problems when user goes to page 2, 3, ...
+        context['dynamic_update'] = context['page_obj'].number == 1
         return context
 
 

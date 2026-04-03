@@ -163,6 +163,7 @@
 
     .col-result {
         min-width: 160px;
+        text-align: center;
         width: 20%;
     }
 
@@ -180,7 +181,7 @@
 
     .col-state {
         white-space: nowrap;
-        font-weight: 700;
+        text-align: center;
         min-width: 100px;
     }
 }
@@ -249,9 +250,9 @@
 }
 
 .result-bar-grading {
-    background: linear-gradient(90deg, $color_primary50, $color_primary75);
+    background: #6C6DFF;
     width: 100%;
-    animation: grading-pulse 1.5s ease-in-out infinite;
+    animation: grading-pulse 1.0s ease-in-out infinite;
 
     .fa {
         color: #fff;
@@ -260,6 +261,7 @@
 
     color: #fff;
     font-size: 0.8em;
+    font-weight: 700;
 }
 
 .result-bar-CE, .result-bar-IE, .result-bar-AB {
@@ -520,6 +522,18 @@ label[for="language"], label[for="status"], label[for="organization"] {
 
 .case-CE, .case-IE, .case-AB {
     color: #888;
+    font-weight: bold;
+}
+
+// .case-QU, .case-P, .case-G {
+//     color: #6C6DFF;
+//     font-weight: bold;
+// }
+
+// .case-QU, .case-P, .case-G is .case-None in BKDNOJ
+
+.case-None {
+    color: #6C6DFF;
     font-weight: bold;
 }
 
