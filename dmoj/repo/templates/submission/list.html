@@ -183,7 +183,19 @@
                             data: {id: id, show_problem: show_problem}
                         }).done(function (data) {
                             var was_shown = row.is(':visible');
-                            row.html(data);
+                            var hasGrading = row.find('.result-bar-grading').length > 0;
+                            if (hasGrading) {
+                                var $temp = $('<table><tbody><tr>' + data + '</tr></tbody></table>');
+                                if ($temp.find('.result-bar-grading').length > 0) {
+                                    // Still grading: update only case text + state, keep animation intact
+                                    row.find('.grading-case-text').text($temp.find('.grading-case-text').text().trim());
+                                    row.find('.col-state').html($temp.find('.col-state').html());
+                                } else {
+                                    row.html(data);
+                                }
+                            } else {
+                                row.html(data);
+                            }
                             register_time(row.find('.time-with-rel'));
                             if (!was_shown) {
                                 row.slideDown('slow');

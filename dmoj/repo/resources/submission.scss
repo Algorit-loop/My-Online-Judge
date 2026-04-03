@@ -279,17 +279,21 @@
 
 /* ===== Sub-actions (icons below result bar) ===== */
 .sub-actions {
-    margin-top: 4px;
+    margin-top: 1px;
     display: flex;
     gap: 6px;
-    font-size: 0.85em;
+    justify-content: space-evenly;
 
     a {
         color: $color_primary50;
-        transition: color 0.15s;
+        transition: color 0.15s, background 0.15s;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 1.0em;
 
         &:hover {
             color: $color_primary100;
+            background: $color_primary10;
         }
     }
 }
