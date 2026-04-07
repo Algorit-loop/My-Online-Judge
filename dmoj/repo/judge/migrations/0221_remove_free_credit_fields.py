@@ -11,9 +11,20 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.SeparateDatabaseAndState(
-            # Both columns don't exist in the DB, skip all DB operations.
-            database_operations=[],
-            # Only update Django's model state to remove both fields.
+            # Drop the actual DB columns:
+            # - 'monthly_credit'        (db_column of free_credit, added in 0207)
+            # - 'monthly_free_credit_limit' (added in 0212)
+            database_operations=[
+                migrations.RunSQL(
+                    sql='ALTER TABLE `judge_organization` DROP COLUMN IF EXISTS `monthly_credit`',
+                    reverse_sql='ALTER TABLE `judge_organization` ADD COLUMN `monthly_credit` double NOT NULL DEFAULT 0',
+                ),
+                migrations.RunSQL(
+                    sql='ALTER TABLE `judge_organization` DROP COLUMN IF EXISTS `monthly_free_credit_limit`',
+                    reverse_sql='ALTER TABLE `judge_organization` ADD COLUMN `monthly_free_credit_limit` double NOT NULL DEFAULT 10800',
+                ),
+            ],
+            # Update Django's model state to remove both fields.
             state_operations=[
                 migrations.RemoveField(
                     model_name='organization',
