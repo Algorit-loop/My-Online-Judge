@@ -123,6 +123,11 @@
             font-size: 0.7em;
             color: $color_primary50;
         }
+
+        &.col-exectime {
+            color: $color_primary75;
+            font-weight: 600;
+        }
     }
 
     tbody tr {
@@ -171,12 +176,14 @@
         white-space: nowrap;
         text-align: right;
         min-width: 90px;
+        font-weight: 500;
+        color: #FF1493;
+        
     }
 
     .col-memory {
         white-space: nowrap;
         text-align: right;
-        min-width: 80px;
     }
 
     .col-state {
