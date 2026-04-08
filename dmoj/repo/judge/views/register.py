@@ -48,9 +48,9 @@ class CustomRegistrationForm(RegistrationForm):
                                                 'is allowed per address.') % self.cleaned_data['email'])
         if '@' in self.cleaned_data['email']:
             domain = self.cleaned_data['email'].split('@')[-1].lower()
-            # Only allow .lge.com email domain
-            if domain != 'lge.com':
-                raise forms.ValidationError(gettext('Only LGE email addresses (ending with @lge.com) are allowed for registration.'))
+            # # Only allow .lge.com email domain
+            # if domain != 'lge.com':
+            #     raise forms.ValidationError(gettext('Only LGE email addresses (ending with @lge.com) are allowed for registration.'))
             if (domain in settings.BAD_MAIL_PROVIDERS or
                     any(regex.match(domain) for regex in bad_mail_regex)):
                 raise forms.ValidationError(gettext('Your email provider is not allowed due to history of abuse. '
