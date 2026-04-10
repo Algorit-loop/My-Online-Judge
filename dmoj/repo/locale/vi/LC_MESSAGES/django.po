@@ -5556,6 +5556,14 @@ msgstr "Kỳ thi sẽ kết thúc sau %(countdown)s."
 msgid "Active contests"
 msgstr "Các kỳ thi đang tham gia"
 
+#: templates/contest/list.html
+msgid "Author"
+msgstr "Tác giả"
+
+#: templates/contest/list.html
+msgid "Action"
+msgstr "Hành động"
+
 #: templates/contest/list.html:199 templates/contest/list.html:239
 #: templates/contest/list.html:279 templates/contest/list.html:330
 msgid "Contest"

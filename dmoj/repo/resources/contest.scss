@@ -126,6 +126,17 @@
         padding-top: 0.5em;
     }
 
+    .contest-time-col {
+        text-align: center;
+        color: #ffffff;
+
+        .time-left {
+            text-align: center;
+            color: $color_primary100;
+            padding-top: 0.5em;
+        }
+    }
+
     .contest-tags {
         padding-left: 0.75em;
         vertical-align: top;
@@ -156,7 +167,7 @@
 }
 
 .contest-list-title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
 }
 

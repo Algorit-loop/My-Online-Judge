@@ -198,9 +198,11 @@
             <table class="contest-list table striped">
                 <thead>
                 <tr>
-                    <th style="width:80%">{{ _('Contest') }}</th>
+                    <th>{{ _('Contest') }}</th>
+                    <th class="contest-time-col">{{ _('Time') }}</th>
+                    <th>{{ _('Author') }}</th>
                     <th>{{ _('Users') }}</th>
-                    <th style="width:20%"></th>
+                    <th>{{ _('Action') }}</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -210,16 +212,20 @@
                             <td>
                                 <div class="contest-block">
                                     {{ contest_head(contest) }}
-                                    {% if contest.start_time %}
-                                        <br>
-                                        {% if contest.time_limit %}
-                                            <span class="time">{{ _('Window ends in %(countdown)s', countdown=as_countdown(participation.time_remaining)) }}</span>
-                                        {% elif contest.time_before_end %}
-                                            <span class="time">{{ _('Ends in %(countdown)s', countdown=as_countdown(contest.time_before_end)) }}</span>
-                                        {% endif %}
-                                        {{ time_left(contest) }}
-                                    {% endif %}
                                 </div>
+                            </td>
+                            <td class="contest-time-col">
+                                {% if contest.start_time %}
+                                    {% if contest.time_limit %}
+                                        <span class="time">{{ _('Window ends in %(countdown)s', countdown=as_countdown(participation.time_remaining)) }}</span>
+                                    {% elif contest.time_before_end %}
+                                        <span class="time">{{ _('Ends in %(countdown)s', countdown=as_countdown(contest.time_before_end)) }}</span>
+                                    {% endif %}
+                                    {{ time_left(contest) }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ link_users(contest.authors.all()) }}
                             </td>
                             <td>
                                 {{ user_count(contest, request.user) }}
@@ -238,9 +244,11 @@
             <table class="contest-list table striped">
                 <thead>
                 <tr>
-                    <th style="width:80%">{{ _('Contest') }}</th>
+                    <th>{{ _('Contest') }}</th>
+                    <th class="contest-time-col">{{ _('Time') }}</th>
+                    <th>{{ _('Author') }}</th>
                     <th>{{ _('Users') }}</th>
-                    <th style="width:15%"></th>
+                    <th>{{ _('Action') }}</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -249,14 +257,18 @@
                         <td>
                             <div class="contest-block">
                                 {{ contest_head(contest) }}
-                                {% if contest.start_time %}
-                                    <br>
-                                    {% if contest.time_before_end %}
-                                        <span class="time">{{ _('Ends in %(countdown)s', countdown=as_countdown(contest.time_before_end)) }}</span>
-                                    {% endif %}
-                                    {{ time_left(contest) }}
-                                {% endif %}
                             </div>
+                        </td>
+                        <td class="contest-time-col">
+                            {% if contest.start_time %}
+                                {% if contest.time_before_end %}
+                                    <span class="time">{{ _('Ends in %(countdown)s', countdown=as_countdown(contest.time_before_end)) }}</span>
+                                {% endif %}
+                                {{ time_left(contest) }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ link_users(contest.authors.all()) }}
                         </td>
                         <td>
                             {{ user_count(contest, request.user) }}
@@ -279,7 +291,9 @@
                 <thead>
                 <tr>
                     <th>{{ _('Contest') }}</th>
-                    <th style="width:20%"></th>
+                    <th class="contest-time-col">{{ _('Time') }}</th>
+                    <th>{{ _('Author') }}</th>
+                    <th>{{ _('Action') }}</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -288,14 +302,18 @@
                         <td>
                             <div class="contest-block">
                                 {{ contest_head(contest) }}
-                                {% if contest.start_time %}
-                                    <br>
-                                    {% if contest.time_before_start %}
-                                        <span class="time">{{ _('Starting in %(countdown)s', countdown=as_countdown(contest.time_before_start)) }}</span>
-                                    {% endif %}
-                                    {{ time_left(contest) }}
-                                {% endif %}
                             </div>
+                        </td>
+                        <td class="contest-time-col">
+                            {% if contest.start_time %}
+                                {% if contest.time_before_start %}
+                                    <span class="time">{{ _('Starting in %(countdown)s', countdown=as_countdown(contest.time_before_start)) }}</span>
+                                {% endif %}
+                                {{ time_left(contest) }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ link_users(contest.authors.all()) }}
                         </td>
                         {% if contest.require_registration %}
                             {{ contest_register(contest, request) }}
@@ -328,10 +346,12 @@
             <table class="contest-list table striped">
                 <thead>
                 <tr>
-                    <th style="width:80%">{{ _('Contest') }}</th>
+                    <th>{{ _('Contest') }}</th>
+                    <th class="contest-time-col">{{ _('Time') }}</th>
+                    <th>{{ _('Author') }}</th>
                     <th>{{ _('Users') }}</th>
                     {% if not request.in_contest %}
-                        <th style="width:15%"></th>
+                        <th>{{ _('Action') }}</th>
                     {% endif %}
                 </tr>
                 </thead>
@@ -341,8 +361,13 @@
                         <td>
                             <div class="contest-block">
                                 {{ contest_head(contest) }}
-                                {{ time_left(contest) }}
                             </div>
+                        </td>
+                        <td class="contest-time-col">
+                            {{ time_left(contest) }}
+                        </td>
+                        <td>
+                            {{ link_users(contest.authors.all()) }}
                         </td>
                         <td>
                             {{ user_count(contest, request.user) }}
