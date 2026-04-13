@@ -29,6 +29,13 @@ CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': os.environ.get('REDIS_CACHING_URL', 'redis://redis:6379/0'),
+        # 'OPTIONS': {
+        #     'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        #     # Prevent Redis connectivity issues from crashing uWSGI workers.
+        #     # When Redis is unavailable, cache operations fail silently and
+        #     # SESSION_ENGINE='cached_db' falls back to DB reads/writes.
+        #     'IGNORE_EXCEPTIONS': True,
+        # },
     },
 }
 
@@ -52,7 +59,7 @@ DATABASES = {
 # Documentation: <https://docs.djangoproject.com/en/3.2/topics/http/sessions/>
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 # ---- tao them -----
-SESSION_COOKIE_AGE = 3600 * 24 * 4  # 1 giờ
+SESSION_COOKIE_AGE = 3600 * 24 * 4  # 4 ngày
 SESSION_SAVE_EVERY_REQUEST = True  # Reset mỗi lần user có hoạt động
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Không xóa session khi tắt trình duyệt
 # ---------------------

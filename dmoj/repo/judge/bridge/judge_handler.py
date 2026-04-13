@@ -25,7 +25,8 @@ UPDATE_RATE_LIMIT = 5
 UPDATE_RATE_TIME = 0.5
 SubmissionData = namedtuple(
     'SubmissionData',
-    'time memory short_circuit pretests_only contest_no attempt_no user_id file_only file_size_limit',
+    'time memory short_circuit pretests_only contest_no attempt_no user_id file_only file_size_limit'
+    ' scoring_mode',
 )
 
 
@@ -190,11 +191,12 @@ class JudgeHandler(ZlibPacketHandler):
         _ensure_connection()
 
         try:
-            pid, time, memory, short_circuit, lid, is_pretested, sub_date, uid, part_virtual, part_id, \
+            pid, time, memory, short_circuit, scoring_mode, lid, is_pretested, sub_date, uid, part_virtual, part_id, \
                 file_only, file_size_limit = (
                     Submission.objects.filter(id=submission)
                               .values_list('problem__id', 'problem__time_limit', 'problem__memory_limit',
-                                           'problem__short_circuit', 'language__id', 'is_pretested', 'date',
+                                           'problem__short_circuit', 'problem__scoring_mode',
+                                           'language__id', 'is_pretested', 'date',
                                            'user__id', 'contest__participation__virtual', 'contest__participation__id',
                                            'language__file_only', 'language__file_size_limit')).get()
         except Submission.DoesNotExist:
@@ -224,6 +226,7 @@ class JudgeHandler(ZlibPacketHandler):
             user_id=uid,
             file_only=file_only,
             file_size_limit=file_size_limit,
+            scoring_mode=scoring_mode,
         )
 
     def disconnect(self, force=False):
@@ -246,6 +249,7 @@ class JudgeHandler(ZlibPacketHandler):
             'time-limit': data.time,
             'memory-limit': data.memory,
             'short-circuit': data.short_circuit,
+            'scoring-mode': data.scoring_mode,
             'meta': {
                 'pretests-only': data.pretests_only,
                 'in-contest': data.contest_no,
@@ -390,6 +394,9 @@ class JudgeHandler(ZlibPacketHandler):
             json_log.error(self._make_json_log(packet, action='grading-end', info='unknown submission'))
             return
 
+        problem = submission.problem
+        is_partial_testcase = getattr(problem, 'scoring_mode', 'partial_batch') == 'partial_testcase'
+
         time = 0.0
         total_time = 0.0
         memory = 0
@@ -397,7 +404,9 @@ class JudgeHandler(ZlibPacketHandler):
         total = 0
         status = 0
         status_codes = ['SC', 'AC', 'WA', 'MLE', 'TLE', 'IR', 'RTE', 'OLE']
-        batches = {}  # batch number: (points, total)
+        # partial_batch mode:       batches[batch] = [min_points, max_total]
+        # partial_testcase mode:    batches[batch] = [sum_of_points, total_count, batch_points]
+        batches = {}
 
         for case in SubmissionTestCase.objects.filter(submission=submission):
             time = max(time, case.time)
@@ -406,6 +415,15 @@ class JudgeHandler(ZlibPacketHandler):
             if not case.batch:
                 points += case.points
                 total += case.total
+            elif is_partial_testcase:
+                # Sum actual case.points (handles Custom Checker partial scores 0-1 range)
+                # case.points = coefficient * case.total, where coefficient is 0..1
+                if case.batch in batches:
+                    batches[case.batch][0] += case.points  # sum_of_points
+                    batches[case.batch][1] += 1  # total_count
+                    batches[case.batch][2] = max(batches[case.batch][2], case.total)  # batch_points
+                else:
+                    batches[case.batch] = [case.points, 1, case.total]
             else:
                 if case.batch in batches:
                     batches[case.batch][0] = min(batches[case.batch][0], case.points)
@@ -416,16 +434,24 @@ class JudgeHandler(ZlibPacketHandler):
             if i > status:
                 status = i
 
-        for i in batches:
-            points += batches[i][0]
-            total += batches[i][1]
+        if is_partial_testcase:
+            for i in batches:
+                sum_of_points, total_count, batch_pts = batches[i]
+                # batch_score = sum(case.points) / total_count
+                # This works for both standard (case.points = 0 or batch_pts) and
+                # custom checker (case.points = coefficient * batch_pts)
+                points += (sum_of_points / total_count) if total_count > 0 else 0
+                total += batch_pts
+        else:
+            for i in batches:
+                points += batches[i][0]
+                total += batches[i][1]
 
         points = round(points, 1)
         total = round(total, 1)
         submission.case_points = points
         submission.case_total = total
 
-        problem = submission.problem
         sub_points = round(points / total * problem.points if total > 0 else 0, 3)
         if not problem.partial and sub_points != problem.points:
             sub_points = 0

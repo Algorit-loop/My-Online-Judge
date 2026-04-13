@@ -14,6 +14,16 @@ services:
     container_name: vnoj_redis
     image: redis:alpine
     restart: unless-stopped
+    # # Limit Redis memory and use LRU eviction.
+    # # Without a limit, Redis uses 'noeviction' policy by default, meaning
+    # # write operations (e.g. session saves) will fail with OOM errors when
+    # # memory is full, crashing uWSGI workers and causing 502 errors.
+    # command: >
+    #   redis-server
+    #   --maxmemory 256mb
+    #   --maxmemory-policy allkeys-lru
+    #   --save ""
+    #   --appendonly no
     networks: [site]
     #ports:
     #  - 6379:6379
@@ -95,12 +105,18 @@ services:
     #  - 15100:15100
     #  - 15101:15101
     #  - 15102:15102
+  # redis-flush:
+  #   image: redis:alpine
+  #   restart: unless-stopped
+  #   networks: [site]
+  #   depends_on: [redis]
+  #   command: sh -c "while true; do redis-cli -h redis FLUSHDB && sleep 28800; done"
   nginx:
     container_name: vnoj_nginx
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - 80:80
+      - 8080:8080
     volumes:
       - assets:/assets/
       - userdatacache:/userdatacache/

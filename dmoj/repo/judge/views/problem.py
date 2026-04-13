@@ -919,7 +919,7 @@ class ProblemCreate(PermissionRequiredMixin, TitleMixin, CreateView):
         initial = initial.copy()
         initial['description'] = misc_config(self.request)['misc_config']['description_example']
         initial['memory_limit'] = 262144  # 256 MB
-        initial['partial'] = True
+        initial['scoring_mode'] = 'partial_batch'
         try:
             initial['group'] = ProblemGroup.objects.get(name='Uncategorized').pk
         except ProblemGroup.DoesNotExist:

@@ -130,7 +130,7 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
         }),
         (_('Social Media'), {'classes': ('collapse',), 'fields': ('og_image', 'summary')}),
         (_('Taxonomy'), {'fields': ('types', 'group')}),
-        (_('Points'), {'fields': (('points', 'partial'), 'short_circuit')}),
+        (_('Points'), {'fields': ('points', 'scoring_mode')}),
         (_('Limits'), {'fields': ('time_limit', 'memory_limit')}),
         (_('Language'), {'fields': ('allowed_languages',)}),
         (_('Justice'), {'fields': ('banned_users',)}),
@@ -224,7 +224,7 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
         super(ProblemAdmin, self).save_model(request, obj, form, change)
         if (
             form.changed_data and
-            any(f in form.changed_data for f in ('is_public', 'is_organization_private', 'partial'))
+            any(f in form.changed_data for f in ('is_public', 'is_organization_private', 'scoring_mode'))
         ):
             self._rescore(request, obj.id, 'is_public' in form.changed_data)
 

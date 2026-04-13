@@ -806,7 +806,7 @@ class PolygonImporter:
             'time_limit': self.meta['time_limit'],
             'memory_limit': self.meta['memory_limit'],
             'description': self.meta['description'],
-            'partial': self.meta['partial'],
+            'scoring_mode': 'partial_batch' if self.meta['partial'] else 'short_circuit',
             'group': ProblemGroup.objects.order_by('id').first(),  # Uncategorized
             'points': 0.01,
         })

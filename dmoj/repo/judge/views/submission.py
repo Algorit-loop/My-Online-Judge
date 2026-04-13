@@ -167,10 +167,18 @@ def SubmissionSourceDiff(request):
     })
 
 
-def make_batch(batch, cases, statuses=None):
+def make_batch(batch, cases, statuses=None, scoring_mode='partial_batch'):
     result = {'id': batch, 'cases': cases}
     if batch:
-        result['points'] = min(map(attrgetter('points'), cases))
+        if scoring_mode == 'partial_testcase':
+            total_count = len(cases)
+            sum_of_points = sum(c.points for c in cases)
+            batch_pts = max(map(attrgetter('total'), cases))
+            # batch_score = sum(case.points) / total_count
+            # Handles Custom Checker partial scores (coefficient 0-1 * batch_pts)
+            result['points'] = (sum_of_points / total_count) if total_count > 0 else 0
+        else:
+            result['points'] = min(map(attrgetter('points'), cases))
         result['total'] = max(map(attrgetter('total'), cases))
         result['status'] = statuses[0].status if statuses else None
         if result['status']:
@@ -207,7 +215,7 @@ def combine_statuses(status_cases, submission):
     return ret
 
 
-def group_test_cases(cases):
+def group_test_cases(cases, scoring_mode='partial_batch'):
     result = []
     status = []
     buf = []
@@ -219,14 +227,14 @@ def group_test_cases(cases):
         test_case_count += 1
         if case.batch != last and buf:
             statuses = get_statuses(last, buf)
-            result.append(make_batch(last, buf, statuses))
+            result.append(make_batch(last, buf, statuses, scoring_mode))
             status.extend(statuses)
             buf = []
         buf.append(case)
         last = case.batch
     if buf:
         statuses = get_statuses(last, buf)
-        result.append(make_batch(last, buf, statuses))
+        result.append(make_batch(last, buf, statuses, scoring_mode))
         status.extend(statuses)
     return result, status, test_case_count
 
@@ -241,7 +249,8 @@ class SubmissionStatus(SubmissionDetailBase):
         context = super(SubmissionStatus, self).get_context_data(**kwargs)
         submission = self.object
 
-        context['batches'], statuses, test_case_count = group_test_cases(submission.test_cases.all())
+        scoring_mode = getattr(submission.problem, 'scoring_mode', 'partial_batch')
+        context['batches'], statuses, test_case_count = group_test_cases(submission.test_cases.all(), scoring_mode)
 
         context['feedback_limit'] = min(3, test_case_count - 1)
         # In case the submission is in an on-going contest, we don't want to show any feedback.

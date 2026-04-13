@@ -453,6 +453,7 @@ class APIProblemList(APIListView):
             'group': problem.group.full_name,
             'points': problem.points,
             'partial': problem.partial,
+            'scoring_mode': problem.scoring_mode,
             'is_organization_private': problem.is_organization_private,
             'is_public': problem.is_public,
         }
@@ -490,6 +491,7 @@ class APIProblemDetail(APIDetailView):
             'points': problem.points,
             'partial': problem.partial,
             'short_circuit': problem.short_circuit,
+            'scoring_mode': problem.scoring_mode,
             'languages': list(problem.allowed_languages.values_list('key', flat=True)),
             'is_organization_private': problem.is_organization_private,
             'organization': (
@@ -667,7 +669,8 @@ class APISubmissionDetail(APILoginRequiredMixin, APIDetailView):
 
     def get_object_data(self, submission):
         cases = []
-        for batch in group_test_cases(submission.test_cases.all())[0]:
+        scoring_mode = getattr(submission.problem, 'scoring_mode', 'partial_batch')
+        for batch in group_test_cases(submission.test_cases.all(), scoring_mode)[0]:
             batch_cases = [
                 {
                     'type': 'case',

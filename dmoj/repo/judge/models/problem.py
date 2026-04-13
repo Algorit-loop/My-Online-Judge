@@ -23,7 +23,7 @@ from judge.user_translations import gettext as user_gettext
 from judge.utils.url import get_absolute_pdf_url
 
 __all__ = ['ProblemGroup', 'ProblemType', 'Problem', 'ProblemTranslation', 'ProblemClarification', 'License',
-           'Solution', 'SubmissionSourceAccess', 'TranslatedProblemQuerySet']
+           'Solution', 'SubmissionSourceAccess', 'TranslatedProblemQuerySet', 'ScoringMode']
 
 
 def disallowed_characters_validator(text):
@@ -117,6 +117,12 @@ class ProblemTestcaseResultAccess:
     ONLY_SUBMISSION_RESULT = 'S'
 
 
+class ScoringMode:
+    SHORT_CIRCUIT = 'short_circuit'
+    PARTIAL_BATCH = 'partial_batch'
+    PARTIAL_TESTCASE = 'partial_testcase'
+
+
 class Problem(models.Model):
     SUBMISSION_SOURCE_ACCESS = (
         (SubmissionSourceAccess.FOLLOW, _('Follow global setting')),
@@ -174,12 +180,29 @@ class Problem(models.Model):
                                                            '(e.g. 64mb = 65536 kilobytes).'),
                                                validators=[MinValueValidator(settings.DMOJ_PROBLEM_MIN_MEMORY_LIMIT),
                                                            MaxValueValidator(settings.DMOJ_PROBLEM_MAX_MEMORY_LIMIT)])
+    SCORING_MODE_CHOICES = (
+        (ScoringMode.SHORT_CIRCUIT, _('Short circuit (stop on first failure, all-or-nothing)')),
+        (ScoringMode.PARTIAL_BATCH, _('Partial (by subtask/batch — failed subtask = 0 points)')),
+        (ScoringMode.PARTIAL_TESTCASE, _('Partial (by testcase — each correct test earns points)')),
+    )
+
+    scoring_mode = models.CharField(
+        max_length=20,
+        verbose_name=_('scoring mode'),
+        choices=SCORING_MODE_CHOICES,
+        default=ScoringMode.PARTIAL_BATCH,
+        help_text=_('How submissions are scored. Short circuit stops at first wrong answer. '
+                    'Partial by subtask gives 0 for a failed subtask. '
+                    'Partial by testcase awards points for each correct test within a subtask.'),
+    )
+    # Kept for backward compatibility with judge protocol. Computed from scoring_mode in save().
     short_circuit = models.BooleanField(default=False)
+    partial = models.BooleanField(verbose_name=_('allows partial points'), default=False)
+
     points = models.FloatField(verbose_name=_('points'),
                                help_text=_('Points awarded for problem completion. '
                                            "Points are displayed with a 'p' suffix if partial."),
                                validators=[MinValueValidator(settings.DMOJ_PROBLEM_MIN_PROBLEM_POINTS)])
-    partial = models.BooleanField(verbose_name=_('allows partial points'), default=False)
     allowed_languages = models.ManyToManyField(Language, verbose_name=_('allowed languages'),
                                                help_text=_('List of allowed submission languages.'))
     is_public = models.BooleanField(verbose_name=_('publicly visible'), db_index=True, default=False)
@@ -568,11 +591,19 @@ class Problem(models.Model):
 
         return {'method': 'standard'}
 
+    @property
+    def is_partial(self):
+        return self.scoring_mode != ScoringMode.SHORT_CIRCUIT
+
+    @property
+    def is_partial_testcase(self):
+        return self.scoring_mode == ScoringMode.PARTIAL_TESTCASE
+
     def save(self, *args, **kwargs):
         is_clone = kwargs.pop('is_clone', False)
-        # if short_circuit = true the judge will stop judging
-        # as soon as the submission failed a test case
-        self.short_circuit = not self.partial
+        # Compute backward-compatible fields from scoring_mode
+        self.partial = self.scoring_mode != ScoringMode.SHORT_CIRCUIT
+        self.short_circuit = self.scoring_mode == ScoringMode.SHORT_CIRCUIT
         super(Problem, self).save(*args, **kwargs)
         # Ignore the custom save if we are cloning a problem
         if is_clone:

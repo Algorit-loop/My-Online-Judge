@@ -8,7 +8,7 @@
 {% macro make_batch_status(batch, cnt) %}
     <b>{{ _('Batch #%(id)d', id=cnt) }}</b>
     {% if not batch.not_graded %}
-        ({{ _('%(points)s/%(total)s points', points=batch.points|floatformat(0), total=batch.total|floatformat(0)) }})
+        ({{ _('%(points)s/%(total)s points', points=batch.points|floatformat(-1), total=batch.total|floatformat(-1)) }})
     {% else %}
         <span class="fa fa-spinner fa-pulse"></span>
     {% endif %}
@@ -122,9 +122,13 @@
 
                 <td>{% if case.status != 'SC' %}{{ case.memory|kbdetailformat }}]{% endif %}</td>
 
-                {% if not batch.id %}
+                {%- if batch.id -%}
+                    {# For batched cases, show coefficient (0-1) out of 1 #}
+                    <td>({{ (case.points / case.total)|floatformat(-3) }}/1)</td>
+                {%- else -%}
+                    {# For non-batched cases, show full score #}
                     <td>({{ case.points|floatformat(-3) }}/{{ case.total|floatformat(0) }})</td>
-                {% endif %}
+                {%- endif -%}
             </tr>
 
             {% if has_extended_data %}
