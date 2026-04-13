@@ -416,14 +416,17 @@ class JudgeHandler(ZlibPacketHandler):
                 points += case.points
                 total += case.total
             elif is_partial_testcase:
-                # Sum actual case.points (handles Custom Checker partial scores 0-1 range)
-                # case.points = coefficient * case.total, where coefficient is 0..1
+                # Normalize case.points to coefficient [0, 1]:
+                #   - Standard checker: case.points ∈ {0, case.total} → coeff = case.points / case.total
+                #   - Custom checker:   case.points ∈ [0, 1] directly → coeff = case.points (as-is)
+                # Heuristic: if case.points > 1 it has been scaled by case.total; otherwise it's already a coefficient.
+                coeff = case.points if case.points <= 1 else (case.points / case.total if case.total else 0)
                 if case.batch in batches:
-                    batches[case.batch][0] += case.points  # sum_of_points
-                    batches[case.batch][1] += 1  # total_count
-                    batches[case.batch][2] = max(batches[case.batch][2], case.total)  # batch_points
+                    batches[case.batch][0] += coeff   # sum_of_coefficients
+                    batches[case.batch][1] += 1        # total_count
+                    batches[case.batch][2] = max(batches[case.batch][2], case.total)  # batch_pts
                 else:
-                    batches[case.batch] = [case.points, 1, case.total]
+                    batches[case.batch] = [coeff, 1, case.total]
             else:
                 if case.batch in batches:
                     batches[case.batch][0] = min(batches[case.batch][0], case.points)
@@ -436,11 +439,9 @@ class JudgeHandler(ZlibPacketHandler):
 
         if is_partial_testcase:
             for i in batches:
-                sum_of_points, total_count, batch_pts = batches[i]
-                # batch_score = sum(case.points) / total_count
-                # This works for both standard (case.points = 0 or batch_pts) and
-                # custom checker (case.points = coefficient * batch_pts)
-                points += (sum_of_points / total_count) if total_count > 0 else 0
+                sum_coeff, total_count, batch_pts = batches[i]
+                # batch_score = mean(coefficient) * batch_pts
+                points += (sum_coeff / total_count * batch_pts) if total_count > 0 else 0
                 total += batch_pts
         else:
             for i in batches:

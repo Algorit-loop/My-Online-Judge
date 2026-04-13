@@ -123,10 +123,13 @@
                 <td>{% if case.status != 'SC' %}{{ case.memory|kbdetailformat }}]{% endif %}</td>
 
                 {%- if batch.id -%}
-                    {# For batched cases, show coefficient (0-1) out of 1 #}
-                    <td>({{ (case.points / case.total)|floatformat(-3) }}/1)</td>
+                    {# Batched: normalize to coefficient [0,1] same as scoring logic #}
+                    {# Standard checker: case.points = batch_total when AC → divide by case.total #}
+                    {# Custom checker:   case.points ∈ [0,1] already → use as-is #}
+                    {% set coeff = case.points if case.points <= 1 else (case.points / case.total if case.total else 0) %}
+                    <td>({{ coeff|floatformat(-3) }}/1)</td>
                 {%- else -%}
-                    {# For non-batched cases, show full score #}
+                    {# Non-batched: show actual points / total #}
                     <td>({{ case.points|floatformat(-3) }}/{{ case.total|floatformat(0) }})</td>
                 {%- endif -%}
             </tr>

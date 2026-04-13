@@ -172,11 +172,10 @@ def make_batch(batch, cases, statuses=None, scoring_mode='partial_batch'):
     if batch:
         if scoring_mode == 'partial_testcase':
             total_count = len(cases)
-            sum_of_points = sum(c.points for c in cases)
+            # Normalize each testcase to coefficient [0,1] (same logic as judge_handler)
+            sum_coeff = sum((c.points if c.points <= 1 else (c.points / c.total if c.total else 0)) for c in cases)
             batch_pts = max(map(attrgetter('total'), cases))
-            # batch_score = sum(case.points) / total_count
-            # Handles Custom Checker partial scores (coefficient 0-1 * batch_pts)
-            result['points'] = (sum_of_points / total_count) if total_count > 0 else 0
+            result['points'] = (sum_coeff / total_count * batch_pts) if total_count > 0 else 0
         else:
             result['points'] = min(map(attrgetter('points'), cases))
         result['total'] = max(map(attrgetter('total'), cases))
