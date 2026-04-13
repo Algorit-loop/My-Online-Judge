@@ -27,44 +27,59 @@
 
 {% if submission.status != 'IE' %}
     {% if submission.status == 'QU' %}
-        <h4>{{ _('We are waiting for a suitable judge to process your submission...') }}</h4>
+        <div class="status-message status-waiting">
+            <i class="fa fa-clock-o fa-2x"></i>
+            <h4>{{ _('We are waiting for a suitable judge to process your submission...') }}</h4>
+        </div>
     {% elif submission.status == 'P' %}
-        <h4>{{ _('Your submission is being processed...') }}</h4>
+        <div class="status-message status-processing">
+            <i class="fa fa-spinner fa-pulse fa-2x"></i>
+            <h4>{{ _('Your submission is being processed...') }}</h4>
+        </div>
     {% elif submission.status == 'CE' %}
-        <h3>{{ _('Compilation Error') }}</h3>
-        <pre>{{ submission.error|ansi2html }}</pre>
+        <div class="compilation-error-section">
+            <h3><i class="fa fa-exclamation-triangle"></i> {{ _('Compilation Error') }}</h3>
+            <pre class="error-output">{{ submission.error|ansi2html }}</pre>
+        </div>
     {% else %}
         {% if submission.error %}
-            <h3>{{ _('Compilation Warnings') }}</h3>
-            <pre>{{ submission.error|ansi2html }}</pre>
-            <hr class="half-hr"><br>
+            <div class="compilation-warning-section">
+                <h3><i class="fa fa-exclamation-circle"></i> {{ _('Compilation Warnings') }}</h3>
+                <pre class="warning-output">{{ submission.error|ansi2html }}</pre>
+            </div>
         {% endif %}
-        {% if is_pretest %}
-            <h3>{{ _('Pretest Execution Results') }}</h3>
-        {% else %}
-            <h3>{{ _('Execution Results') }}</h3>
-        {% endif %}
-        <br>
+        
+        <div class="execution-results-header">
+            <h3>
+                {% if is_pretest %}
+                    <i class="fa fa-flask"></i> {{ _('Pretest Execution Results') }}
+                {% else %}
+                    <i class="fa fa-check-square-o"></i> {{ _('Execution Results') }}
+                {% endif %}
+            </h3>
+        </div>
         {% if can_view_testcase_status or can_view_batch_status %}
         {% if statuses or not submission.is_graded %}
-            {% for case in statuses %}
-                {% if case.status == "AC" %}
-                    <span class="fa fa-check case-AC"></span>
-                {% elif case.status == "SC" %}
-                    <span class="case-SC">&ndash;</span>
-                {% else %}
-                    <a href="#{{ case.id }}">
-                        <span class="fa fa-times case-{{ case.status }} case-bad"></span>
-                    </a>
+            {# <div class="test-cases-overview">
+                {% for case in statuses %}
+                    {% if case.status == "AC" %}
+                        <span class="fa fa-check case-AC tco-icon" title="Accepted"></span>
+                    {% elif case.status == "SC" %}
+                        <span class="case-SC tco-icon">&ndash;</span>
+                    {% else %}
+                        <span class="fa fa-times case-{{ case.status }} case-bad tco-icon"
+                              title="{{ case.long_status }}"
+                              style="cursor:pointer"
+                              onclick="showCaseModal('{{ case.id }}')"></span>
+                    {% endif %}
+                    {% if case.num_combined > 1 %}
+                        <sup class="case-{{ case.status }}">&times;{{ case.num_combined }}</sup>
+                    {% endif %}
+                {% endfor %}
+                {% if not submission.is_graded %}
+                    <span class="fa fa-spinner fa-pulse"></span>
                 {% endif %}
-                {% if case.num_combined > 1 %}
-                    <sup class="case-{{ case.status }}">&times;{{ case.num_combined }}</sup>
-                {% endif %}
-            {% endfor %}
-            {% if not submission.is_graded %}
-                <span class="fa fa-spinner fa-pulse"></span>
-            {% endif %}
-            <br><br>
+            </div> #}
         {% else %}
             <div>
                 <div class="alert alert-warning comment-lock">
@@ -74,14 +89,16 @@
         {% endif %}
         {% set test_case_id = counter() %}
         {% set test_case_counter = counter() %}
+        <div class="test-batches">
         {% for batch in batches %}
             {% if batch.id %}
-                {{ make_batch_status(batch, test_case_id()) }}
-                <br>
+                <div class="batch-header">
+                    {{ make_batch_status(batch, test_case_id()) }}
+                </div>
                 <div class="batch-cases">
             {% endif %}
         {% if can_view_testcase_status %}
-        <table class="submissions-status-table">{% for case in batch.cases %}
+        <div class="test-cases-grid">{% for case in batch.cases %}
             {% set current_test_case_count = test_case_counter() %}
             {% set print_case_output = can_view_test and case.output %}
             {% set print_case_ext_feedback = case.extended_feedback
@@ -90,125 +107,159 @@
                                               or can_view_test or can_view_feedback) %}
             {% set curr_data = cases_data.get(case.case, None) %}
             {% set has_extended_data = print_case_output or print_case_ext_feedback or (can_view_test and curr_data) %}
+            
+            {%- if batch.id -%}
+                {% set case_label = 'Case #%d'|format(loop.index) %}
+            {%- elif is_pretest -%}
+                {% set case_label = 'Pretest #%d'|format(test_case_id()) %}
+            {%- else -%}
+                {% set case_label = 'Test case #%d'|format(test_case_id()) %}
+            {%- endif -%}
+            
+            {%- if batch.id -%}
+                {% set coeff = case.points if case.points <= 1 else (case.points / case.total if case.total else 0) %}
+                {% set points_display = '%s/1'|format(coeff|floatformat(-3)) %}
+            {%- else -%}
+                {% set points_display = '%s/%s'|format(case.points|floatformat(-3), case.total|floatformat(0)) %}
+            {%- endif -%}
 
-            <tr id="{{ case.id }}" class="case-row toggle closed">
-                <td>
-                    {%- if has_extended_data -%}
-                        <i class="fa fa-chevron-right fa-fw"></i>
-                    {%- endif -%}
-                    {%- if batch.id -%}
-                        <b>{{ _('Case #%(id)d:', id=loop.index) }}</b>
-                    {%- elif is_pretest -%}
-                        <b>{{ _('Pretest #%(id)d:', id=test_case_id()) }}</b>
-                    {%- else -%}
-                        <b>{{ _('Test case #%(id)d:', id=test_case_id()) }}</b>
-                    {%- endif -%}
-                </td>
-
-                <td>
-                    {{ make_status(case) }}
-                    {%- if case.feedback %}&nbsp;({{ case.feedback }}){% endif -%}
-                </td>
-
-                <td>
+            <div class="test-case-card case-{{ case.status }}" {% if has_extended_data %}onclick="showCaseModal('{{ case.id }}')" style="cursor: pointer;"{% endif %}>
+                <div class="case-card-header">
+                    <span class="case-card-title">{{ case_label }}</span>
+                    <span class="case-card-status">{{ make_status(case) }}</span>
+                </div>
+                <div class="case-card-body">
                     {%- if case.status != 'SC' -%}
-                        {%- if case.status == 'TLE' -%}
-                            [&gt;<span>{{ time_limit|floatformat(3) }}s,</span>
-                        {%- else -%}
-                            [<span title="{{ case.time }}s">{{ case.time|floatformat(3) }}s,</span>
-                        {%- endif -%}
+                        <div class="case-card-info">
+                            <i class="fa fa-clock-o"></i>
+                            {%- if case.status == 'TLE' -%}
+                                &gt;{{ time_limit|floatformat(3) }}s
+                            {%- else -%}
+                                {{ case.time|floatformat(3) }}s
+                            {%- endif -%}
+                        </div>
+                        <div class="case-card-info">
+                            <i class="fa fa-microchip"></i>
+                            {{ case.memory|kbdetailformat }}
+                        </div>
                     {%- endif -%}
-                </td>
-
-                <td>{% if case.status != 'SC' %}{{ case.memory|kbdetailformat }}]{% endif %}</td>
-
-                {%- if batch.id -%}
-                    {# Batched: normalize to coefficient [0,1] same as scoring logic #}
-                    {# Standard checker: case.points = batch_total when AC → divide by case.total #}
-                    {# Custom checker:   case.points ∈ [0,1] already → use as-is #}
-                    {% set coeff = case.points if case.points <= 1 else (case.points / case.total if case.total else 0) %}
-                    <td>({{ coeff|floatformat(-3) }}/1)</td>
-                {%- else -%}
-                    {# Non-batched: show actual points / total #}
-                    <td>({{ case.points|floatformat(-3) }}/{{ case.total|floatformat(0) }})</td>
+                    <div class="case-card-info">
+                        <i class="fa fa-star"></i>
+                        {{ points_display }}
+                    </div>
+                </div>
+                {%- if has_extended_data -%}
+                    <div class="case-card-footer">
+                        <i class="fa fa-eye"></i> Click to view details
+                    </div>
                 {%- endif -%}
-            </tr>
+            </div>
 
             {% if has_extended_data %}
-                <tr id="{{ case.id }}-output" style="display:none" class="case-feedback toggled">
-                    <td colspan="5" class="case-output">
-                        <div class="case-info">
+                <div id="modal-{{ case.id }}" class="case-modal" style="display:none;">
+                    <div class="case-modal-overlay" onclick="hideCaseModal('{{ case.id }}')"></div>
+                    <div class="case-modal-content">
+                        <div class="case-modal-header">
+                            <h3>{{ case_label }} - {{ make_status(case) }}</h3>
+                            <button class="case-modal-close" onclick="hideCaseModal('{{ case.id }}')">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="case-modal-body">
                             {% if can_view_test and curr_data %}
-                                <strong>{{ _('Input:') }}</strong>
-                                <pre class="case-output">{{ curr_data['input']|linebreaksbr }}</pre>
-                                <strong>{{ _('Answer:') }}</strong>
-                                <pre class="case-output">{{ curr_data['answer']|linebreaksbr }}</pre>
+                                <div class="modal-section">
+                                    <strong>{{ _('Input:') }}</strong>
+                                    <pre class="case-output">{{ curr_data['input']|linebreaksbr }}</pre>
+                                </div>
+                                <div class="modal-section">
+                                    <strong>{{ _('Answer:') }}</strong>
+                                    <pre class="case-output">{{ curr_data['answer']|linebreaksbr }}</pre>
+                                </div>
                             {% endif %}
                             {% if print_case_output %}
                                 {% set escaped_output = case.output.encode("unicode-escape").decode("utf-8") %}
-                                <strong>{{ _('Your output (clipped)') }}</strong>
-                                {% if prefix_length is none or prefix_length == 0 %}
-                                    <pre class="case-output">{{ escaped_output|linebreaksbr }}</pre>
-                                {% else %}
-                                    <pre class="case-output">{{ escaped_output[:prefix_length]|linebreaksbr }}</pre>
-                                {% endif %}
+                                <div class="modal-section">
+                                    <strong>{{ _('Your output (clipped)') }}</strong>
+                                    {% if prefix_length is none or prefix_length == 0 %}
+                                        <pre class="case-output">{{ escaped_output|linebreaksbr }}</pre>
+                                    {% else %}
+                                        <pre class="case-output">{{ escaped_output[:prefix_length]|linebreaksbr }}</pre>
+                                    {% endif %}
+                                </div>
                             {% endif %}
                             {% if print_case_ext_feedback %}
-                                <strong>{{ _('Judge feedback') }}</strong>
-                                <pre class="case-output">{{ case.extended_feedback|linebreaksbr }}</pre>
+                                <div class="modal-section">
+                                    <strong>{{ _('Judge feedback') }}</strong>
+                                    <pre class="case-output">{{ case.extended_feedback|linebreaksbr }}</pre>
+                                </div>
                             {% endif %}
                         </div>
-                    </td>
-                </tr>
+                    </div>
+                </div>
             {% endif %}
         {% endfor %}
-        </table>
+        </div>
         {% endif %}
 
         {% if batch.id %}</div>{% endif %}
-            <br>
         {% endfor %}
+        </div>
         {% if statuses and submission.is_graded %}
-            <br>
-            {% if submission.result != "AB" %}
-                {% if can_view_testcase_status %}
-                    <b>{{ _('Resources:') }}</b>
-                    {% if submission.total_time %}
-                        <span title="{{ submission.total_time }}s">{{ submission.total_time|floatformat(3) }}s,</span>
-                    {% else %}
-                        <span title="{{ submission.time }}s">{{ submission.time|floatformat(3) }}s,</span>
+            <div class="submission-summary">
+                {% if submission.result != "AB" %}
+                    {% if can_view_testcase_status %}
+                        <div class="summary-item">
+                            <span class="summary-label"><i class="fa fa-tachometer"></i> {{ _('Resources:') }}</span>
+                            <span class="summary-value">
+                                {% if submission.total_time %}
+                                    <span title="{{ submission.total_time }}s">{{ submission.total_time|floatformat(3) }}s</span>
+                                {% else %}
+                                    <span title="{{ submission.time }}s">{{ submission.time|floatformat(3) }}s</span>
+                                {% endif %}
+                                <span class="separator">|</span>
+                                {{ submission.memory|kbdetailformat }}
+                            </span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label"><i class="fa fa-clock-o"></i> {{ _('Maximum single-case runtime:') }}</span>
+                            <span class="summary-value" title="{{ submission.time }}s">{{ submission.time|floatformat(3) }}s</span>
+                        </div>
                     {% endif %}
-                    {{ submission.memory|kbdetailformat }}
-                    <br>
-                    <b>{{ _('Maximum single-case runtime:') }}</b>
-                    <span title="{{ submission.time }}s">{{ submission.time|floatformat(3) }}s</span>
-                    <br>
-                {% endif %}
-                {% if is_pretest %}
-                    <b>{{ _('Final pretest score:') }}</b>
+                    <div class="summary-item final-score">
+                        <span class="summary-label">
+                            <i class="fa fa-trophy"></i>
+                            {% if is_pretest %}
+                                {{ _('Final pretest score:') }}
+                            {% else %}
+                                {{ _('Final score:') }}
+                            {% endif %}
+                        </span>
+                        <span class="summary-value">
+                            <span class="score-points">{{ submission.case_points|floatformat(-3) }}/{{ submission.case_total|floatformat(0) }}</span>
+                            {% if request.in_contest and submission.contest_or_none %}
+                                {% with contest=submission.contest_or_none %}
+                                    {% set points=contest.points|roundfloat(3) %}
+                                    {% set total=contest.problem.points|floatformat(-1) %}
+                                    <span class="score-contest">({{ _('%(points)s/%(total)s points', points=points, total=total) }})</span>
+                                {% endwith %}
+                            {% else %}
+                                {% with points=submission.points|floatformat(3), total=submission.problem.points|floatformat(3) %}
+                                    <span class="score-contest">({{ _('%(points)s/%(total)s points', points=points, total=total) }})</span>
+                                {% endwith %}
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if is_pretest and submission.result == "AC" %}
+                        <div class="pretest-warning">
+                            <i class="fa fa-info-circle"></i> {{ _('Passing pretests does not guarantee a full score on system tests.') }}
+                        </div>
+                    {% endif %}
                 {% else %}
-                    <b>{{ _('Final score:') }}</b>
+                    <div class="submission-aborted">
+                        <i class="fa fa-ban"></i> <b>{{ _('Submission aborted!') }}</b>
+                    </div>
                 {% endif %}
-                {{ submission.case_points|floatformat(-3) }}/{{ submission.case_total|floatformat(0) }}
-                {% if request.in_contest and submission.contest_or_none %}
-                    {% with contest=submission.contest_or_none %}
-                        {% set points=contest.points|roundfloat(3) %}
-                        {% set total=contest.problem.points|floatformat(-1) %}
-                        ({{ _('%(points)s/%(total)s points', points=points, total=total) }})
-                    {% endwith %}
-                {% else %}
-                    {% with points=submission.points|floatformat(3), total=submission.problem.points|floatformat(3) %}
-                        ({{ _('%(points)s/%(total)s points', points=points, total=total) }})
-                    {% endwith %}
-                {% endif %}
-                {% if is_pretest and submission.result == "AC" %}
-                    <br>
-                    <i>{{ _('Passing pretests does not guarantee a full score on system tests.') }}</i>
-                {% endif %}
-            {% else %}
-                <b>{{ _('Submission aborted!') }}</b>
-            {% endif %}
-            <br>
+            </div>
         {% endif %}
         {% else %}
         {% if not submission.is_graded %}
