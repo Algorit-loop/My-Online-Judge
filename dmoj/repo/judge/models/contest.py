@@ -180,6 +180,20 @@ class Contest(models.Model):
                                             help_text=_('A custom Lua function to generate problem labels. Requires a '
                                                         'single function with an integer parameter, the zero-indexed '
                                                         'contest problem index, and returns a string, the label.'))
+    PROBLEM_LABEL_NUMERIC = 'numeric'
+    PROBLEM_LABEL_ALPHABETIC = 'alphabetic'
+    PROBLEM_LABEL_STYLE_CHOICES = (
+        (PROBLEM_LABEL_NUMERIC, _('Numeric (1, 2, 3, …)')),
+        (PROBLEM_LABEL_ALPHABETIC, _('Alphabetic (A, B, C, …)')),
+    )
+    problem_label_style = models.CharField(
+        verbose_name=_('problem label style'),
+        max_length=10,
+        choices=PROBLEM_LABEL_STYLE_CHOICES,
+        default=PROBLEM_LABEL_NUMERIC,
+        help_text=_('How to label problems in the ranking table. '
+                    'ICPC format always uses Alphabetic regardless of this setting.'),
+    )
     locked_after = models.DateTimeField(verbose_name=_('contest lock'), null=True, blank=True,
                                         help_text=_('Prevent submissions from this contest '
                                                     'from being rejudged after this date.'))
@@ -209,6 +223,10 @@ class Contest(models.Model):
     @cached_property
     def get_label_for_problem(self):
         if not self.problem_label_script:
+            # ICPC format always uses alphabetic labels, as does any contest with alphabetic style.
+            if self.problem_label_style == self.PROBLEM_LABEL_ALPHABETIC or self.format_name == 'icpc':
+                from judge.contest_format.icpc import get_alphabetic_label
+                return get_alphabetic_label
             return self.format.get_label_for_problem
 
         def DENY_ALL(obj, attr_name, is_setting):

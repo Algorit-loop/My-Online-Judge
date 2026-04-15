@@ -15,6 +15,16 @@ from judge.timezone import from_database_time
 from judge.utils.timedelta import nice_repr
 
 
+def get_alphabetic_label(index):
+    """Returns an alphabetic label (A, B, C, ..., Z, AA, AB, ...) for a zero-indexed problem index."""
+    index += 1
+    ret = ''
+    while index > 0:
+        ret += chr((index - 1) % 26 + 65)
+        index = (index - 1) // 26
+    return ret[::-1]
+
+
 @register_contest_format('icpc')
 class ICPCContestFormat(DefaultContestFormat):
     name = gettext_lazy('ICPC')
@@ -233,12 +243,7 @@ class ICPCContestFormat(DefaultContestFormat):
         )
 
     def get_label_for_problem(self, index):
-        index += 1
-        ret = ''
-        while index > 0:
-            ret += chr((index - 1) % 26 + 65)
-            index = (index - 1) // 26
-        return ret[::-1]
+        return get_alphabetic_label(index)
 
     def get_short_form_display(self):
         yield _('The maximum score submission for each problem will be used.')

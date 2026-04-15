@@ -18,6 +18,33 @@
             $('.resend-link').click(function () {
                 return confirm('{{ _('Are you sure you want to resend this announcement?') }}');
             });
+
+            // Lock problem_label_style to "Alphabetic" when ICPC format is selected.
+            function updateLabelStyleForFormat() {
+                var formatName = $('#id_format_name').val();
+                var $labelStyle = $('#id_problem_label_style');
+                var $hiddenInput = $('#id_problem_label_style_hidden');
+
+                if (formatName === 'icpc') {
+                    $labelStyle.val('alphabetic').prop('disabled', true);
+                    // Ensure the value is still submitted even when disabled.
+                    if (!$hiddenInput.length) {
+                        $('<input type="hidden" id="id_problem_label_style_hidden" name="problem_label_style" value="alphabetic">').insertAfter($labelStyle);
+                    } else {
+                        $hiddenInput.val('alphabetic');
+                    }
+                    if (!$labelStyle.next('.label-style-icpc-note').length) {
+                        $labelStyle.after('<span class="label-style-icpc-note help" style="margin-left:8px;color:#888;">{% trans "ICPC format always uses Alphabetic labels." %}</span>');
+                    }
+                } else {
+                    $labelStyle.prop('disabled', false);
+                    $hiddenInput.remove();
+                    $labelStyle.next('.label-style-icpc-note').remove();
+                }
+            }
+
+            $('#id_format_name').on('change', updateLabelStyleForFormat);
+            updateLabelStyleForFormat();
         });
     </script>
 {% endblock extrahead %}

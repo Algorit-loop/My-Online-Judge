@@ -805,6 +805,7 @@ class ContestForm(ModelForm):
             'show_short_display',
             'scoreboard_visibility',
             'format_name',
+            'problem_label_style',
             'description',
             'access_code',
             'is_private',
@@ -817,6 +818,7 @@ class ContestForm(ModelForm):
             'description': MartorWidget(attrs={'data-markdownfy-url': reverse_lazy('contest_preview')}),
             'scoreboard_visibility': Select2Widget(),
             'format_name': Select2Widget(),
+            'problem_label_style': Select2Widget(),
             'private_contestants': HeavySelect2MultipleWidget(
                 data_view='profile_select2',
                 attrs={'style': 'width: 100%'},

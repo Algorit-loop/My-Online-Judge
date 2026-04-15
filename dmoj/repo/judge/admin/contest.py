@@ -148,7 +148,7 @@ class ContestAdmin(NoBatchDeleteMixin, SortableAdminBase, VersionAdmin):
         (_('Scheduling'), {'fields': ('start_time', 'end_time', 'registration_start', 'registration_end',
                                       'time_limit')}),
         (_('Details'), {'fields': ('description', 'og_image', 'logo_override_image', 'tags', 'summary')}),
-        (_('Format'), {'fields': ('format_name', 'frozen_last_minutes', 'format_config', 'problem_label_script')}),
+        (_('Format'), {'fields': ('format_name', 'frozen_last_minutes', 'format_config', 'problem_label_script', 'problem_label_style')}),
         (_('Rating'), {'fields': ('is_rated', 'rate_all', 'rate_disqualified', 'rating_floor', 'rating_ceiling',
                                   'rate_exclude')}),
         (_('Access'), {'fields': ('access_code', 'is_private', 'private_contestants', 'is_organization_private',
