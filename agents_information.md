@@ -267,5 +267,19 @@ Throttle: `doing_ajax` flag + 1s cooldown between non-forced updates.
 - Result: no syntax/lint errors reported by editor diagnostics in this session.
 
 ### NOT yet fixed
+
+#### Contest Format Change Auto-Rescore Bug (FIXED in Apr 2026)
+- **Issue**: When admin/curator changed contest `format_name` or `format_config` via `/contest/{key}/edit` (EditContest view), ranking showed `???` until manual rescore clicked.
+- **Root cause**: 
+  - Django Admin (`/admin/judge/contest/{id}/change/`) had auto-rescore logic in `save_model()` when `format_name`, `format_config`, or `frozen_last_minutes` changed.
+  - EditContest view (`judge/views/contests.py`) lacked equivalent logic in `post()` method.
+- **Fix applied** (Apr 15, 2026):
+  - Added auto-rescore trigger to `EditContest.post()` method in `repo/judge/views/contests.py`.
+  - Mirrors Django Admin behavior: when format fields change, immediately calls `rescore_contest.s(contest.key).delay()` via Celery.
+  - Import added: `from django.db import transaction`.
+- **Files modified**:
+  - `repo/judge/views/contests.py`: Added format-change detection + Celery task trigger + import `transaction`
+- **Status**: ✅ RESOLVED
+
 - WebSocket realtime on paginated pages (page 2+) for `/submissions/`, `/contest/.../submissions/`
 - Organization submissions pages have no realtime at all

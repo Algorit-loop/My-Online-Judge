@@ -862,7 +862,8 @@ label[for="language"], label[for="status"], label[for="organization"] {
 .case-card-body {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.3em 1em;
+    justify-content: space-between;
+    font-size: 1.1em;
 }
 
 .case-card-info {

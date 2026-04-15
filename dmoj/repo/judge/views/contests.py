@@ -12,7 +12,7 @@ from django.contrib.auth.context_processors import PermWrapper
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist, PermissionDenied
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import BooleanField, Case, Count, F, FloatField, IntegerField, Max, Min, Q, Sum, Value, When
 from django.db.models.expressions import CombinedExpression
 from django.db.models.query import Prefetch
@@ -1343,6 +1343,14 @@ class EditContest(ContestMixin, LoginRequiredMixin, TitleMixin, UpdateView):
 
                 revisions.set_comment(_('Edited from site'))
                 revisions.set_user(self.request.user)
+
+            # Auto-rescore when contest format or scoring-related fields change,
+            # mirroring the behavior in the Django Admin (judge/admin/contest.py).
+            if form.changed_data and any(
+                f in form.changed_data for f in ('frozen_last_minutes', 'format_config', 'format_name')
+            ):
+                from judge.tasks import rescore_contest
+                transaction.on_commit(rescore_contest.s(self.object.key).delay)
 
             return HttpResponseRedirect(self.get_success_url())
         else:

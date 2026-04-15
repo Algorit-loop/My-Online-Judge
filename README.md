@@ -628,40 +628,72 @@ ID: judge01
 Key: cTLqgCOG77KYgj2I/edX/Pt0MSyn+NtalIucB9jOSkNQEFBUdol8xoDQdbEnoAWtL7yt4+X2yoXHmddTxlBexyEohRSwQgb73N5T
 ```
 
-### Bước 2: Build Judge Runtime Environment
+### Bước 2: Chuẩn Bị Judge-Server Source Code
 
-Tải về judge-server repository và build Docker image:
+Clone judge-server repository (cần thiết cho custom patches):
 
 ```bash
-# Tạo thư mục tạm
-mkdir -p ~/judge-build
-cd ~/judge-build
-
-# Clone judge-server
+# Clone vào thư mục home (cùng cấp với aloj-docker)
+cd ~
 git clone https://github.com/VNOI-Admin/judge-server.git
-cd judge-server/.docker
+cd judge-server
 
-# Cài đặt Make
+# Apply patches cho partial_testcase scoring (nếu có)
+# Xem phần "Apply Custom Patches" bên dưới
+```
+
+> **LƯU Ý QUAN TRỌNG**: 
+> - Judge-server source cần thiết để mount các file đã patch vào container.
+> - Image Docker `vnoj/judge-tiervnoj:latest` **không** chứa các custom patches.
+> - Phải mount `judge.py` và `packet.py` từ source vào container.
+
+### Bước 2.1: Apply Custom Patches (nếu cần)
+
+Nếu bạn cần tính năng **partial_testcase scoring mode** (grade tất cả test cases trong batch kể cả khi có fail):
+
+```bash
+cd ~/judge-server
+
+# Apply patch từ aloj-docker repo
+git apply ~/aloj-docker/judge_partial_testcase.patch
+
+# Hoặc nếu không có patch file, thay đổi thủ công:
+# - dmoj/judge.py: thêm logic is_partial_testcase
+# - dmoj/packet.py: parse scoring-mode từ packet
+```
+
+> **Kiểm tra patch đã apply:**
+> ```bash
+> grep -c "is_partial_testcase" dmoj/judge.py
+> # → phải ra số > 0 (thường là 3)
+> ```
+
+### Bước 2.2: Build Judge Docker Image (tùy chọn)
+
+Chỉ cần nếu bạn muốn rebuild image:
+
+```bash
+cd ~/judge-server/.docker
 sudo apt-get install -y make
 
 # Build Judge Image (chọn một tier phù hợp)
 # Tier 1: Python, C/C++, Java, Pascal (nhẹ - ~2GB)
-sudo make judge-tier1
+make judge-tier1
 
 # Tier 2: Thêm Ruby, Go, PHP, Perl, Haskell... (~5GB)
-# sudo make judge-tier2
+# make judge-tier2
 
 # Tier 3: Đầy đủ (tất cả ngôn ngữ - ~10GB)
-# sudo make judge-tier3
+# make judge-tier3
 
 # TierVNOJ: Tùy chỉnh cho VNOJ (khuyến nghị)
-# sudo make judge-tiervnoj
+make judge-tiervnoj
 ```
 
 > **Lưu Ý**: 
-> - `judge-tier1` đủ cho hầu hết bài tập cơ bản
-> - Quá trình build mất 20-30 phút tùy ISP
-> - Cần kết nối internet tốt
+> - Có thể dùng image có sẵn `vnoj/judge-tiervnoj:latest` từ Docker Hub
+> - Rebuild chỉ cần khi muốn thay đổi runtime environments
+> - Quá trình build mất 20-30 phút
 
 ### Bước 3: Tạo File Cấu Hình Judge
 
@@ -687,18 +719,20 @@ problem_storage_globs:
 
 ### Bước 4: Khởi Động Judge Container
 
-Trong thư mục `/dmoj`, chạy:
+**QUAN TRỌNG**: Judge container cần mount source files để áp dụng custom patches.
 
 ```bash
 # Judge 1 (Port API: 9111)
 sudo docker run \
     --name judge01 \
     --network="host" \
-    -v /home/algorit/vnoj-docker/dmoj/problems:/problems \
+    -v /home/algorit/aloj-docker/dmoj/problems:/problems \
+    -v /home/algorit/judge-server/dmoj/judge.py:/judge/dmoj/judge.py:ro \
+    -v /home/algorit/judge-server/dmoj/packet.py:/judge/dmoj/packet.py:ro \
     --cap-add=SYS_PTRACE \
     -d \
-    --restart=always \
-    vnoj/judge-tier1:latest \
+    --restart=unless-stopped \
+    vnoj/judge-tiervnoj:latest \
     run -p 9999 -c /problems/judge01.yml 192.168.1.60 -A 0.0.0.0 -a 9111
 ```
 
@@ -706,11 +740,13 @@ sudo docker run \
 - `--name judge01`: Tên container
 - `--network="host"`: Dùng network của host (cần thiết để kết nối)
 - `-v /path/to/problems:/problems`: Mount thư mục chứa bài tập
+- `-v /path/to/judge.py:/judge/dmoj/judge.py:ro`: Mount judge.py đã patch (read-only)
+- `-v /path/to/packet.py:/judge/dmoj/packet.py:ro`: Mount packet.py đã patch (read-only)
 - `--cap-add=SYS_PTRACE`: Cho phép trace process (cần cho sandbox)
-- `--restart=always`: Tự khởi động khi Docker daemon restart
+- `--restart=unless-stopped`: Tự khởi động khi server reboot (khuyến nghị hơn `always`)
 - `-p 9999`: Port dùng để liên lạc với judge
 - `-c /problems/judge01.yml`: File cấu hình judge
-- `192.168.1.60`: IP của site server
+- `192.168.1.60`: IP của site server (hoặc `localhost` nếu cùng máy)
 - `-A 0.0.0.0 -a 9111`: API port để quản lý judge
 
 ```bash
@@ -718,31 +754,57 @@ sudo docker run \
 sudo docker run \
     --name judge02 \
     --network="host" \
-    -v /home/algorit/vnoj-docker/dmoj/problems:/problems \
+    -v /home/algorit/aloj-docker/dmoj/problems:/problems \
+    -v /home/algorit/judge-server/dmoj/judge.py:/judge/dmoj/judge.py:ro \
+    -v /home/algorit/judge-server/dmoj/packet.py:/judge/dmoj/packet.py:ro \
     --cap-add=SYS_PTRACE \
     -d \
-    --restart=always \
-    vnoj/judge-tier1:latest \
+    --restart=unless-stopped \
+    vnoj/judge-tiervnoj:latest \
     run -p 9999 -c /problems/judge02.yml 192.168.1.60 -A 0.0.0.0 -a 9112
 ```
+
+> **LƯU Ý**:
+> - **Đường dẫn source files**: Thay `/home/algorit/` bằng đường dẫn thực tế trên máy của bạn.
+> - **IP site server**: Dùng `localhost` nếu judge và site cùng máy, hoặc IP thực nếu khác máy.
+> - **Volume mounts cho judge.py và packet.py**: Bắt buộc nếu có custom patches (ví dụ: partial_testcase).
+> - **Read-only mount (`:ro`)**: Ngăn container ghi đè source files.
+> - **Restart policy**: `unless-stopped` tốt hơn `always` (không tự động start khi manual stop).
 
 ### Bước 5: Kiểm Tra Judge
 
 ```bash
-# Xem logs judge
-sudo docker logs -ft judge01
+# Xem logs judge (kiểm tra self-test executors)
+sudo docker logs -ft judge01 | tail -30
 
 # Kiểm tra container đang chạy
 sudo docker ps | grep judge
 
-# Kiểm tra kết nối
+# Kiểm tra kết nối với site
 sudo docker exec judge01 netstat -tln | grep 9999
+
+# Verify custom patches đã được load
+sudo docker exec judge01 grep -c "is_partial_testcase" /judge/dmoj/judge.py
+# → phải ra 3 (nếu có patch partial_testcase)
 ```
 
 **Dấu Hiệu Thành Công:**
-- Logs hiển thị: `Judge is ready`
-- Container đang running
-- Không có lỗi kết nối
+- Logs hiển thị: `Self-testing executors` rồi `Judge is ready`
+- Container status: `Up X minutes`
+- Không có lỗi compilation hay connection timeout
+- Custom patch verify: count > 0
+
+**Nếu lỗi:**
+```bash
+# Xem log chi tiết
+sudo docker logs judge01 --tail=50
+
+# Kiểm tra mount points
+sudo docker inspect judge01 --format '{{json .HostConfig.Binds}}' | python3 -m json.tool
+
+# Restart nếu cần
+sudo docker restart judge01
+```
 
 ---
 
@@ -797,20 +859,22 @@ sudo sshfs -o allow_other,IdentityFile=/home/judger/.ssh/id_rsa \
 > ssh-copy-id -i ~/.ssh/id_rsa.pub username@192.168.1.60
 > ```
 
-### Phần 3: Build Judge Runtime
+### Phần 3: Clone Judge-Server và Apply Patches
 
 ```bash
-# Tương tự Local Server
+# Clone judge-server
+cd ~
 git clone https://github.com/VNOI-Admin/judge-server.git
-cd judge-server/.docker
-sudo apt-get install -y make
-sudo make judge-tier1
+cd judge-server
+
+# Apply patches nếu cần (partial_testcase scoring)
+# Xem hướng dẫn ở phần "Cài Đặt Máy Chấm" → Bước 2.1
 ```
 
 ### Phần 4: Tạo File Cấu Hình Judge Remote
 
 ```bash
-# Tạo file cấu hình
+# Tạo file cấu hình trên problems directory
 cat > /mnt/problems/judge03.yml << 'EOF'
 id: 'judge03'
 key: 'third_judge_key_from_admin'
@@ -826,12 +890,19 @@ sudo docker run \
     --name judge03 \
     --network="host" \
     -v /mnt/problems:/problems \
+    -v /home/judger/judge-server/dmoj/judge.py:/judge/dmoj/judge.py:ro \
+    -v /home/judger/judge-server/dmoj/packet.py:/judge/dmoj/packet.py:ro \
     --cap-add=SYS_PTRACE \
     -d \
-    --restart=always \
-    vnoj/judge-tier1:latest \
+    --restart=unless-stopped \
+    vnoj/judge-tiervnoj:latest \
     run -p 9999 -c /problems/judge03.yml 192.168.1.60 -A 0.0.0.0 -a 9113
 ```
+
+> **LƯU Ý**:
+> - **Problems mount**: `/mnt/problems` là SSHFS mount từ site server
+> - **Judge source files**: Mount từ `~/judge-server/dmoj/` trên máy remote
+> - **Site IP**: Thay `192.168.1.60` bằng IP thực của site server
 
 ### Phần 6: Tự Động Mount SSHFS khi Reboot
 
@@ -1245,6 +1316,50 @@ docker-compose down
 docker-compose build  # Nếu thay Dockerfile
 docker-compose up -d
 ```
+
+### Q: Làm sao update judge code khi có patch mới?
+
+**A:** 
+Nếu đã mount volume cho `judge.py` và `packet.py`:
+```bash
+# 1. Pull/apply patches vào judge-server source
+cd ~/judge-server
+git pull  # hoặc git apply <patch_file>
+
+# 2. Restart judge container để load code mới
+sudo docker restart judge01
+
+# 3. Verify
+sudo docker exec judge01 grep -c "is_partial_testcase" /judge/dmoj/judge.py
+```
+
+Nếu CHƯA mount volume (judge chạy từ image cũ):
+```bash
+# Phải recreate container với volume mounts
+sudo docker stop judge01 && sudo docker rm judge01
+
+# Chạy lại với lệnh docker run có -v mount judge.py và packet.py
+# (Xem Bước 4 phần "Cài Đặt Máy Chấm")
+```
+
+### Q: Partial testcase không hoạt động (test bị skip khi fail)?
+
+**A:**
+Kiểm tra:
+1. **Problem scoring mode**: Vào Admin → Problems → chọn bài → đảm bảo `Scoring mode = Partial (by testcase)`
+2. **Judge có patch**: `sudo docker exec judge01 grep -c "is_partial_testcase" /judge/dmoj/judge.py` → phải > 0
+3. **Volume mount**: `sudo docker inspect judge01 --format '{{json .HostConfig.Binds}}'` → phải có `/judge/dmoj/judge.py` và `packet.py`
+
+Nếu thiếu bất kỳ điều nào, làm theo "Q: Làm sao update judge code khi có patch mới?" ở trên.
+
+### Q: Judge trên máy mới bị short-circuit khi dùng partial_testcase?
+
+**A:**
+Máy mới build từ image gốc không có patch. Cần:
+1. Clone judge-server: `cd ~ && git clone https://github.com/VNOI-Admin/judge-server.git`
+2. Apply patch: `cd judge-server && git apply ~/aloj-docker/judge_partial_testcase.patch`
+3. Recreate container với volume mount (xem Bước 4)
+4. Verify: `sudo docker exec <judge_name> grep "is_partial_testcase" /judge/dmoj/judge.py`
 
 ---
 
