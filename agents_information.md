@@ -266,8 +266,6 @@ Throttle: `doing_ajax` flag + 1s cooldown between non-forced updates.
   - `repo/judge/views/api/api_v2.py`
 - Result: no syntax/lint errors reported by editor diagnostics in this session.
 
-### NOT yet fixed
-
 #### Contest Format Change Auto-Rescore Bug (FIXED in Apr 2026)
 - **Issue**: When admin/curator changed contest `format_name` or `format_config` via `/contest/{key}/edit` (EditContest view), ranking showed `???` until manual rescore clicked.
 - **Root cause**: 
@@ -281,5 +279,59 @@ Throttle: `doing_ajax` flag + 1s cooldown between non-forced updates.
   - `repo/judge/views/contests.py`: Added format-change detection + Celery task trigger + import `transaction`
 - **Status**: ✅ RESOLVED
 
+---
+
+### Penalty Time Format feature (Apr 16, 2026 — in progress, not yet committed)
+
+**Objective**: Allow admin to choose how solving time is displayed in contest ranking table — either `HH:MM:SS` (default) or just `Minutes` (integer).
+
+**Files modified (staged, pending commit)**:
+
+1. `repo/judge/models/contest.py`
+   - Added `penalty_time_format` field to `Contest` model: `CharField(choices=[('hh:mm:ss', ...), ('mm', ...)], default='hh:mm:ss')`
+
+2. `repo/judge/contest_format/base.py`
+   - Added `format_time(seconds)` method to `BaseContestFormat`:
+     - If `penalty_time_format == 'mm'` → returns `int(seconds // 60)`
+     - Otherwise → returns `nice_repr(timedelta(seconds=seconds), 'noday')` (HH:MM:SS)
+   - Uses `getattr(..., 'hh:mm:ss')` as fallback for safety
+
+3. `repo/judge/contest_format/atcoder.py`, `default.py`, `ecoo.py`, `icpc.py`, `legacy_ioi.py`, `vnoj.py`
+   - All replaced `nice_repr(timedelta(seconds=X), 'noday')` with `self.format_time(X)` for both per-problem time and cumtime
+
+4. `repo/judge/admin/contest.py`
+   - Format fieldset updated to include `penalty_time_format`:
+     `('format_name', 'frozen_last_minutes', 'penalty_time_format', 'format_config', 'problem_label_style', 'problem_label_script')`
+   - **Note**: staged version still has the old buggy line (duplicate field + dead comment). Working tree is already correct. Must `git add` this file before committing.
+
+5. `repo/templates/contest/media-css.html`
+   - `.full-score`, `.partial-score`: color `green` → `#006d00`
+   - `.failed-score`: color `red` → `#cc0000`
+   - `.partial-score`: added `font-weight: 600`
+   - `.user-points`: added `font-size: 1.05em`
+   - `.solving-time`: color `gray` → `#555`, font-size `0.75em` → `0.8em`
+
+6. `repo/judge/migrations/0224_contest_penalty_time_format.py` (**untracked**, needs `git add`)
+   - Dependency: `('judge', '0223_contest_problem_label_style')`
+   - Adds `penalty_time_format` column to `judge_contest` table
+
+**Migration note**:
+- DB on this machine (machine 2) had the old `0222_contest_penalty_time_format` already applied.
+- Renamed to `0224` after merge with machine 1's `0222_problem_scoring_mode` and `0223_contest_problem_label_style`.
+- To apply without error: `./scripts/manage.py migrate judge 0224_contest_penalty_time_format --fake` (column already exists in DB).
+- DB also has orphan `0222_contest_show_penalty_as_minutes` recorded — file no longer on disk, Django will warn but not fail.
+
+**What still needs to be done before commit**:
+```bash
+git add dmoj/repo/judge/admin/contest.py          # re-stage clean version
+git add dmoj/repo/judge/migrations/0224_contest_penalty_time_format.py
+git add dmoj/docker-compose.yml                   # port 80
+git add dmoj/nginx/conf.d/nginx.conf              # port 80
+git commit
+```
+
+---
+
+### Known open issues (NOT yet fixed)
 - WebSocket realtime on paginated pages (page 2+) for `/submissions/`, `/contest/.../submissions/`
 - Organization submissions pages have no realtime at all

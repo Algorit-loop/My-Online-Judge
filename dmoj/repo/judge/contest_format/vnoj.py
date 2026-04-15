@@ -211,7 +211,7 @@ class VNOJContestFormat(DefaultContestFormat):
                          self.best_solution_state(format_data['points'], contest_problem.points))
 
                 points = floatformat(format_data['points'], -self.contest.points_precision)
-                time = nice_repr(timedelta(seconds=format_data['time']), 'noday')
+                time = self.format_time(format_data['time'])
 
                 return format_html(
                     '<td class="{state}"><a href="{url}"><div>{points}{penalty}</div>'
@@ -243,7 +243,7 @@ class VNOJContestFormat(DefaultContestFormat):
                      self.best_solution_state(format_data[prefix + 'points'], contest_problem.points))
 
             points = floatformat(format_data[prefix + 'points'], -self.contest.points_precision)
-            time = nice_repr(timedelta(seconds=format_data[prefix + 'time']), 'noday')
+            time = self.format_time(format_data[prefix + 'time'])
             pending = format_html(' <small style="color:black;">[{pending}]</small>',
                                   pending=floatformat(format_data['pending'])) if has_pending else ''
 
@@ -284,7 +284,7 @@ class VNOJContestFormat(DefaultContestFormat):
             url=reverse('contest_all_user_submissions',
                         args=[self.contest.key, participation.user.user.username]),
             points=floatformat(points, -self.contest.points_precision),
-            cumtime=nice_repr(timedelta(seconds=cumtime), 'noday'),
+            cumtime=self.format_time(cumtime),
         )
 
     def get_short_form_display(self):

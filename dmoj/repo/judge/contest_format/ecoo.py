@@ -113,7 +113,7 @@ class ECOOContestFormat(DefaultContestFormat):
                             args=[self.contest.key, participation.user.user.username, contest_problem.problem.code]),
                 points=floatformat(format_data['points'], -self.contest.points_precision),
                 bonus=bonus,
-                time=nice_repr(timedelta(seconds=format_data['time']), 'noday'),
+                time=self.format_time(format_data['time']),
             )
         else:
             return mark_safe('<td></td>')
@@ -124,7 +124,7 @@ class ECOOContestFormat(DefaultContestFormat):
             url=reverse('contest_all_user_submissions',
                         args=[self.contest.key, participation.user.user.username]),
             points=floatformat(participation.score, -self.contest.points_precision),
-            cumtime=nice_repr(timedelta(seconds=participation.cumtime), 'noday') if self.config['cumtime'] else '',
+            cumtime=self.format_time(participation.cumtime) if self.config['cumtime'] else '',
         )
 
     def get_short_form_display(self):

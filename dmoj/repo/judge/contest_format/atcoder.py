@@ -109,7 +109,7 @@ class AtCoderContestFormat(DefaultContestFormat):
                             args=[self.contest.key, participation.user.user.username, contest_problem.problem.code]),
                 points=floatformat(format_data['points'], -self.contest.points_precision),
                 penalty=penalty,
-                time=nice_repr(timedelta(seconds=format_data['time']), 'noday'),
+                time=self.format_time(format_data['time']),
             )
         else:
             return mark_safe('<td></td>')

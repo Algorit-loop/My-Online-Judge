@@ -176,6 +176,13 @@ class Contest(models.Model):
                               help_text=_('A JSON object to serve as the configuration for the chosen contest format '
                                           'module. Leave empty to use None. Exact format depends on the contest format '
                                           'selected.'))
+    PENALTY_TIME_FORMATS = (
+        ('hh:mm:ss', _('HH:MM:SS')),
+        ('mm', _('Minutes')),
+    )
+    penalty_time_format = models.CharField(verbose_name=_('penalty time format'), max_length=10,
+                                           choices=PENALTY_TIME_FORMATS, default='hh:mm:ss',
+                                           help_text=_('Display format for solving time in the ranking table.'))
     problem_label_script = models.TextField(verbose_name=_('contest problem label script'), blank=True,
                                             help_text=_('A custom Lua function to generate problem labels. Requires a '
                                                         'single function with an integer parameter, the zero-indexed '

@@ -83,7 +83,7 @@ class DefaultContestFormat(BaseContestFormat):
                 url=reverse('contest_user_submissions',
                             args=[self.contest.key, participation.user.user.username, contest_problem.problem.code]),
                 points=floatformat(format_data['points'], -self.contest.points_precision),
-                time=nice_repr(timedelta(seconds=format_data['time']), 'noday'),
+                time=self.format_time(format_data['time']),
             )
         else:
             return mark_safe('<td></td>')
@@ -94,7 +94,7 @@ class DefaultContestFormat(BaseContestFormat):
             url=reverse('contest_all_user_submissions',
                         args=[self.contest.key, participation.user.user.username]),
             points=floatformat(participation.score, -self.contest.points_precision),
-            cumtime=nice_repr(timedelta(seconds=participation.cumtime), 'noday'),
+            cumtime=self.format_time(participation.cumtime),
         )
 
     def get_problem_breakdown(self, participation, contest_problems):

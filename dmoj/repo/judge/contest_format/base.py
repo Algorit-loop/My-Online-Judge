@@ -1,4 +1,7 @@
 from abc import ABCMeta, abstractmethod
+from datetime import timedelta
+
+from judge.utils.timedelta import nice_repr
 
 
 class abstractclassmethod(classmethod):
@@ -14,6 +17,11 @@ class BaseContestFormat(metaclass=ABCMeta):
     def __init__(self, contest, config):
         self.config = config
         self.contest = contest
+
+    def format_time(self, seconds):
+        if getattr(self.contest, 'penalty_time_format', 'hh:mm:ss') == 'mm':
+            return int(seconds // 60)
+        return nice_repr(timedelta(seconds=seconds), 'noday')
 
     @property
     @abstractmethod

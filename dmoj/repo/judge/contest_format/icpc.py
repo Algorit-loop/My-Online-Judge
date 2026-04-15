@@ -221,7 +221,7 @@ class ICPCContestFormat(DefaultContestFormat):
                 url=url,
                 tries=tries,
                 minute=int(format_data['time'] // 60),
-                time=nice_repr(timedelta(seconds=format_data['time']), 'noday'),
+                time=self.format_time(format_data['time']),
             )
         else:
             return mark_safe('<td></td>')
