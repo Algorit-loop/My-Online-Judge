@@ -147,9 +147,35 @@
         width: 90px;
     }
 
+    .contest-block-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5em;
+    }
+
     .contest-block {
         text-align: left;
         padding: 0.5em 0.5em 0.5em 1em;
+        flex: 1;
+    }
+
+    .contest-ranking-btn {
+        white-space: nowrap;
+        padding: 0.3em 0.7em;
+        border: 1px solid #ccc;
+        border-radius: 0.3em;
+        font-size: 13px;
+        color: #555;
+        background: #f7f7f7;
+        text-decoration: none;
+        flex-shrink: 0;
+
+        &:hover {
+            background: #e8e8e8;
+            color: #333;
+            text-decoration: none;
+        }
     }
 
     a.contest-sort-link {
@@ -164,6 +190,8 @@
     font-weight: 600;
     margin-right: 0.45em;
     position: relative;
+    white-space: nowrap;
+    display: inline-block;
 }
 
 .contest-list-title {
@@ -272,6 +300,7 @@ form.contest-join-pseudotab {
 
     .user-points, .user-points a {
         color: $color_primary100;
+        font-size: 15px;
     }
 }
 

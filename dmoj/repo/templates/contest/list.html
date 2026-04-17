@@ -210,8 +210,11 @@
                     {% with contest=participation.contest %}
                         <tr>
                             <td>
-                                <div class="contest-block">
-                                    {{ contest_head(contest) }}
+                                <div class="contest-block-wrapper">
+                                    <div class="contest-block">
+                                        {{ contest_head(contest) }}
+                                    </div>
+                                    <a href="{{ url('contest_ranking', contest.key) }}" class="contest-ranking-btn"><i class="fa fa-bar-chart"></i> Rankings</a>
                                 </div>
                             </td>
                             <td class="contest-time-col">
@@ -255,8 +258,11 @@
                 {% for contest in current_contests %}
                     <tr>
                         <td>
-                            <div class="contest-block">
-                                {{ contest_head(contest) }}
+                            <div class="contest-block-wrapper">
+                                <div class="contest-block">
+                                    {{ contest_head(contest) }}
+                                </div>
+                                <a href="{{ url('contest_ranking', contest.key) }}" class="contest-ranking-btn"><i class="fa fa-bar-chart"></i> Rankings</a>
                             </div>
                         </td>
                         <td class="contest-time-col">
@@ -300,8 +306,11 @@
                 {% for contest in future_contests %}
                     <tr>
                         <td>
-                            <div class="contest-block">
-                                {{ contest_head(contest) }}
+                            <div class="contest-block-wrapper">
+                                <div class="contest-block">
+                                    {{ contest_head(contest) }}
+                                </div>
+                                <a href="{{ url('contest_ranking', contest.key) }}" class="contest-ranking-btn"><i class="fa fa-bar-chart"></i> Rankings</a>
                             </div>
                         </td>
                         <td class="contest-time-col">
@@ -359,8 +368,11 @@
                 {% for contest in past_contests %}
                     <tr>
                         <td>
-                            <div class="contest-block">
-                                {{ contest_head(contest) }}
+                            <div class="contest-block-wrapper">
+                                <div class="contest-block">
+                                    {{ contest_head(contest) }}
+                                </div>
+                                <a href="{{ url('contest_ranking', contest.key) }}" class="contest-ranking-btn"><i class="fa fa-bar-chart"></i> Rankings</a>
                             </div>
                         </td>
                         <td class="contest-time-col">

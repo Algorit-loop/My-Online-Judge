@@ -4,19 +4,40 @@
 {% block extrahead %}{{ block.super }}
     <script>
         django.jQuery(function ($) {
+            // Restore scroll position if it was saved
+            var savedScrollPos = sessionStorage.getItem('contest_admin_scroll_pos');
+            if (savedScrollPos !== null) {
+                $(window).scrollTop(parseInt(savedScrollPos));
+                sessionStorage.removeItem('contest_admin_scroll_pos');
+            }
+
             $('.rerate-link').appendTo('div#bottombar').show();
             $('.rejudge-link').click(function (event) {
                 if (confirm('{{ _('Are you sure you want to rejudge ALL the submissions?') }}')) {
+                    // Save scroll position before page reload
+                    sessionStorage.setItem('contest_admin_scroll_pos', $(window).scrollTop());
                     return true;
                 }
                 event.stopImmediatePropagation();
                 return false;
             });
-            $('.rescore-link').click(function () {
-                return confirm('{{ _('Are you sure you want to rescore ALL the submissions?') }}');
+            $('.rescore-link').click(function (event) {
+                if (confirm('{{ _('Are you sure you want to rescore ALL the submissions?') }}')) {
+                    // Save scroll position before page reload
+                    sessionStorage.setItem('contest_admin_scroll_pos', $(window).scrollTop());
+                    return true;
+                }
+                event.stopImmediatePropagation();
+                return false;
             });
-            $('.resend-link').click(function () {
-                return confirm('{{ _('Are you sure you want to resend this announcement?') }}');
+            $('.resend-link').click(function (event) {
+                if (confirm('{{ _('Are you sure you want to resend this announcement?') }}')) {
+                    // Save scroll position before page reload
+                    sessionStorage.setItem('contest_admin_scroll_pos', $(window).scrollTop());
+                    return true;
+                }
+                event.stopImmediatePropagation();
+                return false;
             });
 
             // Lock problem_label_style to "Alphabetic" when ICPC format is selected.
