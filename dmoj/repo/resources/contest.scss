@@ -302,6 +302,10 @@ form.contest-join-pseudotab {
         color: $color_primary100;
         font-size: 15px;
     }
+
+    td:not(.user-points) > a {
+        white-space: nowrap;
+    }
 }
 
 #org-dropdown-check-list {

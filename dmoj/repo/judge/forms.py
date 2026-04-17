@@ -803,6 +803,7 @@ class ContestForm(ModelForm):
             'scoreboard_visibility',
             'format_name',
             'problem_label_style',
+            'penalty_time_format',
             'description',
             'access_code',
             'is_private',
@@ -816,6 +817,7 @@ class ContestForm(ModelForm):
             'scoreboard_visibility': Select2Widget(),
             'format_name': Select2Widget(),
             'problem_label_style': Select2Widget(),
+            'penalty_time_format': Select2Widget(),
             'private_contestants': HeavySelect2MultipleWidget(
                 data_view='profile_select2',
                 attrs={'style': 'width: 100%'},

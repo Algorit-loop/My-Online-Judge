@@ -60,6 +60,8 @@
 
                 install_tooltips();
 
+                window.equalizePointsColumns();
+
                 // Auto reload every 10 seconds
                 var ranking_outdated = false;
                 function update_ranking() {
@@ -79,6 +81,7 @@
                             window.applyRankingFilter();
                         {% endif %}
                         window.enableAdminOperations();
+                        window.equalizePointsColumns();
                     }).always(function () {
                         ranking_outdated = false;
                         setTimeout(update_ranking, 10000);
@@ -94,7 +97,22 @@
         </script>
     {% endif %}
     <script type="text/javascript">
+        window.equalizePointsColumns = function () {
+            var $headers = $('#ranking-table th.points.header');
+            if (!$headers.length) return;
+            $headers.css('min-width', '');
+            var maxWidth = 0;
+            $headers.each(function () {
+                maxWidth = Math.max(maxWidth, $(this).width());
+            });
+            if (maxWidth > 0) {
+                $headers.css('min-width', maxWidth + 'px');
+            }
+        };
+
         $(function () {
+            window.equalizePointsColumns();
+
             var url = '{{ url('contest_participation', contest.key, '__username__') }}';
             var placeholder = $('#search-contest').replaceWith($('<select>').attr({
                 id: 'search-contest'
