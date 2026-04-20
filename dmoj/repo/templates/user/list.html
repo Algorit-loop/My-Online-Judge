@@ -7,6 +7,78 @@
     {% include "user/user-list-tabs.html" %}
 {% endblock %}
 
+{#
+  Layout khi có podium (page 1):
+    before_users_table  → (1) bảng header-only  +  (2) podium
+    users_table         → (3) bảng body-only (rank 4+, thead ẩn)
+
+  Khi không có podium (trang 2+):
+    before_users_table  → rỗng
+    users_table         → bảng đầy đủ (bình thường)
+#}
+
+{% block before_users_table %}
+{% if top3_users %}
+    {# ── 1. Table header (thead hiển thị, tbody ẩn qua CSS) ── #}
+    <div class="h-scrollable-table users-table-head-only">
+        {% include "user/users-table.html" %}
+    </div>
+
+    {# ── 2. Podium top 3 ── #}
+    {#
+      Dùng index-based (không dùng dict theo rank) để xử lý đúng trường hợp
+      đồng hạng. top3_users[0] luôn là người đứng đầu (gold), [1] là silver, [2] là bronze.
+      Huy hiệu rank badge hiển thị rank thực tế lấy từ tuple.
+
+      Thứ tự hiển thị bục: silver (trái) → gold (giữa/cao nhất) → bronze (phải)
+    #}
+    <div class="podium-section">
+        {% for podium_class, slot_idx in [('rank-2', 1), ('rank-1', 0), ('rank-3', 2)] %}
+            {% if slot_idx < top3_users|length %}
+                {# Unpack tuple (rank, profile) qua for-loop 1 phần tử #}
+                {% for slot_rank, slot_user in [top3_users[slot_idx]] %}
+                <div class="podium-item {{ podium_class }}">
+
+                    <div class="podium-avatar-wrap">
+                        <img class="podium-avatar"
+                             src="{{ gravatar(slot_user, 88) }}"
+                             width="88" height="88"
+                             alt="{{ slot_user.display_name }}">
+                        <div class="podium-rank-badge">{{ slot_rank }}</div>
+                    </div>
+
+                    <div class="podium-name">{{ link_user(slot_user) }}</div>
+
+                    <div class="podium-score">
+                        {% if current_sort_field == 'rating' %}
+                            {% if slot_user.rating %}{{ rating_number(slot_user) }}{% else %}—{% endif %}
+                        {% elif current_sort_field == 'points' %}
+                            {{ slot_user.points|floatformat(2) }} pts
+                        {% elif current_sort_field == 'problem_count' %}
+                            {{ slot_user.problem_count }} bài
+                        {% else %}
+                            {{ slot_user.performance_points|floatformat(2) }} pts
+                        {% endif %}
+                    </div>
+
+                    <div class="podium-block">
+                        {% if podium_class == 'rank-1' %}🥇{% elif podium_class == 'rank-2' %}🥈{% else %}🥉{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}
+
 {% block users_table %}
+{% if top3_users %}
+    {# ── 3. Body-only (thead ẩn qua CSS, rows bắt đầu từ rank 4) ── #}
+    <div class="users-table-no-head">
+        {% include "user/users-table.html" %}
+    </div>
+{% else %}
     {% include "user/users-table.html" %}
+{% endif %}
 {% endblock %}

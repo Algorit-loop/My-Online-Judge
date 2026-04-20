@@ -575,20 +575,26 @@ class UserList(QueryStringSortMixin, InfinitePaginationMixin, DiggPaginatorMixin
 
     def get_queryset(self):
         return (Profile.objects.filter(is_unlisted=False).order_by(self.order, 'id')
-                .prefetch_related(Prefetch('user', queryset=User.objects.only('username', 'first_name')))
+                .prefetch_related(Prefetch('user', queryset=User.objects.only('username', 'first_name', 'email')))
                 .prefetch_related(Prefetch('organizations',
                                   queryset=Organization.objects.filter(is_unlisted=False).only('name', 'id', 'slug')))
                 .select_related('display_badge')
                 .only('display_rank', 'display_badge', 'user', 'points', 'rating', 'performance_points',
-                      'problem_count', 'organizations', 'username_display_override'))
+                      'problem_count', 'organizations', 'username_display_override', 'mute'))
 
     def get_context_data(self, **kwargs):
         context = super(UserList, self).get_context_data(**kwargs)
-        context['users'] = ranker(
+        users_ranked = list(ranker(
             context['users'],
             key=attrgetter('performance_points', 'problem_count'),
             rank=self.paginate_by * (context['page_obj'].number - 1),
-        )
+        ))
+        if context['page_obj'].number == 1:
+            context['top3_users'] = users_ranked[:3]
+            context['users'] = users_ranked[3:]
+        else:
+            context['users'] = users_ranked
+        context['current_sort_field'] = self.order.lstrip('-')
         context['first_page_href'] = '.'
         context.update(self.get_sort_context())
         context.update(self.get_sort_paginate_context())
