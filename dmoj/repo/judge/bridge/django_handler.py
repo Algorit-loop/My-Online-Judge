@@ -16,6 +16,7 @@ class DjangoHandler(ZlibPacketHandler):
 
         self.handlers = {
             'submission-request': self.on_submission,
+            'run-request': self.on_run_request,
             'terminate-submission': self.on_termination,
             'disconnect-judge': self.on_disconnect_request,
             'disable-judge': self.on_disable_judge,
@@ -47,6 +48,20 @@ class DjangoHandler(ZlibPacketHandler):
             return {'name': 'bad-request'}
         self.judges.judge(id, problem, language, source, judge_id, priority, banned_judges)
         return {'name': 'submission-received', 'submission-id': id}
+
+    def on_run_request(self, data):
+        id = data['submission-id']
+        problem = data['problem-id']
+        language = data['language']
+        source = data['source']
+        judge_id = data['judge-id']
+        priority = data['priority']
+        banned_judges = data.get('banned-judges', [])
+        sample_input_files = data.get('sample-input-files', [])
+        if not self.judges.check_priority(priority):
+            return {'name': 'bad-request'}
+        self.judges.judge_run(id, problem, language, source, judge_id, priority, banned_judges, sample_input_files)
+        return {'name': 'run-received', 'submission-id': id}
 
     def on_termination(self, data):
         return {'name': 'submission-received', 'judge-aborted': self.judges.abort(data['submission-id'])}

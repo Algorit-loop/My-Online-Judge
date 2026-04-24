@@ -249,6 +249,12 @@ class Problem(models.Model):
         default=False,
     )
 
+    enable_new_ide = models.BooleanField(
+        verbose_name=_('Bật giao diện IDE mới'),
+        default=False,
+        help_text=_('Enable the new IDE layout with code editor and custom testcase runner.'),
+    )
+
     __original_points = None
 
     def __init__(self, *args, **kwargs):

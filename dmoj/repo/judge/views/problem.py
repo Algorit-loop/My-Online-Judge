@@ -367,6 +367,11 @@ class ProblemDetail(ProblemMixin, SolvedProblemMixin, ProblemSubmitMixin, Commen
     context_object_name = 'problem'
     template_name = 'problem/problem.html'
 
+    def get_template_names(self):
+        if self.object.enable_new_ide:
+            return ['problem/problem-ide.html']
+        return [self.template_name]
+
     def get_object(self, queryset=None):
         problem = super(ProblemDetail, self).get_object(queryset)
 

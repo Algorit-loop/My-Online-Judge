@@ -17,6 +17,7 @@ from judge.sitemap import sitemaps
 from judge.views import TitledTemplateView, api, blog, comment, contests, language, license, mailgun, organization, \
     preview, problem, problem_manage, ranked_submission, register, stats, status, submission, tag, tasks, ticket, \
     two_factor, user, widgets
+from judge.views.run import RunSubmitView, RunPollView, SampleTestCaseView
 from judge.views.magazine import MagazinePage
 from judge.views.misc_config import MiscConfigEdit
 from judge.views.problem_data import ProblemDataView, ProblemSubmissionDiff, \
@@ -135,6 +136,9 @@ urlpatterns = [
         path('/resubmit/<int:submission>', problem.ProblemSubmit.as_view(), name='problem_submit'),
         path('/update-polygon', problem.ProblemUpdatePolygon.as_view(), name='problem_update_polygon'),
 
+        path('/run', RunSubmitView.as_view(), name='run_submit'),
+        path('/sample-testcases', SampleTestCaseView.as_view(), name='sample_testcases'),
+
         path('/rank/', paged_list_view(ranked_submission.RankedSubmissions, 'ranked_submissions')),
         path('/submissions/', paged_list_view(submission.ProblemSubmissions, 'chronological_submissions')),
         path('/submissions/<str:user>/', paged_list_view(submission.UserProblemSubmissions, 'user_submissions')),
@@ -179,6 +183,8 @@ urlpatterns = [
     path('submissions/', paged_list_view(submission.AllSubmissions, 'all_submissions')),
     path('submissions/diff', submission.SubmissionSourceDiff, name='diff_submissions'),
     path('submissions/user/<str:user>/', paged_list_view(submission.AllUserSubmissions, 'all_user_submissions')),
+
+    path('run/poll/<str:run_id>', RunPollView.as_view(), name='run_poll'),
 
     path('src/<int:submission>', submission.SubmissionSource.as_view(), name='submission_source'),
     path('src/<int:submission>/raw', submission.SubmissionSourceRaw.as_view(), name='submission_source_raw'),

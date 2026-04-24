@@ -16,6 +16,9 @@ def gravatar(email, size=80, default=None):
         email = email.user.email
     elif isinstance(email, AbstractUser):
         email = email.email
+    elif hasattr(email, 'user') and isinstance(email.user, AbstractUser):
+        # e.g. ContestRankingProfile namedtuple where .user is a Django User
+        email = email.user.email
 
     gravatar_url = 'https://www.gravatar.com/avatar/' + hashlib.md5(utf8bytes(email.strip().lower())).hexdigest() + '?'
     args = {'d': 'identicon', 's': str(size)}

@@ -32,6 +32,10 @@ class JudgeList(object):
         self.problems = set()
         self.problem_ids = []
 
+    @staticmethod
+    def _key(id, is_run=False):
+        return ('run', id) if is_run else id
+
     def _handle_free_judge(self, judge):
         with self.lock:
             if judge.tier > self.min_tier:
@@ -45,18 +49,22 @@ class JudgeList(object):
                 elif priority >= REJUDGE_PRIORITY and self.should_reserve_judge():
                     return
                 else:
-                    id, problem, language, source, judge_id, banned_judges = node.value
+                    id, problem, language, source, judge_id, banned_judges, is_run, sample_input_files = node.value
                     if judge.name not in banned_judges and judge.can_judge(problem, language, judge_id):
-                        self.submission_map[id] = judge
+                        key = self._key(id, is_run)
+                        self.submission_map[key] = judge
                         try:
-                            judge.submit(id, problem, language, source)
+                            if is_run:
+                                judge.run_submit(id, problem, language, source, sample_input_files)
+                            else:
+                                judge.submit(id, problem, language, source)
                         except Exception:
                             logger.exception('Failed to dispatch %d (%s, %s) to %s', id, problem, language, judge.name)
                             self.judges.remove(judge)
                             return
-                        logger.info('Dispatched queued submission %d: %s', id, judge.name)
+                        logger.info('Dispatched queued %s %d: %s', 'run' if is_run else 'submission', id, judge.name)
                         self.queue.remove(node)
-                        del self.node_map[id]
+                        del self.node_map[key]
                         break
                 node = node.next
 
@@ -135,8 +143,9 @@ class JudgeList(object):
         with self.lock:
             sub = judge.get_current_submission()
             if sub is not None:
+                key = self._key(sub, judge._is_run)
                 try:
-                    del self.submission_map[sub]
+                    del self.submission_map[key]
                 except KeyError:
                     pass
             self.judges.discard(judge)
@@ -154,10 +163,15 @@ class JudgeList(object):
         return iter(self.judges)
 
     def on_judge_free(self, judge, submission):
-        logger.info('Judge available after grading %d: %s', submission, judge.name)
+        logger.info('Judge available after grading %s: %s', submission, judge.name)
         with self.lock:
-            del self.submission_map[submission]
+            key = self._key(submission, judge._is_run)
+            try:
+                del self.submission_map[key]
+            except KeyError:
+                logger.warning('Submission %s not found in submission_map during free', submission)
             judge._working = False
+            judge._is_run = False
             self._handle_free_judge(judge)
 
     def abort(self, submission):
@@ -181,7 +195,8 @@ class JudgeList(object):
 
     def judge(self, id, problem, language, source, judge_id, priority, banned_judges=[]):
         with self.lock:
-            if id in self.submission_map or id in self.node_map:
+            key = self._key(id, False)
+            if key in self.submission_map or key in self.node_map:
                 # Already judging, don't queue again. This can happen during batch rejudges, rejudges should be
                 # idempotent.
                 return
@@ -204,7 +219,7 @@ class JudgeList(object):
                 # Schedule the submission on the judge reporting least load.
                 judge = min(available, key=lambda judge: (judge.load, random()))
                 logger.info('Dispatched submission %d to: %s', id, judge.name)
-                self.submission_map[id] = judge
+                self.submission_map[key] = judge
                 try:
                     judge.submit(id, problem, language, source)
                 except Exception:
@@ -212,10 +227,43 @@ class JudgeList(object):
                     self.judges.discard(judge)
                     return self.judge(id, problem, language, source, judge_id, priority, banned_judges)
             else:
-                self.node_map[id] = self.queue.insert(
-                    (id, problem, language, source, judge_id, banned_judges),
+                self.node_map[key] = self.queue.insert(
+                    (id, problem, language, source, judge_id, banned_judges, False, []),
                     self.priority[priority],
                 )
                 logger.info('Queued submission: %d', id)
                 if self.queue.size == settings.VNOJ_LONG_QUEUE_ALERT_THRESHOLD + self.priorities:
                     on_long_queue.delay()
+
+    def judge_run(self, id, problem, language, source, judge_id, priority,
+                  banned_judges=[], sample_input_files=[]):
+        with self.lock:
+            key = self._key(id, True)
+            if key in self.submission_map or key in self.node_map:
+                return
+
+            candidates = [
+                judge for judge in self.current_tier_judges()
+                if judge.name not in banned_judges and
+                judge.can_judge(problem, language, judge_id)
+            ]
+            available = [judge for judge in candidates if not judge.working and not judge.is_disabled]
+            logger.info('Free judges for run: %d', len(available))
+
+            if available:
+                judge = min(available, key=lambda judge: (judge.load, random()))
+                logger.info('Dispatched run %d to: %s', id, judge.name)
+                self.submission_map[key] = judge
+                try:
+                    judge.run_submit(id, problem, language, source, sample_input_files)
+                except Exception:
+                    logger.exception('Failed to dispatch run %d (%s, %s) to %s', id, problem, language, judge.name)
+                    self.judges.discard(judge)
+                    return self.judge_run(id, problem, language, source, judge_id, priority,
+                                          banned_judges, sample_input_files)
+            else:
+                self.node_map[key] = self.queue.insert(
+                    (id, problem, language, source, judge_id, banned_judges, True, sample_input_files),
+                    self.priority[priority],
+                )
+                logger.info('Queued run: %d', id)

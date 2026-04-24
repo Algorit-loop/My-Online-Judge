@@ -154,6 +154,7 @@ class ProblemTestCase(models.Model):
     is_pretest = models.BooleanField(verbose_name=_('case is pretest?'))
     output_prefix = models.IntegerField(verbose_name=_('output prefix length'), blank=True, null=True)
     output_limit = models.IntegerField(verbose_name=_('output limit length'), blank=True, null=True)
+    is_sample = models.BooleanField(verbose_name=_('sample testcase?'), default=False)
     checker = models.CharField(max_length=10, verbose_name=_('checker'), choices=CHECKERS, blank=True)
     checker_args = models.TextField(verbose_name=_('checker arguments'), blank=True,
                                     help_text=_('Checker arguments as a JSON object.'))

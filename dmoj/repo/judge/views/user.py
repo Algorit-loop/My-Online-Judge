@@ -616,12 +616,12 @@ class ContribList(QueryStringSortMixin, DiggPaginatorMixin, TitleMixin, ListView
 
     def get_queryset(self):
         return (Profile.objects.filter(is_unlisted=False).order_by(self.order, 'id')
-                .prefetch_related(Prefetch('user', queryset=User.objects.only('username', 'first_name')))
+                .prefetch_related(Prefetch('user', queryset=User.objects.only('username', 'first_name', 'email')))
                 .prefetch_related(Prefetch('organizations',
                                   queryset=Organization.objects.filter(is_unlisted=False).only('name', 'id', 'slug')))
                 .select_related('display_badge')
                 .only('display_rank', 'display_badge', 'user', 'organizations', 'rating', 'contribution_points',
-                      'username_display_override'))
+                      'username_display_override', 'mute'))
 
     def get_context_data(self, **kwargs):
         context = super(ContribList, self).get_context_data(**kwargs)

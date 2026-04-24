@@ -128,6 +128,7 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
                 'is_full_markup', 'pdf_url', 'source', 'description', 'license',
             ),
         }),
+        (_('IDE'), {'fields': ('enable_new_ide',)}),
         (_('Social Media'), {'classes': ('collapse',), 'fields': ('og_image', 'summary')}),
         (_('Taxonomy'), {'fields': ('types', 'group')}),
         (_('Points'), {'fields': ('points', 'scoring_mode')}),

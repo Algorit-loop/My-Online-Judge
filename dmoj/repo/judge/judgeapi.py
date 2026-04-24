@@ -112,6 +112,39 @@ def judge_submission(submission, rejudge=False, batch_rejudge=False, judge_id=No
     return success
 
 
+def judge_run_submission(run_submission, sample_input_files=None):
+    """Send a run-request to the bridge. Uses RunSubmission model, not Submission."""
+    from .models.run_submission import RunSubmission
+
+    if not RunSubmission.objects.filter(id=run_submission.id).exclude(status__in=('P', 'G')).update(
+        time=None, memory=None, points=None, result=None, case_points=0, case_total=0, error=None,
+        status='QU', case_results=[],
+    ):
+        return False
+
+    try:
+        response = judge_request({
+            'name': 'run-request',
+            'submission-id': run_submission.id,
+            'problem-id': run_submission.problem.code,
+            'language': run_submission.language.key,
+            'source': run_submission.source,
+            'judge-id': None,
+            'banned-judges': [],
+            'priority': DEFAULT_PRIORITY,
+            'sample-input-files': sample_input_files or [],
+        })
+    except BaseException:
+        logger.exception('Failed to send run-request to judge')
+        RunSubmission.objects.filter(id=run_submission.id).update(status='IE', result='IE')
+        return False
+    else:
+        if response.get('name') != 'run-received' or response.get('submission-id') != run_submission.id:
+            RunSubmission.objects.filter(id=run_submission.id).update(status='IE', result='IE')
+            return False
+        return True
+
+
 def disconnect_judge(judge, force=False):
     judge_request({'name': 'disconnect-judge', 'judge-id': judge.name, 'force': force}, reply=False)
 
