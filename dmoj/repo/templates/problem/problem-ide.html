@@ -438,9 +438,10 @@
 
         var pendingCount = 0;
         var MAX_POLL_COUNT = 60;
+        var runPollBase = '{{ url("run_poll", "0") }}'.replace('/0', '/');
         function pollForResult() {
             if (!currentRunId) return;
-            $.getJSON('/run/poll/' + currentRunId, function(data) {
+            $.getJSON(runPollBase + currentRunId, function(data) {
                 if (data.status === 'PENDING') {
                     pendingCount++;
                     if (pendingCount >= MAX_POLL_COUNT) {

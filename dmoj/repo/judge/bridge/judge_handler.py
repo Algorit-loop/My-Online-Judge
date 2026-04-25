@@ -279,8 +279,7 @@ class JudgeHandler(ZlibPacketHandler):
     def run_submit(self, id, problem, language, source, sample_input_files):
         data = self.get_related_run_data(id)
         if data is None:
-            logger.error('RunSubmission vanished: %s', id)
-            return
+            raise RuntimeError('RunSubmission vanished: %s' % id)
         self._working = id
         self._is_run = True
         self._no_response_job = threading.Timer(20, self._kill_if_no_response)

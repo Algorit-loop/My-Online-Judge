@@ -96,11 +96,6 @@ class RunPollView(LoginRequiredMixin, View):
 
     def get(self, request, run_id):
         try:
-            run_id = int(run_id)
-        except (ValueError, TypeError):
-            return JsonResponse({'error': 'Invalid run_id'}, status=400)
-
-        try:
             run_sub = RunSubmission.objects.get(id=run_id, user=request.profile)
         except RunSubmission.DoesNotExist:
             return JsonResponse({'status': 'NOT_FOUND'}, status=404)

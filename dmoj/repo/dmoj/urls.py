@@ -184,7 +184,7 @@ urlpatterns = [
     path('submissions/diff', submission.SubmissionSourceDiff, name='diff_submissions'),
     path('submissions/user/<str:user>/', paged_list_view(submission.AllUserSubmissions, 'all_user_submissions')),
 
-    path('run/poll/<str:run_id>', RunPollView.as_view(), name='run_poll'),
+    path('run/poll/<int:run_id>', RunPollView.as_view(), name='run_poll'),
 
     path('src/<int:submission>', submission.SubmissionSource.as_view(), name='submission_source'),
     path('src/<int:submission>/raw', submission.SubmissionSourceRaw.as_view(), name='submission_source_raw'),
