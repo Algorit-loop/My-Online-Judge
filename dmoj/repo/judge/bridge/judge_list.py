@@ -49,13 +49,18 @@ class JudgeList(object):
                 elif priority >= REJUDGE_PRIORITY and self.should_reserve_judge():
                     return
                 else:
-                    id, problem, language, source, judge_id, banned_judges, is_run, sample_input_files = node.value
+                    vals = node.value
+                    if len(vals) == 9:
+                        id, problem, language, source, judge_id, banned_judges, is_run, sample_input_files, custom_inputs = vals
+                    else:
+                        id, problem, language, source, judge_id, banned_judges, is_run, sample_input_files = vals
+                        custom_inputs = []
                     if judge.name not in banned_judges and judge.can_judge(problem, language, judge_id):
                         key = self._key(id, is_run)
                         self.submission_map[key] = judge
                         try:
                             if is_run:
-                                judge.run_submit(id, problem, language, source, sample_input_files)
+                                judge.run_submit(id, problem, language, source, sample_input_files, custom_inputs)
                             else:
                                 judge.submit(id, problem, language, source)
                         except Exception:
@@ -236,7 +241,7 @@ class JudgeList(object):
                     on_long_queue.delay()
 
     def judge_run(self, id, problem, language, source, judge_id, priority,
-                  banned_judges=[], sample_input_files=[]):
+                  banned_judges=[], sample_input_files=[], custom_inputs=[]):
         with self.lock:
             key = self._key(id, True)
             if key in self.submission_map or key in self.node_map:
@@ -255,15 +260,15 @@ class JudgeList(object):
                 logger.info('Dispatched run %d to: %s', id, judge.name)
                 self.submission_map[key] = judge
                 try:
-                    judge.run_submit(id, problem, language, source, sample_input_files)
+                    judge.run_submit(id, problem, language, source, sample_input_files, custom_inputs)
                 except Exception:
                     logger.exception('Failed to dispatch run %d (%s, %s) to %s', id, problem, language, judge.name)
                     self.judges.discard(judge)
                     return self.judge_run(id, problem, language, source, judge_id, priority,
-                                          banned_judges, sample_input_files)
+                                          banned_judges, sample_input_files, custom_inputs)
             else:
                 self.node_map[key] = self.queue.insert(
-                    (id, problem, language, source, judge_id, banned_judges, True, sample_input_files),
+                    (id, problem, language, source, judge_id, banned_judges, True, sample_input_files, custom_inputs),
                     self.priority[priority],
                 )
                 logger.info('Queued run: %d', id)

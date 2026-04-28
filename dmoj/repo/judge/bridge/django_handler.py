@@ -58,9 +58,10 @@ class DjangoHandler(ZlibPacketHandler):
         priority = data['priority']
         banned_judges = data.get('banned-judges', [])
         sample_input_files = data.get('sample-input-files', [])
+        custom_inputs = data.get('custom-inputs', [])
         if not self.judges.check_priority(priority):
             return {'name': 'bad-request'}
-        self.judges.judge_run(id, problem, language, source, judge_id, priority, banned_judges, sample_input_files)
+        self.judges.judge_run(id, problem, language, source, judge_id, priority, banned_judges, sample_input_files, custom_inputs)
         return {'name': 'run-received', 'submission-id': id}
 
     def on_termination(self, data):

@@ -167,12 +167,12 @@
         }
         .bot-tabs .bt:hover { color: var(--text); }
         .bot-tabs .bt.on { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
-        .bot-content { flex: 1; overflow-y: auto; }
-        .pnl { display: none; padding: 12px 14px; }
-        .pnl.on { display: block; }
+        .bot-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .pnl { display: none; padding: 12px 14px; flex-direction: column; flex: 1; min-height: 0; }
+        .pnl.on { display: flex; }
 
         /* === Testcase UI === */
-        .tc-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .tc-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; flex-shrink: 0; }
         .tc-t {
             padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 12px;
             font-weight: 500; background: var(--bg2); border: 1px solid var(--bd);
@@ -188,38 +188,37 @@
             user-select: none; transition: all .12s;
         }
         .tc-add:hover { background: var(--bg2); border-color: #999; color: #666; }
-        .tc-lbl { font-weight: 600; font-size: 12px; color: var(--text2); margin: 10px 0 4px; }
+        .tc-lbl { font-weight: 600; font-size: 12px; color: var(--text2); margin: 6px 0 2px; flex-shrink: 0; }
         .tc-lbl:first-child { margin-top: 0; }
+        #tc-body { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 2px; }
         .tc-ta {
-            width: 100%; min-height: 48px; font-family: var(--mono); font-size: 13px;
+            width: 100%; min-height: 48px; flex: 1; font-family: var(--mono); font-size: 13px;
             border: 1px solid var(--bd); border-radius: 6px; padding: 8px;
-            resize: vertical; box-sizing: border-box; background: var(--bg);
-            transition: border-color .12s, background .12s;
+            resize: none; box-sizing: border-box; background: var(--bg);
+            transition: border-color .12s, background .12s; overflow-y: auto;
         }
         .tc-ta:focus { border-color: var(--accent); background: #fff; outline: none; }
         .tc-exp {
             background: #f7f7f7; border: 1px solid #eaeaea; border-radius: 6px; padding: 8px;
-            font-family: var(--mono); font-size: 13px;
-            white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto;
+            font-family: var(--mono); font-size: 13px; flex: 1; min-height: 40px;
+            white-space: pre-wrap; word-wrap: break-word; overflow-y: auto;
         }
 
         /* === Result UI === */
         .rs {
             display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-            padding: 12px 16px; border-radius: 8px; margin-bottom: 12px;
+            padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; flex-shrink: 0;
         }
         .rs-st { font-size: 15px; font-weight: 700; }
         .rs-meta { font-size: 13px; color: var(--text2); display: flex; gap: 16px; flex-wrap: wrap; }
 
-        .st-AC,.st-SC { color: var(--green); }
-        .st-WA,.st-RTE,.st-CE,.st-IR { color: var(--red); }
-        .st-TLE,.st-MLE,.st-OLE { color: var(--orange); }
-        .st-IE,.st-AB { color: var(--text3); }
-
-        .bg-AC,.bg-SC { background: #f0fdf4; border: 1px solid #bbf7d0; }
-        .bg-WA,.bg-RTE,.bg-CE,.bg-IR { background: #fef2f2; border: 1px solid #fecaca; }
-        .bg-TLE,.bg-MLE,.bg-OLE { background: #fffbeb; border: 1px solid #fde68a; }
-        .bg-IE,.bg-AB { background: #f9fafb; border: 1px solid #e5e7eb; }
+        /* st-* removed: use case-* from submission.scss (loaded globally) */
+        /* bg-* groupings match case-* from submission.scss */
+        .bg-AC { background: #f0fdf4; border: 1px solid #bbf7d0; }
+        .bg-WA { background: #fef2f2; border: 1px solid #fecaca; }
+        .bg-TLE,.bg-SC { background: #f3f4f6; border: 1px solid #d1d5db; }
+        .bg-MLE,.bg-OLE,.bg-RTE,.bg-IR { background: #fffbeb; border: 1px solid #fde68a; }
+        .bg-CE,.bg-IE,.bg-AB { background: #f9fafb; border: 1px solid #e5e7eb; }
 
         .rc-bar { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
         .rc-t {
@@ -228,28 +227,34 @@
             transition: all .12s;
         }
         .rc-t.on { border-width: 2px; }
-        .rc-t.rc-AC,.rc-t.rc-SC { color: var(--green); border-color: var(--green); }
-        .rc-t.rc-AC.on,.rc-t.rc-SC.on { background: #f0fdf4; }
-        .rc-t.rc-WA,.rc-t.rc-RTE,.rc-t.rc-CE,.rc-t.rc-IR { color: var(--red); border-color: var(--red); }
-        .rc-t.rc-WA.on,.rc-t.rc-RTE.on,.rc-t.rc-CE.on,.rc-t.rc-IR.on { background: #fef2f2; }
-        .rc-t.rc-TLE,.rc-t.rc-MLE,.rc-t.rc-OLE { color: var(--orange); border-color: var(--orange); }
-        .rc-t.rc-TLE.on,.rc-t.rc-MLE.on,.rc-t.rc-OLE.on { background: #fffbeb; }
-        .rc-t.rc-IE,.rc-t.rc-AB { color: var(--text3); border-color: #ccc; }
-        .rc-t.rc-IE.on,.rc-t.rc-AB.on { background: #f9fafb; }
+        /* rc-* tab colors match case-* from submission.scss */
+        .rc-t.rc-AC { color: green; border-color: green; }
+        .rc-t.rc-AC.on { background: #f0fdf4; }
+        .rc-t.rc-WA { color: #ef1b53; border-color: #ef1b53; }
+        .rc-t.rc-WA.on { background: #fef2f2; }
+        .rc-t.rc-TLE,.rc-t.rc-SC { color: gray; border-color: gray; }
+        .rc-t.rc-TLE.on,.rc-t.rc-SC.on { background: #f3f4f6; }
+        .rc-t.rc-MLE,.rc-t.rc-OLE,.rc-t.rc-RTE,.rc-t.rc-IR { color: orange; border-color: orange; }
+        .rc-t.rc-MLE.on,.rc-t.rc-OLE.on,.rc-t.rc-RTE.on,.rc-t.rc-IR.on { background: #fffbeb; }
+        .rc-t.rc-CE,.rc-t.rc-IE,.rc-t.rc-AB { color: #888; border-color: #aaa; }
+        .rc-t.rc-CE.on,.rc-t.rc-IE.on,.rc-t.rc-AB.on { background: #f9fafb; }
 
-        .rd-meta { font-size: 12px; color: #999; margin-bottom: 8px; display: flex; gap: 12px; align-items: center; }
-        .rd-row { margin-bottom: 8px; }
-        .rd-lbl { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 3px; }
+        .rd-meta { font-size: 12px; color: #999; margin-bottom: 8px; display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
+        #rc-det { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .rd-row { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .rd-lbl { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 3px; flex-shrink: 0; }
         .rd-val {
             background: #f7f7f7; border: 1px solid #eaeaea; border-radius: 6px; padding: 8px;
-            font-family: var(--mono); font-size: 13px;
-            white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto;
+            font-family: var(--mono); font-size: 13px; flex: 1; min-height: 32px;
+            white-space: pre-wrap; word-wrap: break-word; overflow-y: auto;
         }
         .rs-err pre {
             background: #fff5f5; border: 1px solid #fecaca; border-radius: 6px; padding: 10px;
             color: var(--red); font-size: 13px; white-space: pre-wrap; max-height: 180px; overflow-y: auto;
         }
         .rs-ph { color: #bbb; font-size: 14px; padding: 30px 0; text-align: center; }
+        #ide-res { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .rc-bar { flex-shrink: 0; }
     </style>
 {% endblock %}
 
@@ -391,8 +396,11 @@
         function svTC() { var $v = $('#tc-in'); if ($v.length && ai < tcs.length) tcs[ai].i = $v.val(); }
         function rTabs() {
             var $b = $('#tc-bar').empty();
+            var ci = 0;
             for (var j = 0; j < tcs.length; j++) {
-                var lbl = tcs[j].s ? 'Sample ' + (j+1) : 'Case ' + (j+1);
+                var lbl;
+                if (tcs[j].s) { lbl = 'Sample ' + (j+1); }
+                else { ci++; lbl = 'Custom ' + ci; }
                 var $t = $('<span class="tc-t">').toggleClass('on', j===ai).data('x', j);
                 $t.append($('<span>').text(lbl));
                 if (!tcs[j].s && tcs.length > 1)
@@ -409,7 +417,12 @@
         }
         $(document).on('click', '#tc-bar .tc-t', function(e) { if (!$(e.target).hasClass('tc-x')) swTC($(this).data('x')); });
         $(document).on('click', '#tc-bar .tc-x', function(e) { e.stopPropagation(); rmTC($(this).data('x')); });
-        $(document).on('click', '#tc-bar .tc-add', function() { svTC(); addTC('','',false); });
+        $(document).on('click', '#tc-bar .tc-add', function() {
+            var customCount = 0;
+            for (var k = 0; k < tcs.length; k++) { if (!tcs[k].s) customCount++; }
+            if (customCount >= 5) { alert('Maximum 5 custom testcases'); return; }
+            svTC(); addTC('','',false);
+        });
 
         $.getJSON(SAMP, function(d) {
             var s = d.samples || [];
@@ -425,27 +438,37 @@
         function ft(t) { return t != null ? t.toFixed(3) + 's' : '—'; }
         function fm(m) { return m != null ? (m/1024).toFixed(2) + ' MB' : '—'; }
 
+        function countSamples() { var n=0; for(var k=0;k<tcs.length;k++) if(tcs[k].s) n++; return n; }
         function showRes(d) {
-            LR = d; ari = 0; var $p = $('#ide-res');
+            LR = d; ari = 0; var $p = $('#ide-res'); var ns = countSamples();
             if (d.status !== 'done') {
                 var r = d.status;
-                var h = '<div class="rs bg-' + r + '"><span class="rs-st st-' + r + '">' + (ST[r]||r) + '</span></div>';
+                var h = '<div class="rs bg-' + r + '"><span class="rs-st case-' + r + '">' + (ST[r]||r) + '</span></div>';
                 if (d.error) h += '<div class="rs-err"><pre>' + esc(d.error) + '</pre></div>';
                 $p.html(h); return;
             }
-            var r = d.result;
+            // Count passed/total only for sample cases (first ns results)
+            var passed = 0;
+            for (var j = 0; j < Math.min(ns, (d.testcases||[]).length); j++) {
+                if (d.testcases[j].status === 'AC') passed++;
+            }
+            var sampleResult = ns > 0 ? (passed === ns ? 'AC' : d.result) : d.result;
+            var r = sampleResult;
             var h = '<div class="rs bg-' + r + '">';
-            h += '<span class="rs-st st-' + r + '">' + (ST[r]||r) + '</span>';
+            h += '<span class="rs-st case-' + r + '">' + (ST[r]||r) + '</span>';
             h += '<span class="rs-meta">';
-            h += '<span>' + (d.passed||0) + '/' + (d.total_cases||0) + ' passed</span>';
+            if (ns > 0) h += '<span>' + passed + '/' + ns + ' samples passed</span>';
             if (d.time != null) h += '<span>' + ft(d.time) + '</span>';
             if (d.memory != null) h += '<span>' + fm(d.memory) + '</span>';
             h += '</span></div>';
             if (d.testcases && d.testcases.length) {
                 h += '<div id="rc-bar" class="rc-bar">';
                 for (var j = 0; j < d.testcases.length; j++) {
+                    var isSam = j < ns;
                     var s = d.testcases[j].status || 'IE';
-                    h += '<span class="rc-t rc-' + s + (j===0?' on':'') + '" data-x="' + j + '">Case ' + (j+1) + '</span>';
+                    var isRuntimeErr = !isSam && s !== 'AC' && s !== 'WA' && s !== 'SC';
+                    var lbl = isSam ? 'Sample ' + (j+1) : 'Custom ' + (j-ns+1);
+                    h += '<span class="rc-t' + ((isSam || isRuntimeErr) ? ' rc-' + s : '') + (j===0?' on':'') + '" data-x="' + j + '">' + lbl + '</span>';
                 }
                 h += '</div><div id="rc-det"></div>';
             }
@@ -453,24 +476,42 @@
             $p.html(h);
             if (d.testcases && d.testcases.length) showCase(0);
         }
+        function truncOut(tc) { var s = tc.output || ''; if (tc.output_truncated) return s + '\\n… (output truncated)'; return s; }
         function showCase(x) {
             if (!LR || !LR.testcases) return;
             ari = x;
             $('#rc-bar .rc-t').removeClass('on');
             $('#rc-bar .rc-t[data-x="'+x+'"]').addClass('on');
             var tc = LR.testcases[x], s = tc.status || 'IE';
-            var isSam = x < tcs.length && tcs[x] && tcs[x].s;
-            var h = '<div class="rd-meta">';
-            h += '<span class="rs-st st-' + s + '" style="font-size:13px">' + (ST[s]||s) + '</span>';
-            h += '<span>' + ft(tc.time) + '</span><span>' + fm(tc.memory) + '</span></div>';
-            if (x < tcs.length && tcs[x])
-                h += '<div class="rd-row"><div class="rd-lbl">Input</div><div class="rd-val">' + esc(tcs[x].i) + '</div></div>';
-            if (tc.output != null && tc.output !== '')
-                h += '<div class="rd-row"><div class="rd-lbl">Output</div><div class="rd-val">' + esc(tc.output) + '</div></div>';
-            if (isSam && tcs[x].e)
-                h += '<div class="rd-row"><div class="rd-lbl">Expected</div><div class="rd-val">' + esc(tcs[x].e) + '</div></div>';
-            if (tc.feedback)
-                h += '<div class="rd-row"><div class="rd-lbl">Feedback</div><div class="rd-val">' + esc(tc.feedback) + '</div></div>';
+            var ns = countSamples();
+            var isSam = x < ns;
+            var h = '';
+            if (isSam) {
+                // Sample case: show status, time, memory, Input, Output, Expected
+                h += '<div class="rd-meta">';
+                h += '<span class="rs-st case-' + s + '" style="font-size:13px">' + (ST[s]||s) + '</span>';
+                h += '<span>' + ft(tc.time) + '</span><span>' + fm(tc.memory) + '</span></div>';
+                if (x < tcs.length && tcs[x])
+                    h += '<div class="rd-row"><div class="rd-lbl">Input</div><div class="rd-val">' + esc(tcs[x].i) + '</div></div>';
+                h += '<div class="rd-row"><div class="rd-lbl">Output</div><div class="rd-val">' + esc(truncOut(tc)) + '</div></div>';
+                if (tcs[x] && tcs[x].e)
+                    h += '<div class="rd-row"><div class="rd-lbl">Expected</div><div class="rd-val">' + esc(tcs[x].e) + '</div></div>';
+                if (tc.feedback)
+                    h += '<div class="rd-row"><div class="rd-lbl">Feedback</div><div class="rd-val">' + esc(tc.feedback) + '</div></div>';
+            } else {
+                // Custom case: no expected output comparison
+                // Show runtime errors (TLE/RTE/MLE/OLE/IR) but hide AC/WA (meaningless without expected)
+                var isRuntimeErr = s !== 'AC' && s !== 'WA' && s !== 'SC';
+                if (isRuntimeErr) {
+                    h += '<div class="rd-meta">';
+                    h += '<span class="rs-st case-' + s + '" style="font-size:13px">' + (ST[s]||s) + '</span>';
+                    h += '<span>' + ft(tc.time) + '</span><span>' + fm(tc.memory) + '</span></div>';
+                }
+                var ci = x;  // index into tcs[]
+                if (ci < tcs.length && tcs[ci])
+                    h += '<div class="rd-row"><div class="rd-lbl">Input</div><div class="rd-val">' + esc(tcs[ci].i) + '</div></div>';
+                h += '<div class="rd-row"><div class="rd-lbl">Output</div><div class="rd-val">' + esc(truncOut(tc)) + '</div></div>';
+            }
             $('#rc-det').html(h);
         }
         $(document).on('click', '#rc-bar .rc-t', function() { showCase(+$(this).data('x')); });
@@ -481,17 +522,22 @@
             var src = ed.getValue(), l = lid();
             if (!src.trim()) return;
             if (_t) { clearTimeout(_t); _t = null; } save();
+            svTC();
+            var customInputs = [];
+            for (var ci = 0; ci < tcs.length; ci++) {
+                if (!tcs[ci].s) customInputs.push(tcs[ci].i);
+            }
             $(this).prop('disabled', true).text('Running...');
             $('.bot-tabs .bt[data-t="pnl-res"]').click();
             $('#ide-res').html('<div class="rs-ph">Running...</div>');
             $.ajax({
                 url: RURL, method: 'POST', contentType: 'application/json',
                 headers: {'X-CSRFToken': TK},
-                data: JSON.stringify({source: src, language: parseInt(l)}),
+                data: JSON.stringify({source: src, language: parseInt(l), custom_inputs: customInputs}),
                 success: function(r) { rid = r.run_id; pc = 0; doPoll(); },
                 error: function(x) {
                     var e = 'Error'; try { e = JSON.parse(x.responseText).error || e; } catch(ex) {}
-                    $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st st-IE">' + esc(e) + '</span></div>');
+                    $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">' + esc(e) + '</span></div>');
                     $('#btn-run').prop('disabled', false).text('▶ Run');
                 }
             });
@@ -501,7 +547,7 @@
             $.getJSON(POLL + rid, function(d) {
                 if (d.status === 'PENDING') {
                     if (++pc >= 60) {
-                        $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st st-IE">Timed out</span></div>');
+                        $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Timed out</span></div>');
                         $('#btn-run').prop('disabled', false).text('▶ Run'); rid = null; return;
                     }
                     var m = d.grading_status === 'QU' ? 'Queued...' : d.grading_status === 'P' ? 'Processing...' : d.grading_status === 'G' ? 'Grading...' : 'Waiting...';
@@ -510,7 +556,7 @@
                 }
                 showRes(d); $('#btn-run').prop('disabled', false).text('▶ Run'); rid = null;
             }).fail(function() {
-                $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st st-IE">Poll failed</span></div>');
+                $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Poll failed</span></div>');
                 $('#btn-run').prop('disabled', false).text('▶ Run'); rid = null;
             });
         }

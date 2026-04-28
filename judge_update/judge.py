@@ -484,6 +484,58 @@ class JudgeWorker:
             else:
                 flattened_cases.append((None, case))
 
+        # Filter to sample testcases only if meta requests it
+        sample_testcase_only = self.submission.meta.get('sample-testcase-only', False)
+        custom_inputs = self.submission.meta.get('custom-inputs', [])
+        if sample_testcase_only:
+            sample_input_files = set(self.submission.meta.get('sample-input-files', []))
+            filtered = []
+
+            # Filter sample testcases
+            if sample_input_files:
+                for batch_no, case in flattened_cases:
+                    case_input = case.config['in']
+                    if case_input and str(case_input) in sample_input_files:
+                        # Extract from batch context - sample cases run as standalone
+                        filtered.append((None, case))
+
+            # Add custom input testcases as virtual TestCases (in-memory, no disk writes)
+            if custom_inputs:
+                from dmoj.config import ConfigNode as _CN
+                from dmoj.cptbox.utils import MemoryIO
+                for ci_idx, ci_data in enumerate(custom_inputs):
+                    ci_bytes = ci_data.encode('utf-8') if isinstance(ci_data, str) else ci_data
+                    # Use problem.config as parent so virtual case inherits
+                    # wall_time_factor, output_limit_length, etc.
+                    virtual_config = _CN(raw_config={
+                        'in': None,
+                        'out': None,
+                        'points': 1,
+                    }, parent=problem.config)
+                    virtual_case = TestCase(
+                        count=len(flattened_cases) + ci_idx,
+                        batch_no=0,
+                        config=virtual_config,
+                        problem=problem,
+                    )
+                    # Inject input data directly into memory — bypasses file I/O entirely
+                    virtual_case._input_data_io = MemoryIO(prefill=ci_bytes, seal=True)
+                    filtered.append((None, virtual_case))
+
+            if not filtered:
+                if sample_input_files:
+                    logger.warning(
+                        'sample-testcase-only=True but no cases matched sample-input-files %s and no custom inputs',
+                        sample_input_files,
+                    )
+                else:
+                    logger.warning('sample-testcase-only=True but no sample-input-files and no custom inputs provided')
+                yield IPC.GRADING_END, ()
+                return
+            flattened_cases = filtered
+            # Reset batch tracking since we removed batch structure
+            batch_dependencies = []
+
         case_number = 0
         is_short_circuiting = False
         is_short_circuiting_enabled = self.submission.short_circuit

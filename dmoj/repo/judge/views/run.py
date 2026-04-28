@@ -48,12 +48,18 @@ class RunSubmitView(LoginRequiredMixin, View):
 
         source = data.get('source', '')
         language_id = data.get('language')
+        custom_inputs = data.get('custom_inputs', [])
 
         if not source or not language_id:
             return JsonResponse({'error': 'source and language are required'}, status=400)
 
         if len(source) > 8192:
             return JsonResponse({'error': 'Source code too long'}, status=400)
+
+        # Validate custom_inputs
+        if not isinstance(custom_inputs, list):
+            custom_inputs = []
+        custom_inputs = [str(ci)[:8192] for ci in custom_inputs[:5]]  # Max 5 custom inputs, 8192 chars each
 
         try:
             language = Language.objects.get(id=language_id)
@@ -69,8 +75,8 @@ class RunSubmitView(LoginRequiredMixin, View):
             dataset=prob, is_sample=True, type='C',
         ).order_by('order').values_list('input_file', flat=True))
 
-        if not sample_cases:
-            return JsonResponse({'error': 'No sample testcases configured for this problem.'}, status=400)
+        if not sample_cases and not custom_inputs:
+            return JsonResponse({'error': 'No sample testcases configured and no custom input provided.'}, status=400)
 
         # Create RunSubmission
         run_sub = RunSubmission(
@@ -83,7 +89,7 @@ class RunSubmitView(LoginRequiredMixin, View):
         run_sub.save()
 
         # Dispatch to judge via bridge
-        success = judge_run_submission(run_sub, sample_input_files=sample_cases)
+        success = judge_run_submission(run_sub, sample_input_files=sample_cases, custom_inputs=custom_inputs)
         if not success:
             run_sub.delete()
             return JsonResponse({'error': 'Failed to dispatch to judge'}, status=503)
@@ -117,21 +123,19 @@ class RunPollView(LoginRequiredMixin, View):
             result['time'] = run_sub.time
             result['memory'] = run_sub.memory
 
-            passed = 0
             testcases = []
             for tc in run_sub.case_results:
-                is_ac = tc.get('status') == 'AC'
-                if is_ac:
-                    passed += 1
+                raw_output = tc.get('output', '')
+                truncated = len(raw_output) > 8192
                 testcases.append({
                     'case': tc.get('case'),
                     'status': tc.get('status'),
                     'time': tc.get('time'),
                     'memory': tc.get('memory'),
                     'feedback': tc.get('feedback', ''),
-                    'output': tc.get('output', ''),
+                    'output': raw_output[:8192],
+                    'output_truncated': truncated,
                 })
-            result['passed'] = passed
             result['total_cases'] = len(testcases)
             result['testcases'] = testcases
         elif run_sub.status in ('CE', 'IE'):

@@ -276,7 +276,7 @@ class JudgeHandler(ZlibPacketHandler):
             },
         })
 
-    def run_submit(self, id, problem, language, source, sample_input_files):
+    def run_submit(self, id, problem, language, source, sample_input_files, custom_inputs=None):
         data = self.get_related_run_data(id)
         if data is None:
             raise RuntimeError('RunSubmission vanished: %s' % id)
@@ -303,6 +303,7 @@ class JudgeHandler(ZlibPacketHandler):
                 'file-size-limit': data.file_size_limit,
                 'sample-testcase-only': True,
                 'sample-input-files': data.sample_input_files,
+                'custom-inputs': custom_inputs or [],
             },
         })
 
@@ -756,7 +757,7 @@ class JudgeHandler(ZlibPacketHandler):
                     'time': result['time'],
                     'memory': result['memory'],
                     'feedback': (result.get('feedback') or '')[:max_feedback],
-                    'extended_feedback': result.get('extended-feedback') or '',
+                    'extended_feedback': (result.get('extended-feedback') or '')[:8192],
                     'output': result['output'],
                 })
             return
