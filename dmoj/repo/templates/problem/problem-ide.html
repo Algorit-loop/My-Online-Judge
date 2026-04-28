@@ -295,6 +295,7 @@
             RURL = '{{ url("run_submit", problem.code) }}',
             POLL = '{{ url("run_poll", 0) }}'.replace('/0', '/'),
             SUBM = '{{ url("problem_submit", problem.code) }}',
+            SRCRAW = '{{ url("submission_source_raw", 0) }}',
             TK = '{{ csrf_token }}';
 
         // === ACE Editor ===
@@ -332,7 +333,22 @@
             }).fail(function() { ed.setValue('', -1); showS('saved'); });
         }
         $L.on('change', function() { save(); setMode(); loadCode(lid()); });
-        setMode(); loadCode(lid());
+
+        // === Resubmit: load source from old submission ===
+        var _qs = new URLSearchParams(window.location.search);
+        var _resubId = _qs.get('resubmit'), _resubLang = _qs.get('lang');
+        if (_resubId) {
+            if (_resubLang && $L.find('option[value="' + _resubLang + '"]').length) {
+                $L.val(_resubLang);
+            }
+            setMode();
+            $.get(SRCRAW.replace('/0/', '/' + _resubId + '/'), function(src) {
+                ed.setValue(src, -1); save(); showS('saved');
+            }).fail(function() { loadCode(lid()); });
+            window.history.replaceState({}, '', window.location.pathname);
+        } else {
+            setMode(); loadCode(lid());
+        }
 
         // === Resize IDE to viewport ===
         function fitIDE() {

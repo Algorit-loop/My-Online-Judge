@@ -99,15 +99,9 @@
         <div class="submission-action-bar">
             <div class="action-group">
                 {% if not submission.language.file_only or request.user.is_superuser %}
-                    {% if submission.problem.enable_new_ide %}
-                        <a href="{{ url('problem_detail', submission.problem.code) }}" class="action-btn">
-                            <i class="fa fa-code"></i> {{ _('View source') }}
-                        </a>
-                    {% else %}
-                        <a href="{{ url('submission_source', submission.id) }}" class="action-btn">
-                            <i class="fa fa-code"></i> {{ _('View source') }}
-                        </a>
-                    {% endif %}
+                    <a href="{{ url('submission_source', submission.id) }}" class="action-btn">
+                        <i class="fa fa-code"></i> {{ _('View source') }}
+                    </a>
                 {% endif %}
                 {% if submission.language.file_only %}
                     <a href="{{ url('submission_source_download', submission.id) }}" class="action-btn">
@@ -116,7 +110,7 @@
                 {% endif %}
                 {% if (request.user == submission.user.user or perms.judge.resubmit_other) and not submission.language.file_only %}
                     {% if submission.problem.enable_new_ide %}
-                        <a href="{{ url('problem_detail', submission.problem.code) }}" class="action-btn">
+                        <a href="{{ url('problem_detail', submission.problem.code) }}?resubmit={{ submission.id }}&lang={{ submission.language_id }}" class="action-btn">
                             <i class="fa fa-repeat"></i> {{ _('Resubmit') }}
                         </a>
                     {% else %}
