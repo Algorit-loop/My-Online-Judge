@@ -452,6 +452,17 @@ class ProblemDetail(ProblemMixin, SolvedProblemMixin, ProblemSubmitMixin, Commen
             context.update(submit_context)
             context['no_judges'] = not context['form'].fields['language'].queryset if context.get('form') else True
 
+        if self.object.enable_new_ide:
+            context.setdefault('ACE_URL', settings.ACE_URL)
+            context.setdefault('default_lang', None)
+            if not context.get('form'):
+                form = ProblemSubmitForm(judge_choices=())
+                form.fields['language'].queryset = (
+                    self.object.usable_languages.order_by('name', 'key')
+                    .prefetch_related(Prefetch('runtimeversion_set', RuntimeVersion.objects.order_by('priority')))
+                )
+                context['form'] = form
+
         return context
 
     def post(self, request, *args, **kwargs):

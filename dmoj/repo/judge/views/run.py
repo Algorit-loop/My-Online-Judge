@@ -52,7 +52,7 @@ class RunSubmitView(LoginRequiredMixin, View):
         if not source or not language_id:
             return JsonResponse({'error': 'source and language are required'}, status=400)
 
-        if len(source) > 65536:
+        if len(source) > 8192:
             return JsonResponse({'error': 'Source code too long'}, status=400)
 
         try:
@@ -129,6 +129,7 @@ class RunPollView(LoginRequiredMixin, View):
                     'time': tc.get('time'),
                     'memory': tc.get('memory'),
                     'feedback': tc.get('feedback', ''),
+                    'output': tc.get('output', ''),
                 })
             result['passed'] = passed
             result['total_cases'] = len(testcases)

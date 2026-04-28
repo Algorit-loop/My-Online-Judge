@@ -54,9 +54,15 @@
                 <i class="fa fa-eye fa-fw"></i>
             </a>
             {% if not submission.language.file_only %}
-                <a href="{{ url('submission_source', submission.id) }}" title="{{ _('source') }}">
-                    <i class="fa fa-file-code-o fa-fw"></i>
-                </a>
+                {% if submission.problem.enable_new_ide %}
+                    <a href="{{ url('problem_detail', submission.problem.code) }}" title="{{ _('source') }}">
+                        <i class="fa fa-file-code-o fa-fw"></i>
+                    </a>
+                {% else %}
+                    <a href="{{ url('submission_source', submission.id) }}" title="{{ _('source') }}">
+                        <i class="fa fa-file-code-o fa-fw"></i>
+                    </a>
+                {% endif %}
             {% else %}
                 <a href="{{ url('submission_source_download', submission.id) }}" title="{{ _('download') }}">
                     <i class="fa fa-download fa-fw"></i>

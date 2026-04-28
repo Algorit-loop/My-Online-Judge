@@ -99,9 +99,15 @@
         <div class="submission-action-bar">
             <div class="action-group">
                 {% if not submission.language.file_only or request.user.is_superuser %}
-                    <a href="{{ url('submission_source', submission.id) }}" class="action-btn">
-                        <i class="fa fa-code"></i> {{ _('View source') }}
-                    </a>
+                    {% if submission.problem.enable_new_ide %}
+                        <a href="{{ url('problem_detail', submission.problem.code) }}" class="action-btn">
+                            <i class="fa fa-code"></i> {{ _('View source') }}
+                        </a>
+                    {% else %}
+                        <a href="{{ url('submission_source', submission.id) }}" class="action-btn">
+                            <i class="fa fa-code"></i> {{ _('View source') }}
+                        </a>
+                    {% endif %}
                 {% endif %}
                 {% if submission.language.file_only %}
                     <a href="{{ url('submission_source_download', submission.id) }}" class="action-btn">
@@ -109,9 +115,15 @@
                     </a>
                 {% endif %}
                 {% if (request.user == submission.user.user or perms.judge.resubmit_other) and not submission.language.file_only %}
-                    <a href="{{ url('problem_submit', submission.problem.code, submission.id) }}" class="action-btn">
-                        <i class="fa fa-repeat"></i> {{ _('Resubmit') }}
-                    </a>
+                    {% if submission.problem.enable_new_ide %}
+                        <a href="{{ url('problem_detail', submission.problem.code) }}" class="action-btn">
+                            <i class="fa fa-repeat"></i> {{ _('Resubmit') }}
+                        </a>
+                    {% else %}
+                        <a href="{{ url('problem_submit', submission.problem.code, submission.id) }}" class="action-btn">
+                            <i class="fa fa-repeat"></i> {{ _('Resubmit') }}
+                        </a>
+                    {% endif %}
                 {% endif %}
             </div>
             

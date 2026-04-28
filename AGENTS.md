@@ -1,5 +1,7 @@
 # ALOJ – Algorit Online Judge · AI Agent Reference
 
+> **Mục đích file này**: Cung cấp context đầy đủ cho AI agent khi làm việc với codebase ALOJ. Đọc file này TRƯỚC khi thực hiện bất kỳ thay đổi nào.
+
 > **Base platform**: [VNOJ Docker](https://github.com/VNOI-Admin/vnoj-docker) (fork của [DMOJ](https://github.com/DMOJ/online-judge))  
 > **Stack**: Django · MariaDB · Redis · Celery · Nginx · Docker Compose  
 > **Ngôn ngữ UI**: Tiếng Việt (`LANGUAGE_CODE = 'vi'`, timezone `Asia/Ho_Chi_Minh`)
@@ -12,18 +14,19 @@
 2. [Project Stack (Frontend)](#2-project-stack-frontend)
 3. [Cấu Trúc Thư Mục](#3-cấu-trúc-thư-mục)
 4. [Docker Services](#4-docker-services)
-5. [Luồng Chấm Bài](#5-luồng-chấm-bài)
-6. [Cấu Hình Chính](#6-cấu-hình-chính)
-7. [Judge Servers](#7-judge-servers)
-8. [Networking & Ports](#8-networking--ports)
-9. [Frontend Architecture](#9-frontend-architecture)
-10. [Build & Deploy](#10-build--deploy)
-11. [Scripts Tiện Ích](#11-scripts-tiện-ích)
-12. [Bài Tập (Problems)](#12-bài-tập-problems)
-13. [Khởi Động & Vận Hành](#13-khởi-động--vận-hành)
-14. [Past Modifications](#14-past-modifications)
-15. [Known Open Issues](#15-known-open-issues)
-16. [Tham Khảo](#16-tham-khảo)
+5. [Luồng Chấm Bài (Submit)](#5-luồng-chấm-bài-submit)
+6. [Luồng Run (IDE)](#6-luồng-run-ide)
+7. [Cấu Hình Chính](#7-cấu-hình-chính)
+8. [Judge Servers](#8-judge-servers)
+9. [Networking & Ports](#9-networking--ports)
+10. [Frontend Architecture](#10-frontend-architecture)
+11. [Build & Deploy](#11-build--deploy)
+12. [Scripts Tiện Ích](#12-scripts-tiện-ích)
+13. [Bài Tập (Problems)](#13-bài-tập-problems)
+14. [Khởi Động & Vận Hành](#14-khởi-động--vận-hành)
+15. [Past Modifications](#15-past-modifications)
+16. [Known Open Issues](#16-known-open-issues)
+17. [Tham Khảo](#17-tham-khảo)
 
 ---
 
@@ -48,7 +51,7 @@ Nginx (:80)
                                   Judge Server(s) (:9999)
 ```
 
-**Quy trình nộp bài:**
+**Quy trình nộp bài (Submit):**
 
 ```
 Nộp bài → Site (lưu DB, status=QU)
@@ -56,6 +59,16 @@ Nộp bài → Site (lưu DB, status=QU)
         → Judge (:9999) biên dịch + chạy test
         → Bridge cập nhật DB (status D / result AC/WA/…)
         → wsevent broadcast WebSocket → Browser cập nhật UI
+```
+
+**Quy trình Run (IDE):**
+
+```
+Run → Site (lưu RunSubmission, status=QU)
+    → Bridge (:9998) nhận run-request
+    → Judge (:9999) biên dịch + chạy SAMPLE testcases only
+    → Bridge cập nhật RunSubmission (status D, case_results JSON)
+    → JS poll /run/poll/<id> → hiển thị kết quả inline
 ```
 
 ---
@@ -78,7 +91,8 @@ Nộp bài → Site (lưu DB, status=QU)
 
 ```
 aloj-docker/
-├── AGENTS.md                  # File này
+├── AGENTS.md                  # File này — AI agent reference
+├── CHANGES_IDE_FEATURE.md     # Chi tiết tính năng IDE + Run
 └── dmoj/
     ├── docker-compose.yml     # Định nghĩa toàn bộ services
     ├── base/Dockerfile        # Base image dùng chung
@@ -110,6 +124,11 @@ aloj-docker/
     │   ├── templates/
     │   │   ├── base.html
     │   │   ├── common-content.html
+    │   │   ├── problem/
+    │   │   │   ├── problem.html         # Template gốc cho problem detail
+    │   │   │   ├── problem-ide.html     # Template IDE 2 cột (khi enable_new_ide=True)
+    │   │   │   ├── problem-detail.html  # Problem statement (shared)
+    │   │   │   └── data.html            # Admin test data (có cột is_sample)
     │   │   └── submission/
     │   │       ├── list.html
     │   │       ├── row.html
@@ -117,10 +136,30 @@ aloj-docker/
     │   │       ├── status-testcases.html
     │   │       ├── source.html
     │   │       └── submission-list-tabs.html
-    │   ├── judge/views/submission.py
-    │   ├── judge/models/submission.py
-    │   ├── judge/bridge/judge_handler.py
-    │   ├── judge/views/api/api_v2.py
+    │   ├── judge/
+    │   │   ├── views/
+    │   │   │   ├── submission.py
+    │   │   │   ├── problem.py           # ProblemDetail.get_template_names() → IDE toggle
+    │   │   │   ├── problem_data.py      # is_sample field in testcase form
+    │   │   │   └── run.py               # RunSubmitView, RunPollView, SampleTestCaseView
+    │   │   ├── models/
+    │   │   │   ├── submission.py
+    │   │   │   ├── problem.py           # +enable_new_ide field
+    │   │   │   ├── problem_data.py      # +is_sample field on ProblemTestCase
+    │   │   │   └── run_submission.py    # RunSubmission model (IDE Run)
+    │   │   ├── admin/
+    │   │   │   ├── problem.py           # +IDE fieldset
+    │   │   │   └── run_submission.py    # RunSubmission admin
+    │   │   ├── bridge/
+    │   │   │   ├── judge_handler.py     # +run_submit(), +_on_run_grading_end(), +_is_run logic
+    │   │   │   ├── judge_list.py        # +judge_run(), +_key(id, is_run)
+    │   │   │   └── django_handler.py    # +on_run_request()
+    │   │   ├── judgeapi.py              # +judge_run_submission()
+    │   │   ├── migrations/
+    │   │   │   ├── 0224_contest_penalty_time_format.py
+    │   │   │   ├── 0225_problem_enable_new_ide_problemtestcase_is_sample.py
+    │   │   │   └── 0226_run_submission.py
+    │   │   └── views/api/api_v2.py
     │   ├── judge/views/contests.py
     │   ├── judge/admin/contest.py
     │   ├── judge/contest_format/base.py
@@ -153,6 +192,12 @@ judge-server/
 │   ├── cptbox/               # Sandbox (ptrace-based)
 │   └── utils/                # Utilities
 └── testsuite/                # Test cases for judge features
+
+judge_update/                  # Patched judge files (copied into running judge containers)
+├── judge_new_25_04_2025_RUN.py  # judge.py patched with sample-testcase-only filtering
+├── judge.py                   # judge.py with partial_testcase scoring
+├── packet.py                  # packet.py (matching)
+└── NOTE.txt
 ```
 
 ---
@@ -192,13 +237,29 @@ judge-server/
 
 ---
 
-## 5. Luồng Chấm Bài
+## 5. Luồng Chấm Bài (Submit)
 
 ### Protocol
 
 - **Transport**: TCP Socket + SSL + Zlib compression
 - **Format**: JSON → `zlib.compress` → `[4-byte length header (struct '!I')][payload]`
 - `PacketManager` class in `judge-server/dmoj/packet.py` handles serialization
+
+### Luồng Submit
+
+```
+1. User POST /problem/<code>/submit (form)
+2. Site: tạo Submission (status='QU') + SubmissionSource → DB
+3. judge_submission() → socket tới Bridge (port 9998)
+4. django_handler.on_submission() → judge_list.judge()
+5. judge_list chọn judge rảnh → judge_handler.submit()
+6. judge_handler gửi 'submission-request' tới Judge Server (port 9999)
+7. Judge Server: begin_grading() → JudgeWorker (multiprocessing)
+8. JudgeWorker: compile → chạy từng testcase → gửi kết quả
+9. Bridge: on_test_case → save SubmissionTestCase, event.post() → wsevent
+10. Bridge: on_grading_end → tính điểm, cập nhật Submission, stats, contest
+11. Browser nhận WebSocket update → AJAX refresh
+```
 
 ### IPC Messages (Judge Internal)
 
@@ -240,7 +301,76 @@ submission-acknowledged → grading-begin → test-case-status (×N) → grading
 
 ---
 
-## 6. Cấu Hình Chính
+## 6. Luồng Run (IDE)
+
+> Chi tiết đầy đủ xem `CHANGES_IDE_FEATURE.md`
+
+### Tổng quan
+
+Khi `Problem.enable_new_ide = True`, trang `/problem/<CODE>` chuyển sang template IDE 2 cột.
+User click "▶ Run" → chạy source code trên **sample testcases only** (đánh dấu `is_sample=True`).
+
+### Khác biệt Run vs Submit
+
+| Aspect | Submit | Run |
+|--------|--------|-----|
+| Model | `Submission` + `SubmissionTestCase` | `RunSubmission` (model riêng, JSONField `case_results`) |
+| Pipeline | `judge_submission()` → `on_submission()` → `judge_list.judge()` → `judge_handler.submit()` | `judge_run_submission()` → `on_run_request()` → `judge_list.judge_run()` → `judge_handler.run_submit()` |
+| Judge Server packet | `submission-request` (chạy TẤT CẢ testcases) | `submission-request` + meta `sample-testcase-only=True` (lọc chỉ sample) |
+| Lưu kết quả | DB: `Submission`, `SubmissionTestCase` | DB: `RunSubmission.case_results` (JSONField) |
+| Events (WebSocket) | ✅ `event.post()` | ❌ Skip |
+| Stats update | ✅ `calculate_points()`, `update_stats()`, `update_contest()` | ❌ Skip |
+| Kết quả hiển thị | Trang `/submission/<id>` | IDE Result panel (inline JSON poll) |
+
+### Luồng Run chi tiết
+
+```
+1. User click "▶ Run" trên IDE
+2. JS gửi POST /problem/<code>/run {source, language}
+3. RunSubmitView:
+   a. Validate: problem access, enable_new_ide, language, source length, rate limit
+   b. Query sample testcases (ProblemTestCase.is_sample=True, type='C')
+   c. Tạo RunSubmission (status='QU') → DB
+   d. Gọi judge_run_submission(run_sub, sample_input_files)
+4. judgeapi.py gửi 'run-request' tới Bridge (port 9998)
+5. django_handler.on_run_request() → judge_list.judge_run()
+6. judge_list chọn judge rảnh → judge_handler.run_submit()
+7. run_submit() gửi 'submission-request' tới Judge Server với meta:
+   - sample-testcase-only: true
+   - sample-input-files: ['input1.txt', 'input2.txt', ...]
+8. Judge Server: begin_grading() → JudgeWorker lọc chỉ sample cases → chạy
+9. Bridge nhận kết quả:
+   - on_test_case: _is_run=True → append vào _run_test_cases[], update RunSubmission
+   - on_grading_end: _is_run=True → _on_run_grading_end() → save case_results JSON
+   - KHÔNG event.post(), KHÔNG update stats/contest
+10. JS poll GET /run/poll/<run_id> → RunPollView trả JSON
+11. JS hiển thị: status, time, memory, per-testcase table
+```
+
+### Key files cho Run feature
+
+| File | Vai trò |
+|------|---------|
+| `judge/views/run.py` | `RunSubmitView`, `RunPollView`, `SampleTestCaseView` |
+| `judge/models/run_submission.py` | `RunSubmission` model |
+| `judge/judgeapi.py` | `judge_run_submission()` |
+| `judge/bridge/django_handler.py` | `on_run_request()` |
+| `judge/bridge/judge_list.py` | `judge_run()`, `_key(id, is_run)` |
+| `judge/bridge/judge_handler.py` | `run_submit()`, `_on_run_grading_end()`, `_is_run` flag |
+| `judge_update/judge_new_25_04_2025_RUN.py` | Judge-side: `sample-testcase-only` filtering logic |
+| `templates/problem/problem-ide.html` | IDE template (ACE editor, testcase tabs, result panel) |
+
+### URL patterns (Run)
+
+| URL | View | Method |
+|-----|------|--------|
+| `/problem/<code>/run` | `RunSubmitView` | POST |
+| `/problem/<code>/sample-testcases` | `SampleTestCaseView` | GET |
+| `/run/poll/<run_id>` | `RunPollView` | GET |
+
+---
+
+## 7. Cấu Hình Chính
 
 ### `environment/site.env`
 
@@ -319,7 +449,7 @@ Client max body size: 64M.
 
 ---
 
-## 7. Judge Servers
+## 8. Judge Servers
 
 ### Tiers Docker Image
 
@@ -370,7 +500,7 @@ problem_storage_globs:
 
 ---
 
-## 8. Networking & Ports
+## 9. Networking & Ports
 
 | Port (host) | Service | Mô tả |
 |---|---|---|
@@ -386,7 +516,7 @@ problem_storage_globs:
 
 ---
 
-## 9. Frontend Architecture
+## 10. Frontend Architecture
 
 ### Template Inheritance
 
@@ -481,7 +611,7 @@ Icons: eye (view) → file-code (source) / download → refresh (rejudge, admin 
 
 ---
 
-## 10. Build & Deploy
+## 11. Build & Deploy
 
 ```bash
 cd /home/algoritonlinejudge/aloj-docker/dmoj && \
@@ -493,7 +623,7 @@ docker compose restart site 2>&1 | tail -2
 
 ---
 
-## 11. Scripts Tiện Ích
+## 12. Scripts Tiện Ích
 
 Tất cả trong `dmoj/scripts/`:
 
@@ -507,7 +637,7 @@ Tất cả trong `dmoj/scripts/`:
 
 ---
 
-## 12. Bài Tập (Problems)
+## 13. Bài Tập (Problems)
 
 Dữ liệu test lưu tại `dmoj/problems/<problem_code>/`:
 
@@ -525,7 +655,7 @@ Dữ liệu test lưu tại `dmoj/problems/<problem_code>/`:
 
 ---
 
-## 13. Khởi Động & Vận Hành
+## 14. Khởi Động & Vận Hành
 
 ### Lần đầu setup
 
@@ -581,7 +711,21 @@ tar -czf problems_backup.tar.gz problems/
 
 ---
 
-## 14. Past Modifications
+## 15. Past Modifications
+
+### IDE + Run Feature (Apr 2026)
+- **LeetCode-style IDE** per-problem (`enable_new_ide` toggle) — template `problem-ide.html`
+- **RunSubmission model** — separate from Submission, stores results in `case_results` JSONField
+- **Sample testcase marking** — `ProblemTestCase.is_sample` field, admin column "Sample?"
+- **Run pipeline** — reuses judge infrastructure (`submission-request` packet) with `sample-testcase-only` meta flag
+- **Judge-side filtering** — `judge_update/judge_new_25_04_2025_RUN.py` filters flattened_cases by `sample-input-files`
+- **Bridge `_is_run` flag** — all handlers (`on_test_case`, `on_grading_end`, `on_compile_error`, etc.) branch on `_is_run` to write RunSubmission instead of Submission, skip events/stats
+- **Migrations**: `0225_problem_enable_new_ide_problemtestcase_is_sample`, `0226_run_submission`
+- **See `CHANGES_IDE_FEATURE.md` for full details**
+
+### Leaderboard Podium (Apr 2026)
+- Top 3 users podium with avatars on `/users/` page
+- `judge/views/user.py` + `resources/users.scss` + `templates/user/list.html`
 
 ### Submission list page (list.html + submission.scss + row.html)
 1. **Toolbar buttons** – `.toolbar-btn` with blue bg (#2196F3), dropdown toggle JS
@@ -627,14 +771,16 @@ tar -czf problems_backup.tar.gz problems/
 
 ---
 
-## 15. Known Open Issues
+## 16. Known Open Issues
 
 - WebSocket realtime on paginated pages (page 2+) for `/submissions/`, `/contest/.../submissions/`
 - Organization submissions pages have no realtime at all
+- IDE Run: chỉ hỗ trợ sample testcases (không custom input từ user)
+- IDE Run: cần deploy `judge_new_25_04_2025_RUN.py` vào judge containers (thay `judge.py`)
 
 ---
 
-## 16. Tham Khảo
+## 17. Tham Khảo
 
 | Link | Mô tả |
 |---|---|

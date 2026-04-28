@@ -1,618 +1,407 @@
-# Tài liệu chi tiết: Tính năng IDE mới cho VNOJ
+# Tính năng IDE + Run cho ALOJ
 
-## Tổng quan
-
-Thêm tính năng **IDE kiểu LeetCode** cho từng bài toán trên VNOJ/DMOJ. Khi bật, trang `/problem/<CODE>` chuyển sang giao diện 2 cột: bên trái là đề bài, bên phải là code editor + testcase runner.
-
----
-
-## 1. Những gì đã làm
-
-### 1.1. Model — Thêm field mới
-
-**File: `judge/models/problem.py`**
-```diff
-+    enable_new_ide = models.BooleanField(
-+        verbose_name=_('Bật giao diện IDE mới'),
-+        default=False,
-+        help_text=_('Enable the new IDE layout with code editor and custom testcase runner.'),
-+    )
-```
-→ Thêm toggle per-problem để admin bật/tắt IDE mới.
-
-**File: `judge/models/problem_data.py`**
-```diff
-+    is_sample = models.BooleanField(verbose_name=_('sample testcase?'), default=False)
-```
-→ Thêm field `is_sample` vào `ProblemTestCase` để đánh dấu testcase nào là sample (hiển thị cho thí sinh).
-
-**File: `judge/migrations/0225_problem_enable_new_ide_problemtestcase_is_sample.py`**
-→ Migration thêm 2 field trên vào database.
+> **Mục đích file này**: Reference chi tiết cho AI agent khi cần sửa/mở rộng tính năng IDE hoặc Run.
+> Đọc file này khi làm việc với: `problem-ide.html`, `run.py`, `run_submission.py`, bridge run handlers, judge sample-testcase filtering.
 
 ---
 
-### 1.2. Admin — Cho phép toggle IDE từ admin panel
+## 1. Tổng quan
 
-**File: `judge/admin/problem.py`**
-```diff
-+        (_('IDE'), {'fields': ('enable_new_ide',)}),
-```
-→ Thêm fieldset "IDE" trong admin Problem.
+Thêm **IDE kiểu LeetCode** cho từng bài toán. Khi admin bật `enable_new_ide=True`, trang `/problem/<CODE>` chuyển sang giao diện 2 cột:
+- **Trái**: đề bài (problem statement)
+- **Phải**: ACE code editor + testcase tabs + result panel
 
-**File: `judge/views/problem_data.py`**
-```diff
--        fields = ('order', 'type', 'input_file', 'output_file', 'points', 'is_pretest', ...)
-+        fields = ('order', 'type', 'input_file', 'output_file', 'points', 'is_pretest', 'is_sample', ...)
-```
-→ Thêm `is_sample` vào form quản lý test data.
-
-**File: `templates/problem/data.html`**
-```diff
-+                <th>{{ _('Sample?') }}</th>
-...
-+                    <td>{{ form.is_sample.errors }}{{ form.is_sample }}</td>
-```
-→ Hiển thị cột "Sample?" trong bảng quản lý testcase.
+User có thể **Run** (chạy sample testcases) hoặc **Submit** (nộp bài như thường).
 
 ---
 
-### 1.3. View — Chuyển template khi `enable_new_ide=True`
+## 2. Kiến trúc hiện tại
+
+### 2.1. Hai model riêng biệt
+
+| | Submit | Run |
+|---|---|---|
+| **Model** | `Submission` + `SubmissionTestCase` | `RunSubmission` (model riêng) |
+| **Testcase results** | Mỗi test = 1 row `SubmissionTestCase` | `RunSubmission.case_results` (JSONField, list of dicts) |
+| **Ghi DB vĩnh viễn** | ✅ | ✅ (nhưng không ảnh hưởng stats) |
+| **Events (WebSocket)** | ✅ `event.post()` | ❌ Skip |
+| **Stats/Contest update** | ✅ | ❌ Skip |
+
+### 2.2. Cùng Judge Server packet, khác meta
+
+Cả Submit và Run đều gửi `submission-request` packet tới Judge Server. Khác biệt nằm ở `meta`:
+
+```python
+# Submit
+{'name': 'submission-request', 'meta': {'pretests-only': ..., 'in-contest': ..., ...}}
+
+# Run
+{'name': 'submission-request', 'meta': {'sample-testcase-only': True, 'sample-input-files': [...]}}
+```
+
+Judge Server nhận `sample-testcase-only=True` → lọc `flattened_cases` chỉ giữ cases có `config['in']` nằm trong `sample-input-files`.
+
+### 2.3. Bridge phân biệt qua `_is_run` flag
+
+`judge_handler._is_run` được set bởi `run_submit()` (True) hoặc `submit()` (False). Tất cả handler đều check `_is_run`:
+
+| Handler | Khi `_is_run=True` |
+|---------|---------------------|
+| `on_submission_processing` | Update `RunSubmission.status='P'`, skip event |
+| `on_grading_begin` | Update `RunSubmission.status='G'`, clear `_run_test_cases`, skip event |
+| `on_test_case` | Append vào `_run_test_cases[]`, update `RunSubmission.current_testcase`, skip event |
+| `on_grading_end` | Gọi `_on_run_grading_end()`: tính max time/memory, xác định result, save `case_results` JSON, skip stats |
+| `on_compile_error` | Update `RunSubmission` status='CE', skip event |
+| `on_compile_message` | Update `RunSubmission.error`, skip event |
+| `on_internal_error` | Update `RunSubmission` status='IE', skip event |
+| `on_submission_terminated` | Update `RunSubmission` status='AB', skip event |
+| `on_disconnect` | Update `RunSubmission` status='IE' |
+
+---
+
+## 3. Chi tiết từng thành phần
+
+### 3.1. Model — `RunSubmission`
+
+**File: `judge/models/run_submission.py`**
+
+```python
+class RunSubmission(models.Model):
+    STATUS = SUBMISSION_STATUS       # QU, P, G, D, IE, CE, AB
+    RESULT = SUBMISSION_RESULT       # AC, WA, TLE, MLE, RTE, CE, IE, OLE
+    IN_PROGRESS_GRADING_STATUS = ('QU', 'P', 'G')
+
+    user = models.ForeignKey(Profile)
+    problem = models.ForeignKey(Problem)
+    date = models.DateTimeField(auto_now_add=True)
+    time = models.FloatField(null=True)          # max time across cases
+    memory = models.FloatField(null=True)        # max memory across cases
+    points = models.FloatField(null=True)        # always 0 for run
+    language = models.ForeignKey(Language)
+    status = models.CharField(max_length=2)      # QU → P → G → D
+    result = models.CharField(max_length=3)      # AC, WA, TLE, etc.
+    error = models.TextField(null=True)          # compile errors
+    current_testcase = models.IntegerField(default=0)
+    batch = models.BooleanField(default=False)
+    case_points = models.FloatField(default=0)   # passed count
+    case_total = models.FloatField(default=0)    # total count
+    judged_on = models.ForeignKey('Judge', null=True)
+    judged_date = models.DateTimeField(null=True)
+    source = models.TextField(max_length=65536)
+    case_results = models.JSONField(default=list)  # [{case, status, time, memory, feedback, output}, ...]
+```
+
+**Migration**: `0226_run_submission.py`
+
+### 3.2. Model — Problem fields
+
+**File: `judge/models/problem.py`** — thêm field:
+```python
+enable_new_ide = models.BooleanField(default=False,
+    verbose_name=_('Bật giao diện IDE mới'))
+```
+
+**File: `judge/models/problem_data.py`** — thêm field trên `ProblemTestCase`:
+```python
+is_sample = models.BooleanField(default=False, verbose_name=_('sample testcase?'))
+```
+
+**Migration**: `0225_problem_enable_new_ide_problemtestcase_is_sample.py`
+
+### 3.3. View — Template switching
 
 **File: `judge/views/problem.py`**
-```diff
-+    def get_template_names(self):
-+        if self.object.enable_new_ide:
-+            return ['problem/problem-ide.html']
-+        return [self.template_name]
-```
-→ `ProblemDetail` trả về template IDE nếu bật, ngược lại giữ template gốc.
+```python
+class ProblemDetail(ProblemMixin, ...):
+    template_name = 'problem/problem.html'
 
----
-
-### 1.4. View — Custom Run API (file mới)
-
-**File: `judge/views/custom_run.py`** _(file mới)_
-
-3 view class:
-
-| View | URL | Method | Chức năng |
-|------|-----|--------|-----------|
-| `CustomRunSubmitView` | `/problem/<code>/custom-run` | POST | Nhận source + language + input, gửi tới judge qua bridge |
-| `CustomRunPollView` | `/custom-run/poll/<run_id>` | GET | Poll kết quả từ Redis cache |
-| `SampleTestCaseView` | `/problem/<code>/sample-testcases` | GET | Trả về danh sách sample testcase (input + expected output) |
-
-**Logic `CustomRunSubmitView`:**
-1. Validate problem access, language, source length
-2. Lấy time/memory limit (bao gồm LanguageLimit nếu có)
-3. Lấy output_limit từ ProblemData
-4. Tạo `run_id = cr_<uuid>`
-5. Set cache `custom_run_<run_id>` = `{status: PENDING}` (timeout 300s)
-6. Gọi `judge_custom_run()` qua bridge
-7. Trả về `{run_id: ...}`
-
-**Logic `SampleTestCaseView`:**
-1. Query `ProblemTestCase` where `is_sample=True, type='C'`
-2. Đọc input/output file từ zipfile hoặc file storage
-3. Trả về JSON `{samples: [{input, output}, ...]}`
-
----
-
-### 1.5. URL Configuration
-
-**File: `dmoj/urls.py`**
-```diff
-+from judge.views import custom_run
-...
-+        path('/custom-run', custom_run.CustomRunSubmitView.as_view(), name='custom_run_submit'),
-+        path('/sample-testcases', custom_run.SampleTestCaseView.as_view(), name='sample_testcases'),
-...
-+    path('custom-run/poll/<str:run_id>', custom_run.CustomRunPollView.as_view(), name='custom_run_poll'),
+    def get_template_names(self):
+        if self.object.enable_new_ide:
+            return ['problem/problem-ide.html']
+        return [self.template_name]
 ```
 
----
+### 3.4. View — Run API
 
-### 1.6. Bridge — Xử lý custom-run request
+**File: `judge/views/run.py`** — 3 view classes:
 
-**Luồng dữ liệu:**
-```
-Browser → Site (POST /custom-run) → judgeapi.py (socket) → Bridge (django_handler.py)
-→ judge_list.py (chọn judge) → judge_handler.py (gửi tới judge) → Judge Server (packet.py → judge.py)
-→ Kết quả: Judge Server → judge_handler.py → Redis cache → Browser (poll GET /custom-run/poll/<id>)
-```
+| View | URL | Method | Logic |
+|------|-----|--------|-------|
+| `RunSubmitView` | `/problem/<code>/run` | POST | Validate → query sample cases → create `RunSubmission` → `judge_run_submission()` → return `{run_id}` |
+| `RunPollView` | `/run/poll/<run_id>` | GET | Query `RunSubmission` by id+user → return status/results JSON |
+| `SampleTestCaseView` | `/problem/<code>/sample-testcases` | GET | Query `ProblemTestCase(is_sample=True, type='C')` → read from zipfile/storage → return `{samples: [{input, output}]}` |
 
-**File: `judge/judgeapi.py`**
-```diff
-+def judge_custom_run(run_id, language, source, custom_input, time_limit, memory_limit, output_limit=65536):
-+    response = judge_request({
-+        'name': 'custom-run-request',
-+        'run-id': run_id,
-+        'language': language,
-+        'source': source,
-+        'custom-input': custom_input,
-+        'time-limit': time_limit,
-+        'memory-limit': memory_limit,
-+        'output-limit': output_limit,
-+    })
-+    return response.get('name') == 'custom-run-received'
-```
+**RunSubmitView validation checklist** (same rigor as Submit):
+1. Problem exists
+2. `enable_new_ide` is True
+3. User has access (`is_accessible_by`)
+4. User not banned from problem
+5. Rate limit: `pending_real + pending_run < DMOJ_SUBMISSION_LIMIT`
+6. Valid JSON body with `source` and `language`
+7. Source length ≤ 65536
+8. Language exists and is allowed for problem
+9. At least 1 sample testcase configured
 
-**File: `judge/bridge/django_handler.py`**
-```diff
-+    'custom-run-request': self.on_custom_run,
-...
-+    def on_custom_run(self, data):
-+        self.judges.custom_run(run_id, language, source, custom_input, ...)
-+        return {'name': 'custom-run-received', 'run-id': run_id}
-```
+### 3.5. Bridge — judgeapi
+
+**File: `judge/judgeapi.py`** — function `judge_run_submission(run_sub, sample_input_files)`:
+- Reset RunSubmission fields (time, memory, points, etc.)
+- Send `run-request` packet to bridge with `sample-input-files`
+- Bridge receives via `django_handler.on_run_request()` → `judge_list.judge_run()`
+
+### 3.6. Bridge — django_handler
+
+**File: `judge/bridge/django_handler.py`** — handler `on_run_request(data)`:
+- Extracts: `submission-id`, `problem-id`, `language`, `source`, `judge-id`, `priority`, `banned-judges`, `sample-input-files`
+- Calls `self.judges.judge_run(...)` 
+- Returns `{'name': 'run-received', 'submission-id': id}`
+
+### 3.7. Bridge — judge_list
 
 **File: `judge/bridge/judge_list.py`**
-```diff
-+    def custom_run(self, run_id, language, source, custom_input, ...):
-+        # Tìm judge rảnh có executor phù hợp
-+        available = [judge for judge in self.current_tier_judges()
-+                     if not judge.working and not judge.is_disabled and language in judge.executors]
-+        if available:
-+            judge = min(available, key=lambda judge: (judge.load, random()))
-+            judge.custom_run(...)
-+        else:
-+            cache.set('custom_run_<id>', {status: 'IE', error: 'No judge available'}, timeout=300)
-```
+
+Key additions:
+- `_key(id, is_run=False)` → returns `('run', id)` if is_run else `id` — prevents collision with Submission IDs
+- `judge_run(id, problem, language, source, judge_id, priority, banned_judges, sample_input_files)`:
+  - Same logic as `judge()` but calls `judge.run_submit()` instead of `judge.submit()`
+  - Uses `_key(id, True)` for tracking
+  - Queues with `is_run=True` flag in queue tuple
+- `_handle_free_judge(judge)` — dispatches queued items, checks `is_run` flag:
+  ```python
+  id, problem, language, source, judge_id, banned_judges, is_run, sample_input_files = node.value
+  if is_run:
+      judge.run_submit(id, problem, language, source, sample_input_files)
+  else:
+      judge.submit(id, problem, language, source)
+  ```
+- `on_judge_free(judge, submission)` — uses `_key(submission, judge._is_run)` to clean up, then resets `_is_run=False`
+- `remove(judge)` — uses `_key(sub, judge._is_run)` for cleanup
+
+### 3.8. Bridge — judge_handler
 
 **File: `judge/bridge/judge_handler.py`**
-```diff
-+    'custom-run-result': self.on_custom_run_result,
-...
-+    def custom_run(self, run_id, ...):
-+        self.send({'name': 'custom-run-request', 'submission-id': run_id, ...})
-+
-+    def on_custom_run_result(self, packet):
-+        cache.set('custom_run_<run_id>', result, timeout=300)
-```
 
----
+Key additions:
+- `RunSubmissionData` namedtuple: `(time, memory, user_id, file_only, file_size_limit, sample_input_files)`
+- `self._is_run = False` — initialized on connect, set by `run_submit()`/`submit()`
+- `self._run_test_cases = []` — accumulates test results during grading
 
-### 1.7. Judge Server — Thực thi custom run
-
-**File: `judge-server/dmoj/packet.py`**
-```diff
-+        elif name == 'custom-run-request':
-+            self.judge.begin_custom_run(
-+                run_id=packet['submission-id'],
-+                language=packet['language'],
-+                source=packet['source'],
-+                custom_input=packet['custom-input'],
-+                time_limit=float(packet['time-limit']),
-+                memory_limit=int(packet['memory-limit']),
-+                output_limit=int(packet.get('output-limit', 65536)),
-+            )
-...
-+    def custom_run_result_packet(self, run_id, result: dict):
-+        self._send_packet({'name': 'custom-run-result', 'submission-id': run_id, 'result': result})
-```
-
-**File: `judge-server/dmoj/judge.py`**
-```diff
-+    def begin_custom_run(self, run_id, language, source, custom_input, time_limit, memory_limit, output_limit=65536):
-+        from subprocess import PIPE as SUBPROCESS_PIPE
-+        # 1. Tìm executor cho language
-+        # 2. Compile source code
-+        # 3. Launch process với stdin=PIPE, stdout=PIPE, stderr=PIPE
-+        process = executor.launch(
-+            time=time_limit,
-+            memory=memory_limit,
-+            stdin=SUBPROCESS_PIPE,
-+            stdout=SUBPROCESS_PIPE,
-+            stderr=SUBPROCESS_PIPE,
-+        )
-+        # 4. Ghi custom_input vào stdin, đọc stdout + stderr
-+        stdout, stderr = process.communicate(input=input_data)
-+        # 5. Xác định status (OK/TLE/MLE/OLE/RTE/CE/IE)
-+        # 6. Gửi kết quả về bridge
-+        self.packet_manager.custom_run_result_packet(run_id, result)
-```
-
----
-
-### 1.8. Template IDE (file mới)
-
-**File: `templates/problem/problem-ide.html`**
-
-Giao diện 2 cột kiểu LeetCode:
-- **Trái:** Header (title, meta, links) + Problem statement (dùng `{% include "problem/problem-detail.html" %}` — giữ nguyên markdown rendering gốc với MathJax)
-- **Phải:** Toolbar (language select, Run, Submit) + ACE Editor + Bottom panel (Testcase tabs + Result)
-
-**Testcase panel (LeetCode-style):**
-- Nhiều tab testcase: `Sample 1`, `Sample 2`, `Case 3`, ...
-- Nút `+ Add` để thêm custom testcase
-- Nút `×` để xóa custom testcase (sample không xóa được)
-- Mỗi tab hiển thị: Input (textarea editable) + Expected Output (nếu là sample)
-
-**Result panel:**
-- Status (Accepted/CE/RTE/TLE/MLE/OLE/IE) với màu sắc
-- Time + Memory
-- Input, Output, Expected Output, Stderr
-
----
-
-## 2. Các bug đã fix
-
-### Bug 1: `submission_acknowledged_packet` gây crash judge connection
-
-**Vấn đề:** Trong `packet.py` (judge-server), khi nhận `custom-run-request`, code gọi `self.submission_acknowledged_packet()` trước khi xử lý. Packet này gửi `submission-acknowledged` về bridge. Bridge handler `on_submission_acknowledged()` kiểm tra `self._working` (là None cho custom run), thấy mismatch → **đóng kết nối judge** → custom run chết trước khi trả kết quả.
-
-**Fix:** Xóa dòng `self.submission_acknowledged_packet(packet['submission-id'])` khỏi handler `custom-run-request`.
-
-```diff
- elif name == 'custom-run-request':
--    self.submission_acknowledged_packet(packet['submission-id'])
-     self.judge.begin_custom_run(...)
-```
-
-### Bug 2: `executor.launch()` không tạo pipe cho stdin/stdout
-
-**Vấn đề:** Code ban đầu gọi `executor.launch(stdin=True, stdout=True, stderr=True)`.
-
-Trong `base_executor.py`, method `launch()` có logic:
+**`run_submit(id, problem, language, source, sample_input_files)`**:
 ```python
-stdin=stdin if stdin is not None else kwargs.get('stdin'),  # local stdin starts as None
-```
-Khi không pass explicit kwargs, `kwargs.get('stdin')` trả về `None` → override TracedPopen default `PIPE` → **không tạo pipe** → `communicate()` không ghi được input, không đọc được output.
-
-Khi pass `stdin=True` (=1), TracedPopen kiểm tra `if stdin == PIPE` (PIPE=-1), 1 ≠ -1 → cũng không tạo pipe.
-
-**Fix:** Pass `subprocess.PIPE` (-1) explicitly:
-```diff
- process = executor.launch(
-     time=time_limit,
-     memory=memory_limit,
--    stdin=True,
--    stdout=True,
--    stderr=True,
-+    stdin=SUBPROCESS_PIPE,
-+    stdout=SUBPROCESS_PIPE,
-+    stderr=SUBPROCESS_PIPE,
- )
+data = self.get_related_run_data(id)        # Query RunSubmission + LanguageLimit + ProblemTestCase
+self._working = id
+self._is_run = True
+self._no_response_job = threading.Timer(20, self._kill_if_no_response)
+self._no_response_job.start()
+self.send({
+    'name': 'submission-request',           # SAME packet name as submit!
+    'submission-id': id,
+    'scoring-mode': 'partial_testcase',
+    'meta': {
+        'sample-testcase-only': True,
+        'sample-input-files': data.sample_input_files,
+    },
+})
 ```
 
-### Bug 3: `communicate(timeout=...)` không hợp lệ
+**`_on_run_grading_end(packet)`**:
+- Iterates `_run_test_cases` → compute max time/memory, determine worst status
+- Count passed (AC) vs total
+- Save to `RunSubmission`: status='D', case_results=JSON, case_points=passed, case_total=total
 
-**Vấn đề:** `safe_communicate()` (được assign làm `TracedPopen.communicate`) chỉ nhận `(input, outlimit, errlimit)`, không có parameter `timeout`. Gọi `process.communicate(input=data, timeout=time_limit+5)` sẽ raise `TypeError`.
+### 3.9. Judge Server — Sample testcase filtering
 
-**Fix:** Bỏ parameter `timeout` (sandbox đã enforce time limit qua `wall_time`):
-```diff
--stdout, stderr = process.communicate(input=input_data, timeout=time_limit + 5)
-+stdout, stderr = process.communicate(input=input_data)
-```
+**File: `judge_update/judge_new_25_04_2025_RUN.py`** (patched `judge.py`, deployed to judge containers)
 
-### Bug 4: Template thiếu nút và markdown xấu
+In the `JudgeWorker` grading loop, after flattening all cases:
 
-**Vấn đề:** Template IDE ban đầu extend `base.html` trực tiếp nhưng không include đủ các links/buttons từ template gốc (`problem.html`), và render markdown bằng cách tự viết HTML thay vì dùng `{% include "problem/problem-detail.html" %}`.
-
-**Fix:** Viết lại template:
-- Include `comments/media-css.html` cho CSS
-- Dùng `{% include "problem/problem-detail.html" %}` trong div `.content-description` (giữ nguyên markdown rendering gốc + MathJax + cache)
-- Include `mathjax-load.html` trong `bodyend` block
-- Include `add_code_copy_buttons` cho nút copy code blocks
-- Thêm đầy đủ links: My submissions, All submissions, Best submissions, Editorial, Manage tickets, Edit problem, Edit test data, Manage submissions, Clone problem, Report an issue, PDF
-
----
-
-## 2.5. Nâng cấp Custom Run thành "Fake Submit" (bảo mật + ổn định)
-
-Sau khi phát hiện 5 lỗ hổng so với luồng submit thật, custom run được nâng cấp để hoạt động **giống hệt submit thật** — chỉ khác là không ghi database.
-
-### Lỗ hổng 1: Race condition — judge bị dispatch 2 task cùng lúc
-
-**Vấn đề:** `judge_handler.custom_run()` không set `self._working`. Property `working = bool(self._working)` luôn trả về `False` trong khi đang chạy custom run → `judge_list` thấy judge "free" → có thể dispatch thêm submission/custom-run khác vào cùng judge đang bận.
-
-**Fix — `judge_handler.py`:**
-```diff
- def custom_run(self, run_id, ...):
-+    self._working = run_id
-+    self._no_response_job = threading.Timer(60, self._kill_if_no_response)
-+    self._no_response_job.daemon = True
-+    self._no_response_job.start()
-     self.send({'name': 'custom-run-request', ...})
-```
-
-### Lỗ hổng 2: Judge bị "leak" — không bao giờ được free
-
-**Vấn đề:** `on_custom_run_result()` không gọi `_free_self()` → `_working` không bao giờ được clear → judge bị đánh dấu busy mãi mãi → mọi custom run tiếp theo đều nhận "No judge available".
-
-**Fix — `judge_handler.py`:**
-```diff
- def on_custom_run_result(self, packet):
-+    if self._no_response_job:
-+        self._no_response_job.cancel()
-+        self._no_response_job = None
-     cache.set('custom_run_%s' % run_id, result, timeout=300)
-+    self._free_self(packet)
-```
-
-### Lỗ hổng 3: Disconnect không cleanup custom run
-
-**Vấn đề:** `on_disconnect()` chỉ handle `Submission.objects.filter(id=self._working)` — nhưng custom run `_working` là string `cr_xxx`, không phải integer DB ID → query crash hoặc không tìm thấy → user poll mãi không có kết quả.
-
-**Fix — `judge_handler.py`:**
-```diff
- if self._working:
--    Submission.objects.filter(id=self._working).update(status='IE', ...)
-+    if isinstance(self._working, str) and self._working.startswith('cr_'):
-+        cache.set('custom_run_%s' % self._working, {'status': 'IE', 'error': 'Judge disconnected...'}, ...)
-+    else:
-+        Submission.objects.filter(id=self._working).update(status='IE', ...)
-```
-
-### Lỗ hổng 4: Custom run không được track trong `submission_map`
-
-**Vấn đề:** `judge_list.custom_run()` không add vào `self.submission_map` → khi judge disconnect, cleanup loop qua `submission_map` không biết custom run đang chạy → không thể recover.
-
-**Fix — `judge_list.py`:**
-```diff
- judge = min(available, ...)
-+self.submission_map[run_id] = judge
- judge.custom_run(...)
-```
-
-### Lỗ hổng 5: `begin_custom_run` chạy trên network thread
-
-**Vấn đề:** `packet.py` gọi `judge.begin_custom_run()` trực tiếp từ network thread (thread đọc packet). Custom run có thể mất vài giây (compile + run) → block network thread → không nhận được ping → bridge nghĩ judge chết → kill connection.
-
-**Fix — `judge.py`:**
-```diff
- def begin_custom_run(self, run_id, ...):
-+    self._grading_lock.acquire()         # Đảm bảo 1 task/judge như submit thật
-+    thread = threading.Thread(
-+        target=self._custom_run_thread,  # Chạy trong thread riêng
-+        args=(...), daemon=True
-+    )
-+    thread.start()                       # Trả về ngay, không block network thread
-
-+def _custom_run_thread(self, run_id, ...):
-     # compile + run + send result
-+    try:
-+        self.packet_manager.custom_run_result_packet(run_id, result)
-+    finally:
-+        self._grading_lock.release()     # Luôn release dù có exception
-```
-
-### Bug thêm: `%d` format crash khi free judge
-
-**Vấn đề:** `judge_list.on_judge_free()` dùng `logger.info('Judge available after grading %d: %s', submission, ...)`. Với submit thật `submission` là integer → OK. Với custom run `submission` là string `cr_xxx` → `TypeError: %d format: a number is required` → crash → `_working` không được clear → judge bị leak.
-
-**Fix — `judge_list.py`:**
-```diff
--logger.info('Judge available after grading %d: %s', submission, judge.name)
-+logger.info('Judge available after grading %s: %s', submission, judge.name)
-+# + try/except KeyError cho del submission_map để robust
-```
-
----
-
-## 3. Verify logic
-
-### 3.1. So sánh Custom Run vs Submit thật (sau nâng cấp)
-
-| Aspect | Submit thật | Custom Run (TRƯỚC) | Custom Run (SAU) |
-|--------|------------|-------------------|-----------------|
-| `_working` set? | ✅ `= submission_id` | ❌ Không | ✅ `= run_id` |
-| Timer watchdog? | ✅ 20s | ❌ Không | ✅ 60s |
-| Track `submission_map`? | ✅ | ❌ | ✅ |
-| Free judge khi xong? | ✅ `_free_self()` | ❌ | ✅ `_free_self()` |
-| Disconnect cleanup? | ✅ Set IE in DB | ❌ Crash | ✅ Set IE in cache |
-| `_grading_lock`? | ✅ Thread riêng | ❌ Block network thread | ✅ Thread riêng |
-| Sandbox (ptrace+seccomp+jail)? | ✅ | ✅ | ✅ |
-| Ghi DB? | ✅ | ❌ | ❌ (đúng như thiết kế) |
-
-### 3.2. Luồng Run (đã test thành công)
-
-```
-1. User click "▶ Run"
-2. JS lấy source + language + input từ active testcase
-3. POST /problem/<code>/custom-run → CustomRunSubmitView
-4. View set cache PENDING, gọi judge_custom_run()
-5. judgeapi.py gửi socket tới bridge (port 9998)
-6. django_handler.py nhận, gọi judge_list.custom_run()
-7. judge_list chọn judge rảnh, gọi judge_handler.custom_run()
-8. judge_handler gửi packet tới judge-server (port 9999)
-9. packet.py nhận, gọi judge.begin_custom_run()
-10. judge.py: compile → launch(stdin=PIPE, stdout=PIPE, stderr=PIPE) → communicate(input)
-11. Xác định status, gửi custom_run_result_packet() về bridge
-12. judge_handler.on_custom_run_result() → cache.set() vào Redis
-13. JS poll GET /custom-run/poll/<id> → cache.get() → trả kết quả
-14. JS hiển thị: status, time, memory, input, output, expected output, stderr
-```
-
-**Test thực tế (3 lần chạy liên tiếp):**
-```
-Run 0: OK '10'   (n+0)
-Run 1: OK '11'   (n+1)
-Run 2: OK '12'   (n+2)
-```
-→ Judge được free đúng cách sau mỗi run, không bị leak.
-
-### 3.3. Luồng Submit (không thay đổi)
-
-Submit tạo hidden form POST tới `/problem/<code>/submit` — giống hệt flow cũ.
-
-### 3.4. Sample testcase loading
-
-1. Admin đánh dấu `is_sample=True` cho testcase trong trang data
-2. `SampleTestCaseView` query và đọc input/output file
-3. JS tự động load thành các tab "Sample 1", "Sample 2", ...
-4. Hiển thị Input (editable) + Expected Output (read-only)
-
----
-
-## 3. Xây lại RUN: Ghost Submission (thay thế toàn bộ Custom Run)
-
-### 3.1. Vấn đề với Custom Run cũ
-
-Custom Run cũ dùng code path riêng biệt hoàn toàn so với Submit: `judge_custom_run()` → bridge `on_custom_run()` → `judge_list.custom_run()` → `judge_handler.custom_run()` → judge-server `begin_custom_run()` → `_custom_run_thread()`. Cách tiếp cận này gây ra **3 lỗi nghiêm trọng không fix được triệt để**:
-
-1. **Lock leak trên judge-server:** `_custom_run_thread()` có các `return` sớm (unsupported language, compile error) mà **bypass** `_grading_lock.release()` trong `finally` block → judge bị lock vĩnh viễn → mọi submission/run tiếp theo bị kẹt
-2. **Lần RUN thứ 2 bị treo:** Do lock leak ở trên, lần RUN thứ 1 OK nhưng lần thứ 2 hiện "Waiting for judge..." mãi mãi
-3. **Submit sau RUN bị IE:** Judge bị lock → submit mới vào cùng judge → processing mãi → timeout → Internal Error
-
-### 3.2. Giải pháp: Ghost Submission
-
-**Ý tưởng:** RUN = tạo Submission thật trong DB → chạy qua **đúng pipeline của Submit** (`judge_submission()` → bridge → judge-server `begin_grading()` với multiprocessing JudgeWorker) → sau khi có kết quả, lưu vào Redis cache → xóa Submission + SubmissionTestCase khỏi DB.
-
-Cách này **tận dụng 100% infrastructure đã ổn định của Submit**, bao gồm:
-- Queuing tự động khi judge bận (qua `judge_list.judge()`)
-- Multiprocessing grading (JudgeWorker) — không block network thread
-- Lock management đúng cách (qua `_grading_lock` trong `begin_grading()`)
-- Tất cả testcase của problem được chạy (không chỉ 1 custom input)
-
-**Cơ chế phát hiện Run submission:** Dùng Redis cache markers:
-- `cache.set('run_sub_%d' % submission.id, run_id)` — đánh dấu submission nào là run
-- Bridge kiểm tra marker này trong `on_submission_acknowledged()` để set `self._is_run = True`
-- Khi `_is_run = True`: skip event posting, skip stats update, collect results → cache, delete from DB
-
-### 3.3. Chi tiết thay đổi
-
-#### View — `judge/views/custom_run.py` (viết lại hoàn toàn)
-
-| View | URL | Method | Chức năng |
-|------|-----|--------|-----------|
-| `RunSubmitView` | `/problem/<code>/run` | POST | Tạo ghost Submission + SubmissionSource, gọi `judge_submission()`, trả `run_id` |
-| `RunPollView` | `/run/poll/<run_id>` | GET | Poll kết quả từ cache + kiểm tra DB status (QU/P/G) |
-| `SampleTestCaseView` | `/problem/<code>/sample-testcases` | GET | Không đổi |
-
-**Logic `RunSubmitView`:**
 ```python
-submission = Submission(user=request.profile, problem=prob, language=language, status='QU')
-submission.save()
-source_obj = SubmissionSource(submission=submission, source=source)
-source_obj.save()
-run_id = 'run_%s' % uuid.uuid4().hex[:16]
-cache.set(run_id, {'sub_id': submission.id, 'status': 'PENDING'}, timeout=600)
-cache.set('run_sub_%d' % submission.id, run_id, timeout=600)
-judge_submission(submission)  # Exact same function as Submit!
-return JsonResponse({'run_id': run_id})
+sample_testcase_only = self.submission.meta.get('sample-testcase-only', False)
+if sample_testcase_only:
+    sample_input_files = set(self.submission.meta.get('sample-input-files', []))
+    if not sample_input_files:
+        yield IPC.GRADING_END, ()
+        return
+    filtered = []
+    for batch_no, case in flattened_cases:
+        case_input = case.config['in']
+        if case_input and str(case_input) in sample_input_files:
+            filtered.append((None, case))  # Remove batch context — sample cases run standalone
+    if not filtered:
+        yield IPC.GRADING_END, ()
+        return
+    flattened_cases = filtered
+    batch_dependencies = []
 ```
 
-#### Bridge — `judge/bridge/judge_handler.py`
+This removes batch structure for sample cases — they run as independent standalone cases.
 
-Thêm run detection vào tất cả handler:
+### 3.10. Admin
 
-| Handler | Khi `_is_run = True` |
-|---------|---------------------|
-| `on_submission_acknowledged()` | Detect via `cache.get('run_sub_%d')`, set `self._is_run` |
-| `on_submission_processing()` | Skip `event.post()` |
-| `on_grading_begin()` | Skip `event.post()` |
-| `on_test_case()` | Save testcases to DB (cần cho `on_grading_end`), skip event posting |
-| `on_compile_message()` | Skip `event.post()` |
-| `on_grading_end()` | Collect testcase results → cache, delete Submission+TestCases, skip stats |
-| `on_compile_error()` | Store CE + error log → cache, delete Submission |
-| `on_internal_error()` | Store IE + error message → cache, delete Submission+TestCases |
-| `on_submission_terminated()` | Store AB → cache, delete Submission+TestCases |
-| `on_disconnect()` | Store IE → cache, delete Submission+TestCases |
-
-**Removed:** `custom_run()` method, `on_custom_run_result()` method, `'custom-run-result'` handler
-
-#### Bridge — `judge/bridge/judge_list.py`
-
-**Removed:** `custom_run_queue`, `_dispatch_queued_custom_run()`, `custom_run()` methods
-**Reverted:** `_handle_free_judge()` — dùng `break` thay vì `return` (không cần check custom_run queue)
-
-#### Bridge — `judge/bridge/django_handler.py`
-
-**Removed:** `'custom-run-request'` handler, `on_custom_run()` method
-
-#### Site — `judge/judgeapi.py`
-
-**Removed:** `judge_custom_run()` function
-
-#### Judge Server — `judge-server/dmoj/judge.py` + `judge_update/judge.py`
-
-**Removed:** `begin_custom_run()`, `_custom_run_thread()` methods (đây là nơi chứa bug lock leak gốc)
-
-#### Judge Server — `judge-server/dmoj/packet.py` + `judge_update/packet.py`
-
-**Removed:** `custom-run-request` handling, `custom_run_result_packet()` method
-
-#### URL — `dmoj/urls.py`
-
-```diff
--from judge.views import custom_run
-+from judge.views.custom_run import RunSubmitView, RunPollView, SampleTestCaseView
-...
--        path('/custom-run', custom_run.CustomRunSubmitView.as_view(), name='custom_run_submit'),
-+        path('/run', RunSubmitView.as_view(), name='run_submit'),
-...
--    path('custom-run/poll/<str:run_id>', custom_run.CustomRunPollView.as_view(), name='custom_run_poll'),
-+    path('run/poll/<str:run_id>', RunPollView.as_view(), name='run_poll'),
+**File: `judge/admin/problem.py`** — added IDE fieldset:
+```python
+(_('IDE'), {'fields': ('enable_new_ide',)}),
 ```
 
-#### Frontend — `templates/problem/problem-ide.html`
+**File: `judge/admin/run_submission.py`** — full admin for RunSubmission:
+- `RunSubmissionStatusFilter`, `RunSubmissionResultFilter`
+- Readonly fields, list display, search
 
-- URL: `custom_run_submit` → `run_submit`, `/custom-run/poll/` → `/run/poll/`
-- RUN không gửi `input` nữa (chạy tất cả testcase qua pipeline thật)
-- Hiển thị grading status chi tiết: `Queued`, `Processing`, `Grading`
-- Kết quả hiển thị: Score (points/total), per-testcase table (status, time, memory, score)
-- Hỗ trợ tất cả status: AC, WA, TLE, MLE, RTE, OLE, CE, IE, AB, IR, SC
+**File: `judge/views/problem_data.py`** — added `is_sample` to testcase form fields
 
-### 3.4. So sánh RUN mới vs Submit
+**File: `templates/problem/data.html`** — added "Sample?" column in testcase table
 
-| Aspect | Submit | RUN (Ghost Submission) |
-|--------|--------|----------------------|
-| Tạo Submission trong DB? | ✅ Giữ lại | ✅ Tạo tạm, xóa sau khi chấm xong |
-| Pipeline chấm | `judge_submission()` → bridge → judge-server `begin_grading()` | **Giống hệt** |
-| Queuing khi judge bận? | ✅ Tự động | ✅ Tự động (cùng queue) |
-| Multiprocessing (JudgeWorker)? | ✅ | ✅ |
-| Lock management? | ✅ Qua `begin_grading()` | ✅ Qua `begin_grading()` |
-| Event posting (WebSocket)? | ✅ | ❌ Skip |
-| Stats update (user points, problem stats)? | ✅ | ❌ Skip |
-| Contest update? | ✅ | ❌ Skip |
-| Kết quả lưu ở đâu? | DB (Submission + SubmissionTestCase) | Redis cache (timeout 300s) |
-| Hiển thị kết quả | Trang submission detail | IDE Result panel (inline) |
+### 3.11. URL Configuration
 
-### 3.5. Luồng RUN mới
+**File: `dmoj/urls.py`**
+```python
+from judge.views.run import RunSubmitView, RunPollView, SampleTestCaseView
 
+# Inside problem_url_patterns:
+path('/run', RunSubmitView.as_view(), name='run_submit'),
+path('/sample-testcases', SampleTestCaseView.as_view(), name='sample_testcases'),
+
+# Top-level:
+path('run/poll/<int:run_id>', RunPollView.as_view(), name='run_poll'),
 ```
-1. User click "▶ Run"
-2. JS gửi POST /problem/<code>/run với {source, language}
-3. RunSubmitView:
-   a. Tạo Submission (status='QU') + SubmissionSource
-   b. Set cache markers: run_id → {sub_id, PENDING}, run_sub_{id} → run_id
-   c. Gọi judge_submission(submission) — ĐÚNG HÀM CỦA SUBMIT
-4. judge_submission() → bridge (port 9998)
-5. django_handler → judge_list.judge() — ĐÚNG HÀM CỦA SUBMIT
-6. judge_list chọn judge rảnh (hoặc queue nếu bận)
-7. judge_handler.submit() — ĐÚNG HÀM CỦA SUBMIT
-8. judge-server begin_grading() → JudgeWorker (multiprocessing)
-9. Kết quả: test-case-status → on_test_case (save DB, skip events)
-10. grading-end → on_grading_end:
-    a. Collect testcase results từ DB → cache
-    b. Delete SubmissionTestCase + Submission
-    c. Skip stats/events
-11. JS poll GET /run/poll/<run_id>:
-    a. PENDING + grading_status (QU/P/G) → hiện progress
-    b. done → hiện bảng kết quả per-testcase
+
+### 3.12. Template — problem-ide.html
+
+**File: `templates/problem/problem-ide.html`** — extends `base.html`
+
+Layout structure:
 ```
+.ide-container (flex, 100vh - 60px)
+├── .ide-left (flex:1, scrollable)
+│   ├── .ide-left-header (title, meta, links)
+│   └── .ide-left-body
+│       └── {% include "problem/problem-detail.html" %}  ← shared markdown rendering
+└── .ide-right (flex:1)
+    ├── .ide-toolbar (language select, Run btn, Submit btn)
+    ├── .ide-editor-area
+    │   └── .ide-editor-wrapper (ACE editor, absolute positioned)
+    └── .ide-bottom (max-height:45%)
+        ├── .ide-bottom-tabs (Testcase | Result)
+        └── .ide-bottom-content
+            ├── .ide-panel#testcase-panel
+            │   ├── .tc-tabs-bar (Sample 1, Sample 2, +Add)
+            │   └── .tc-case-content (textarea input + expected output)
+            └── .ide-panel#result-panel
+                └── Per-testcase table (status, time, memory)
+```
+
+**JavaScript behavior**:
+- On load: fetch `/problem/<code>/sample-testcases` → populate tabs
+- Run button: POST `/problem/<code>/run` → poll `/run/poll/<id>` every 1s
+- Submit button: hidden form POST to `/problem/<code>/submit` (standard flow)
+- Poll states: `PENDING` (show grading_status QU/P/G), `done` (show results), error states
 
 ---
 
-## 4. Danh sách file đã thay đổi
+## 4. Danh sách file thay đổi
 
 | File | Loại | Mô tả |
 |------|------|-------|
 | `judge/models/problem.py` | Modified | +`enable_new_ide` field |
-| `judge/models/problem_data.py` | Modified | +`is_sample` field |
+| `judge/models/problem_data.py` | Modified | +`is_sample` field on ProblemTestCase |
+| `judge/models/run_submission.py` | **New** | RunSubmission model |
+| `judge/models/__init__.py` | Modified | Import RunSubmission |
 | `judge/admin/problem.py` | Modified | +IDE fieldset |
-| `judge/views/problem.py` | Modified | +`get_template_names()` |
+| `judge/admin/run_submission.py` | **New** | RunSubmission admin |
+| `judge/admin/__init__.py` | Modified | Register RunSubmissionAdmin |
+| `judge/views/problem.py` | Modified | +`get_template_names()` IDE toggle |
 | `judge/views/problem_data.py` | Modified | +`is_sample` in form |
-| `judge/views/custom_run.py` | **New** | 3 API views |
-| `judge/judgeapi.py` | Modified | +`judge_custom_run()` |
-| `judge/bridge/django_handler.py` | Modified | +`on_custom_run()` |
-| `judge/bridge/judge_handler.py` | Modified | +`custom_run()`, +`on_custom_run_result()` |
-| `judge/bridge/judge_list.py` | Modified | +`custom_run()` |
-| `dmoj/urls.py` | Modified | +3 URL patterns |
+| `judge/views/run.py` | **New** | RunSubmitView, RunPollView, SampleTestCaseView |
+| `judge/judgeapi.py` | Modified | +`judge_run_submission()` |
+| `judge/bridge/django_handler.py` | Modified | +`on_run_request()` handler |
+| `judge/bridge/judge_handler.py` | Modified | +`run_submit()`, +`_on_run_grading_end()`, `_is_run` branching in all handlers |
+| `judge/bridge/judge_list.py` | Modified | +`judge_run()`, +`_key(id, is_run)`, updated `_handle_free_judge`/`on_judge_free`/`remove` |
+| `dmoj/urls.py` | Modified | +3 URL patterns (run, sample-testcases, run/poll) |
 | `templates/problem/data.html` | Modified | +Sample? column |
-| `templates/problem/problem-ide.html` | **New** | IDE template |
-| `judge/migrations/0225_...py` | **New** | Migration |
-| `judge-server/dmoj/packet.py` | Modified | +custom-run handler, +result packet |
-| `judge-server/dmoj/judge.py` | Modified | +`begin_custom_run()`, +`scoring_mode` |
-| `judge_update/packet.py` | Modified | Copy of judge-server |
-| `judge_update/judge.py` | Modified | Copy of judge-server |
+| `templates/problem/problem-ide.html` | **New** | IDE template (CSS + HTML + JS) |
+| `judge/migrations/0225_...py` | **New** | Migration: enable_new_ide + is_sample |
+| `judge/migrations/0226_run_submission.py` | **New** | Migration: RunSubmission model |
+| `judge_update/judge_new_25_04_2025_RUN.py` | **New** | Patched judge.py with sample-testcase-only filtering |
+
+---
+
+## 5. Lịch sử phát triển & Bugs đã fix
+
+### Giai đoạn 1: Custom Run (đã BỎ)
+
+Ban đầu thử cách tiếp cận **custom-run-request**: tạo packet type mới `custom-run-request`, code path riêng từ `judge_custom_run()` → bridge `on_custom_run()` → `judge_list.custom_run()` → `judge_handler.custom_run()` → judge-server `begin_custom_run()` → `_custom_run_thread()`. Kết quả lưu Redis cache.
+
+**Lý do bỏ**: Code path riêng gây 3 lỗi không fix triệt để:
+1. **Lock leak**: `_custom_run_thread()` có early `return` bypass `_grading_lock.release()` → judge bị lock vĩnh viễn
+2. **Lần Run thứ 2 treo**: Do lock leak, judge bận mãi
+3. **Submit sau Run bị IE**: Judge locked → submission timeout
+
+### Giai đoạn 2: Ghost Submission (đã BỎ)
+
+Thử tạo `Submission` thật trong DB → chạy qua pipeline Submit → sau khi có kết quả, lưu vào Redis cache → xóa Submission. Dùng Redis cache markers để bridge detect run submission.
+
+**Lý do bỏ**: Phức tạp, race conditions khi xóa Submission, cache markers không reliable.
+
+### Giai đoạn 3: RunSubmission model (HIỆN TẠI) ✅
+
+Tạo model `RunSubmission` riêng biệt. Gửi cùng `submission-request` packet nhưng thêm meta `sample-testcase-only`. Bridge phân biệt qua `_is_run` flag (set bởi `run_submit()` vs `submit()`).
+
+**Ưu điểm**:
+- Tái sử dụng 100% judge infrastructure (JudgeWorker, multiprocessing, sandbox)
+- Không ảnh hưởng pipeline Submit
+- Không cần Redis cache — kết quả lưu DB
+- Bridge handlers đơn giản: chỉ check `if self._is_run` → write RunSubmission thay vì Submission
+- Judge queuing/dispatch hoạt động bình thường (cùng queue, phân biệt qua `_key`)
+
+### Bugs đã fix trong quá trình phát triển
+
+| Bug | Vấn đề | Fix |
+|-----|--------|-----|
+| `submission_acknowledged` crash | `self.submission_acknowledged_packet()` trong custom-run handler gây bridge đóng connection | Bỏ dòng đó (custom-run không cần acknowledge) |
+| `executor.launch()` không tạo pipe | Pass `stdin=True` (=1) ≠ `PIPE` (=-1) → không tạo pipe | Pass `subprocess.PIPE` explicitly |
+| `communicate(timeout=...)` TypeError | `safe_communicate()` không có param `timeout` | Bỏ `timeout` (sandbox enforce wall_time) |
+| Race condition judge dispatch | `_working` không được set cho custom run → judge bị dispatch 2 task | Set `_working = run_id` |
+| Judge leak (never freed) | `on_custom_run_result()` không gọi `_free_self()` | Gọi `_free_self(packet)` |
+| Disconnect crash | `_working` là string `cr_xxx` nhưng code dùng `Submission.objects.filter(id=...)` | Check `isinstance(self._working, str)` |
+| `%d` format crash | `logger.info('Judge available after grading %d: %s', submission, ...)` với string submission | Đổi `%d` → `%s` |
+| Template markdown rendering | Tự viết HTML thay vì dùng template gốc | Dùng `{% include "problem/problem-detail.html" %}` |
+
+> Tất cả bugs trên đều thuộc giai đoạn Custom Run/Ghost Submission (đã bỏ). Giai đoạn RunSubmission model hiện tại không có các bugs này vì tái sử dụng pipeline có sẵn.
+
+---
+
+## 6. Hướng dẫn cho AI agent
+
+### Khi cần sửa Run feature
+
+1. **View logic** → `judge/views/run.py`
+2. **Model fields** → `judge/models/run_submission.py`
+3. **Bridge routing** → `judge/bridge/django_handler.py` (on_run_request) → `judge_list.py` (judge_run) → `judge_handler.py` (run_submit, _is_run handlers)
+4. **Judge-side filtering** → `judge_update/judge_new_25_04_2025_RUN.py` (sample-testcase-only logic)
+5. **Frontend** → `templates/problem/problem-ide.html` (CSS + JS inline)
+6. **URLs** → `dmoj/urls.py`
+
+### Khi cần thêm tính năng vào Run
+
+- Nếu thêm field vào RunSubmission → cần migration + update `_on_run_grading_end()` trong judge_handler
+- Nếu thay đổi packet meta → cần update cả `run_submit()` (bridge) và `judge_new_25_04_2025_RUN.py` (judge)
+- Nếu thay đổi kết quả trả về → update `RunPollView.get()` + frontend JS poll handler
+
+### QUAN TRỌNG: Deploy judge changes
+
+Judge Server chạy trong container riêng (`judge01`–`judge04`). Thay đổi judge-side cần:
+1. Sửa file trong `judge_update/`
+2. Copy vào container: `docker cp judge_update/judge_new_25_04_2025_RUN.py judge01:/judge/dmoj/judge.py`
+3. Restart judge: `docker restart judge01`
+4. Lặp lại cho mỗi judge container
+
+### Build & deploy site changes
+
+```bash
+cd /home/algoritonlinejudge/aloj-docker/dmoj && \
+docker compose exec site bash -c "cd /site && bash make_style.sh 2>&1 | tail -3 && python manage.py collectstatic --noinput 2>&1 | tail -2" && \
+docker compose restart site 2>&1 | tail -2
+```
+
+Nếu thay đổi bridge: `docker compose restart bridged`
+Nếu thay đổi model: `docker compose exec site python manage.py migrate`
