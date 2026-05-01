@@ -128,7 +128,7 @@ class RunPollView(LoginRequiredMixin, View):
                     'status': tc.get('status'),
                     'time': tc.get('time'),
                     'memory': tc.get('memory'),
-                    'feedback': tc.get('feedback', ''),
+                    'output': tc.get('output', ''),
                 })
             result['passed'] = passed
             result['total_cases'] = len(testcases)

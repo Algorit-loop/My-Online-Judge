@@ -1,240 +1,260 @@
 {% extends "base.html" %}
 
 {% block media %}
-    {% if not comment_lock %}
-        {% include "comments/media-css.html" %}
-    {% endif %}
-    {% if request.user.is_authenticated and form %}
-        {{ form.media.css }}
-    {% endif %}
+    {% if not comment_lock %}{% include "comments/media-css.html" %}{% endif %}
+    {% if request.user.is_authenticated and form %}{{ form.media.css }}{% endif %}
     <style>
-        /* ===== IDE Layout ===== */
-        .ide-container {
-            display: flex;
-            height: calc(100vh - 60px);
-            overflow: hidden;
+        /* === Full-viewport IDE reset === */
+        html, body { overflow: hidden !important; height: 100% !important; margin: 0 !important; padding: 0 !important; }
+        footer, #announcement, #nav-shadow { display: none !important; }
+        #page-container {
+            max-width: none !important; border: none !important;
+            overflow: hidden !important; margin: 0 !important; padding: 0 !important;
+        }
+        #content {
+            margin: 0 !important; padding: 0 !important;
+            width: 100% !important; min-height: 0 !important;
+        }
+        #content-body { height: 100%; margin: 0; padding: 0 !important; }
+
+        /* === Variables === */
+        :root {
+            --bd: #e2e2e2; --bg: #fafafa; --bg2: #f5f5f5;
+            --text: #262626; --text2: #595959; --text3: #8c8c8c;
+            --accent: #2d8cf0; --green: #2cbb5d; --red: #ef4743;
+            --orange: #ffa116; --mono: 'Menlo','Consolas','Monaco','Courier New',monospace;
         }
 
-        /* --- Left pane: problem statement --- */
-        .ide-left {
-            flex: 1;
-            overflow-y: auto;
-            border-right: 3px solid #ddd;
-            min-width: 300px;
-            display: flex;
-            flex-direction: column;
+        /* === IDE Layout === */
+        .ide {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; overflow: hidden; background: #eff1f5;
+            padding: 6px; gap: 0; z-index: 1;
         }
-        .ide-left-header {
-            padding: 12px 20px;
-            border-bottom: 1px solid #eee;
-            background: #fafafa;
-        }
-        .ide-left-header h2 {
-            margin: 0 0 6px 0;
-            display: inline-block;
-        }
-        .ide-left-links {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px 14px;
-            font-size: 13px;
-            margin-top: 6px;
-        }
-        .ide-left-links a {
-            text-decoration: none;
-            color: #007bff;
-        }
-        .ide-left-links a:hover { text-decoration: underline; }
-        .ide-left-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .ide-problem-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 18px;
-            margin-bottom: 10px;
-            font-size: 13px;
-            color: #555;
-        }
-        .ide-problem-meta span i { margin-right: 3px; }
 
-        /* --- Right pane: editor + testcases --- */
-        .ide-right {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 400px;
-            overflow: hidden;
+        /* Dividers */
+        .dv { flex-shrink: 0; background: transparent; position: relative; z-index: 2; }
+        .dv-v { width: 10px; cursor: col-resize; }
+        .dv-h { height: 10px; cursor: row-resize; }
+        .dv::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%); border-radius: 2px;
+            background: rgba(0,0,0,.15); transition: background .15s;
+        }
+        .dv-v::after { width: 3px; height: 32px; }
+        .dv-h::after { height: 3px; width: 32px; }
+        .dv:hover::after { background: var(--accent); }
+        body.dragging { user-select: none !important; }
+        .drag-overlay { position: fixed; inset: 0; z-index: 9999; }
+
+        /* Panel frame (shared) */
+        .panel-frame {
+            background: #fff; border-radius: 10px;
+            border: 1px solid var(--bd); overflow: hidden;
+        }
+
+        /* === Left Panel === */
+        .ide-L {
+            width: 45%; min-width: 280px; display: flex; flex-direction: column;
+        }
+        .ide-L-head {
+            padding: 12px 16px 10px; border-bottom: 1px solid var(--bd); flex-shrink: 0;
+        }
+        .ide-L-body {
+            flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 20px 24px;
+        }
+        /* Thin scrollbar */
+        .ide-L-body::-webkit-scrollbar, .bot-content::-webkit-scrollbar { width: 5px; }
+        .ide-L-body::-webkit-scrollbar-thumb, .bot-content::-webkit-scrollbar-thumb {
+            background: #ccc; border-radius: 3px;
+        }
+
+        /* Title row */
+        .ide-ttl { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .ide-ttl h3 { margin: 0; font-size: 1.15em; font-weight: 700; color: var(--text); }
+        .ide-ttl .fa { font-size: 1.1em; }
+        .ide-pts {
+            display: inline-block; padding: 1px 8px; border-radius: 10px;
+            font-size: 11px; font-weight: 600; background: #f0f9ff;
+            color: var(--accent); border: 1px solid #cce5ff;
+        }
+
+        /* Info grid */
+        .ide-info { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text2); }
+        .ide-info .ii { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+        .ide-info .ii i { color: #aaa; width: 14px; text-align: center; }
+        .ide-info .ii b { font-weight: 600; color: var(--text); }
+        .ide-ll { font-size: 11px; color: #aaa; padding-left: 2px; margin-top: 2px; }
+        .ide-ll span { margin-right: 8px; }
+        .ide-au { font-size: 12px; color: var(--text2); margin-top: 3px; }
+        .ide-au i { color: #bbb; margin-right: 2px; }
+
+        /* Toggles */
+        .ide-L-head .toggle {
+            font-size: 12px; color: var(--text2); cursor: pointer;
+            padding: 2px 0; user-select: none;
+        }
+        .ide-L-head .toggle:hover { color: var(--text); }
+        .ide-L-head .toggled { font-size: 11px; padding: 1px 0 1px 18px; color: #999; }
+
+        /* Links row */
+        .ide-lnk {
+            display: flex; flex-wrap: wrap; gap: 0 10px; font-size: 12px;
+            margin-top: 6px; padding-top: 6px; border-top: 1px solid #f0f0f0;
+        }
+        .ide-lnk a { color: var(--accent); text-decoration: none; }
+        .ide-lnk a:hover { text-decoration: underline; }
+
+        /* === Right Panel === */
+        .ide-R {
+            flex: 1; min-width: 350px; display: flex; flex-direction: column;
+            overflow: hidden; gap: 6px;
         }
 
         /* Toolbar */
-        .ide-toolbar {
-            display: flex;
-            align-items: center;
-            padding: 8px 12px;
-            background: #f5f5f5;
-            border-bottom: 1px solid #ddd;
-            gap: 10px;
-            flex-wrap: wrap;
+        .ide-bar {
+            display: flex; align-items: center; padding: 6px 12px; gap: 8px;
+            background: var(--bg); border-bottom: 1px solid var(--bd); flex-shrink: 0;
+            border-radius: 10px 10px 0 0;
         }
-        .ide-toolbar select {
-            padding: 4px 8px;
-            min-width: 150px;
+        .ide-bar select {
+            padding: 5px 10px; border: 1px solid var(--bd); border-radius: 6px;
+            font-size: 13px; background: #fff; min-width: 130px; outline: none;
         }
-        .ide-toolbar .btn-run {
-            background: #28a745; color: white; border: none;
-            padding: 6px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
+        .ide-bar select:focus { border-color: var(--accent); }
+        .btn-run, .btn-sub {
+            border: none; padding: 6px 16px; border-radius: 6px;
+            font-size: 13px; font-weight: 600; cursor: pointer; color: #fff;
+            transition: filter .15s;
         }
-        .ide-toolbar .btn-run:hover { background: #218838; }
-        .ide-toolbar .btn-run:disabled { background: #6c757d; cursor: not-allowed; }
-        .ide-toolbar .btn-submit {
-            background: #007bff; color: white; border: none;
-            padding: 6px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
+        .btn-run { background: var(--green); }
+        .btn-sub { background: var(--accent); }
+        .btn-run:hover, .btn-sub:hover { filter: brightness(.92); }
+        .btn-run:disabled { opacity: .5; cursor: not-allowed; }
+        .bar-sp { flex: 1; }
+        .save-st { font-size: 11px; color: #bbb; display: flex; align-items: center; gap: 4px; }
+        .save-st .dot {
+            width: 6px; height: 6px; border-radius: 50%; display: inline-block;
         }
-        .ide-toolbar .btn-submit:hover { background: #0069d9; }
+        .dot.saved { background: var(--green); }
+        .dot.unsaved { background: var(--orange); }
+        .dot.saving { background: #17a2b8; }
 
-        /* Editor */
-        .ide-editor-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        /* Editor + Bottom wrapper */
+        .ide-R { gap: 0; }
+        .ide-top-frame {
+            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+            background: #fff; border-radius: 10px; border: 1px solid var(--bd);
         }
-        .ide-editor-wrapper {
-            flex: 1;
-            position: relative;
-            min-height: 200px;
-        }
-        .ide-editor-wrapper .ace_editor {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-        }
+        .ide-editor { flex: 1; position: relative; min-height: 120px; }
+        .ide-editor .ace_editor { position: absolute; inset: 0; border-radius: 0 0 10px 10px; }
 
-        /* Bottom panel */
-        .ide-bottom {
-            border-top: 2px solid #ddd;
-            max-height: 45%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+        /* === Bottom Panel === */
+        .ide-bot {
+            height: 240px; min-height: 80px; display: flex; flex-direction: column;
+            overflow: hidden; background: #fff; border-radius: 10px;
+            border: 1px solid var(--bd);
         }
-        .ide-bottom-tabs {
-            display: flex;
-            background: #f5f5f5;
-            border-bottom: 1px solid #ddd;
-            flex-shrink: 0;
+        .bot-tabs {
+            display: flex; background: var(--bg);
+            border-bottom: 1px solid var(--bd); flex-shrink: 0;
+            border-radius: 10px 10px 0 0;
         }
-        .ide-bottom-tabs .tab {
-            padding: 8px 16px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            font-size: 13px;
+        .bot-tabs .bt {
+            padding: 7px 18px; cursor: pointer; font-size: 13px; font-weight: 500;
+            color: var(--text3); border-bottom: 2px solid transparent;
+            transition: color .12s, border-color .12s; user-select: none;
         }
-        .ide-bottom-tabs .tab.active {
-            border-bottom-color: #007bff;
-            font-weight: bold;
-        }
-        .ide-bottom-content {
-            flex: 1;
-            overflow-y: auto;
-        }
-        .ide-panel { display: none; padding: 10px; }
-        .ide-panel.active { display: block; }
+        .bot-tabs .bt:hover { color: var(--text); }
+        .bot-tabs .bt.on { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+        .bot-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .pnl { display: none; padding: 12px 14px; flex-direction: column; flex: 1; min-height: 0; }
+        .pnl.on { display: flex; }
 
-        /* Testcase tabs (LeetCode-style) */
-        .tc-tabs-bar {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-bottom: 8px;
-            flex-wrap: wrap;
+        /* === Testcase UI === */
+        .tc-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; flex-shrink: 0; }
+        .tc-t {
+            padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 12px;
+            font-weight: 500; background: var(--bg2); border: 1px solid var(--bd);
+            user-select: none; transition: background .12s;
         }
-        .tc-tab {
-            padding: 4px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            background: #f9f9f9;
+        .tc-t:hover { background: #eaeaea; }
+        .tc-t.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .tc-x { margin-left: 5px; font-weight: 700; cursor: pointer; font-size: 13px; opacity: .7; }
+        .tc-x:hover { opacity: 1; }
+        .tc-add {
+            padding: 5px 12px; border: 1px dashed #bbb; border-radius: 6px;
+            cursor: pointer; font-size: 12px; background: transparent; color: #999;
+            user-select: none; transition: all .12s;
         }
-        .tc-tab.active {
-            background: #007bff;
-            color: white;
-            border-color: #007bff;
+        .tc-add:hover { background: var(--bg2); border-color: #999; color: #666; }
+        .tc-lbl { font-weight: 600; font-size: 12px; color: var(--text2); margin: 6px 0 2px; flex-shrink: 0; }
+        .tc-lbl:first-child { margin-top: 0; }
+        #tc-body { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 2px; }
+        .tc-ta {
+            width: 100%; min-height: 48px; flex: 1; font-family: var(--mono); font-size: 13px;
+            border: 1px solid var(--bd); border-radius: 6px; padding: 8px;
+            resize: none; box-sizing: border-box; background: var(--bg);
+            transition: border-color .12s, background .12s; overflow-y: auto;
         }
-        .tc-tab-close {
-            margin-left: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            color: inherit;
-        }
-        .tc-tab-close:hover { opacity: 0.7; }
-        .tc-add-btn {
-            padding: 4px 10px;
-            border: 1px dashed #999;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            background: transparent;
-            color: #666;
-        }
-        .tc-add-btn:hover { background: #f0f0f0; }
-        .tc-case-content { margin-top: 6px; }
-        .tc-label {
-            font-weight: bold;
-            font-size: 12px;
-            color: #555;
-            margin-bottom: 2px;
-        }
-        .tc-textarea {
-            width: 100%;
-            min-height: 60px;
-            font-family: monospace;
-            font-size: 13px;
-            border: 1px solid #ddd;
-            padding: 6px;
-            resize: vertical;
-            box-sizing: border-box;
-        }
-        .tc-expected-output {
-            background: #f8f8f8;
-            border: 1px solid #eee;
-            padding: 6px;
-            font-family: monospace;
-            font-size: 13px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            min-height: 30px;
-            max-height: 150px;
-            overflow-y: auto;
-            color: #333;
+        .tc-ta:focus { border-color: var(--accent); background: #fff; outline: none; }
+        .tc-exp {
+            background: #f7f7f7; border: 1px solid #eaeaea; border-radius: 6px; padding: 8px;
+            font-family: var(--mono); font-size: 13px; flex: 1; min-height: 40px;
+            white-space: pre-wrap; word-wrap: break-word; overflow-y: auto;
         }
 
-        /* Result panel */
-        .ide-result {
-            font-family: monospace;
-            font-size: 13px;
-            padding: 5px;
+        /* === Result UI === */
+        .rs {
+            display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+            padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; flex-shrink: 0;
         }
-        .ide-result pre {
-            background: #f8f8f8;
-            padding: 8px;
-            border: 1px solid #eee;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            max-height: 200px;
-            overflow-y: auto;
+        .rs-st { font-size: 15px; font-weight: 700; }
+        .rs-meta { font-size: 13px; color: var(--text2); display: flex; gap: 16px; flex-wrap: wrap; }
+
+        /* st-* removed: use case-* from submission.scss (loaded globally) */
+        /* bg-* groupings match case-* from submission.scss */
+        .bg-AC { background: #f0fdf4; border: 1px solid #bbf7d0; }
+        .bg-WA { background: #fef2f2; border: 1px solid #fecaca; }
+        .bg-TLE,.bg-SC { background: #f3f4f6; border: 1px solid #d1d5db; }
+        .bg-MLE,.bg-OLE,.bg-RTE,.bg-IR { background: #fffbeb; border: 1px solid #fde68a; }
+        .bg-CE,.bg-IE,.bg-AB { background: #f9fafb; border: 1px solid #e5e7eb; }
+
+        .rc-bar { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
+        .rc-t {
+            padding: 5px 14px; border: 1px solid var(--bd); border-radius: 6px;
+            cursor: pointer; font-size: 12px; font-weight: 600; user-select: none;
+            transition: all .12s;
         }
-        .ide-result .status { font-weight: bold; margin-bottom: 5px; }
-        .ide-result .status-ok { color: #28a745; }
-        .ide-result .status-ce { color: #dc3545; }
-        .ide-result .status-rte { color: #dc3545; }
-        .ide-result .status-tle { color: #ff8c00; }
-        .ide-result .status-mle { color: #ff8c00; }
-        .ide-result .status-ie { color: #6c757d; }
-        .ide-result .meta { color: #666; font-size: 12px; margin-top: 5px; }
+        .rc-t.on { border-width: 2px; }
+        /* rc-* tab colors match case-* from submission.scss */
+        .rc-t.rc-AC { color: green; border-color: green; }
+        .rc-t.rc-AC.on { background: #f0fdf4; }
+        .rc-t.rc-WA { color: #ef1b53; border-color: #ef1b53; }
+        .rc-t.rc-WA.on { background: #fef2f2; }
+        .rc-t.rc-TLE,.rc-t.rc-SC { color: gray; border-color: gray; }
+        .rc-t.rc-TLE.on,.rc-t.rc-SC.on { background: #f3f4f6; }
+        .rc-t.rc-MLE,.rc-t.rc-OLE,.rc-t.rc-RTE,.rc-t.rc-IR { color: orange; border-color: orange; }
+        .rc-t.rc-MLE.on,.rc-t.rc-OLE.on,.rc-t.rc-RTE.on,.rc-t.rc-IR.on { background: #fffbeb; }
+        .rc-t.rc-CE,.rc-t.rc-IE,.rc-t.rc-AB { color: #888; border-color: #aaa; }
+        .rc-t.rc-CE.on,.rc-t.rc-IE.on,.rc-t.rc-AB.on { background: #f9fafb; }
+
+        .rd-meta { font-size: 12px; color: #999; margin-bottom: 8px; display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
+        #rc-det { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .rd-row { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .rd-lbl { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 3px; flex-shrink: 0; }
+        .rd-val {
+            background: #f7f7f7; border: 1px solid #eaeaea; border-radius: 6px; padding: 8px;
+            font-family: var(--mono); font-size: 13px; flex: 1; min-height: 32px;
+            white-space: pre-wrap; word-wrap: break-word; overflow-y: auto;
+        }
+        .rs-err pre {
+            background: #fff5f5; border: 1px solid #fecaca; border-radius: 6px; padding: 10px;
+            color: var(--red); font-size: 13px; white-space: pre-wrap; max-height: 180px; overflow-y: auto;
+        }
+        .rs-ph { color: #bbb; font-size: 14px; padding: 30px 0; text-align: center; }
+        #ide-res { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .rc-bar { flex-shrink: 0; }
     </style>
 {% endblock %}
 
@@ -244,29 +264,21 @@
         <script src="{{ static('libs/clipboard/tooltip.js') }}"></script>
         <script type="text/javascript">
             $(function () {
-                window.add_code_copy_buttons = function ($container) {
-                    $container.find('pre code').each(function () {
-                        var copyButton;
+                window.add_code_copy_buttons = function ($c) {
+                    $c.find('pre code').each(function () {
+                        var cb;
                         $(this).parent().before($('<div>', {'class': 'copy-clipboard'})
-                            .append(copyButton = $('<span>', {
+                            .append(cb = $('<span>', {
                                 'class': 'btn-clipboard',
                                 'data-clipboard-text': $(this).text(),
                                 'title': {{ _('Click to copy')|htmltojs }}
                             }).text({{ _('Copy')|htmltojs }})));
-
-                        $(copyButton.get(0)).mouseleave(function () {
-                            $(this).attr('class', 'btn-clipboard');
-                            $(this).removeAttr('aria-label');
+                        $(cb.get(0)).mouseleave(function () {
+                            $(this).attr('class', 'btn-clipboard').removeAttr('aria-label');
                         });
-
-                        var curClipboard = new Clipboard(copyButton.get(0));
-                        curClipboard.on('success', function (e) {
-                            e.clearSelection();
-                            showTooltip(e.trigger, {{ _('Copied!')|htmltojs }});
-                        });
-                        curClipboard.on('error', function (e) {
-                            showTooltip(e.trigger, fallbackMessage(e.action));
-                        });
+                        var clip = new Clipboard(cb.get(0));
+                        clip.on('success', function (e) { e.clearSelection(); showTooltip(e.trigger, {{ _('Copied!')|htmltojs }}); });
+                        clip.on('error', function (e) { showTooltip(e.trigger, fallbackMessage(e.action)); });
                     });
                 };
                 window.add_code_copy_buttons($(document));
@@ -276,274 +288,288 @@
     <script src="{{ ACE_URL }}/ace.js" type="text/javascript"></script>
     <script type="text/javascript">
     $(function() {
-        // ===== ACE Editor =====
-        var editor = ace.edit('ide-ace-editor');
-        editor.setTheme('ace/theme/{{ request.profile.resolved_ace_theme if request.user.is_authenticated else "twilight" }}');
-        editor.getSession().setUseWrapMode(true);
-        editor.setShowPrintMargin(false);
-        editor.setFontSize(14);
+        // === Config ===
+        var P = {{ problem.code|htmltojs }}, UID = {{ request.user.id if request.user.is_authenticated else 0 }},
+            TMPL = '{{ url("language_template_ajax") }}',
+            SAMP = '{{ url("sample_testcases", problem.code) }}',
+            RURL = '{{ url("run_submit", problem.code) }}',
+            POLL = '{{ url("run_poll", 0) }}'.replace('/0', '/'),
+            SUBM = '{{ url("problem_submit", problem.code) }}',
+            TK = '{{ csrf_token }}';
 
-        var $langSelect = $('#ide-language');
-        function updateEditorMode() {
-            var aceMode = $langSelect.find('option:selected').data('ace');
-            if (aceMode) editor.getSession().setMode('ace/mode/' + aceMode);
+        // === ACE Editor ===
+        var ed = ace.edit('ace-ed');
+        ed.setTheme('ace/theme/{{ request.profile.resolved_ace_theme if request.user.is_authenticated else "twilight" }}');
+        ed.getSession().setUseWrapMode(true);
+        ed.setShowPrintMargin(false);
+        ed.setFontSize(14);
+        var $L = $('#ide-lang');
+        function lid() { return $L.val(); }
+        function setMode() {
+            var m = $L.find(':selected').data('ace');
+            if (m) ed.getSession().setMode('ace/mode/' + m);
         }
-        $langSelect.on('change', updateEditorMode);
-        updateEditorMode();
 
-        // ===== Bottom panel tabs =====
-        $('.ide-bottom-tabs .tab').click(function() {
-            var target = $(this).data('target');
-            $('.ide-bottom-tabs .tab').removeClass('active');
-            $(this).addClass('active');
-            $('.ide-panel').removeClass('active');
-            $('#' + target).addClass('active');
+        // === localStorage Draft ===
+        function dk(l) { return 'ide:' + UID + ':' + P + ':' + l; }
+        function save() { try { localStorage.setItem(dk(lid()), ed.getValue()); } catch(e) {} showS('saved'); }
+        function load(l) { try { return localStorage.getItem(dk(l)); } catch(e) { return null; } }
+        function showS(s) {
+            $('#sv-dot').attr('class', 'dot ' + s);
+            $('#sv-txt').text(s === 'saved' ? 'Saved' : s === 'unsaved' ? 'Unsaved' : 'Saving...');
+        }
+        var _t = null;
+        ed.on('change', function() {
+            showS('unsaved');
+            if (_t) clearTimeout(_t);
+            _t = setTimeout(function() { showS('saving'); save(); }, 800);
+        });
+        function loadCode(l) {
+            var d = load(l);
+            if (d !== null) { ed.setValue(d, -1); showS('saved'); return; }
+            $.get(TMPL, {id: l}).done(function(t) {
+                ed.setValue(t || '', -1); showS('saved'); save();
+            }).fail(function() { ed.setValue('', -1); showS('saved'); });
+        }
+        $L.on('change', function() { save(); setMode(); loadCode(lid()); });
+        setMode(); loadCode(lid());
+
+        // === Resize IDE to viewport ===
+        function fitIDE() {
+            var nh = ($('#navigation').outerHeight() || 0) +
+                     ($('#contest-info:visible').outerHeight() || 0);
+            $('.ide').css('top', nh + 'px');
+            ed.resize();
+        }
+        $(window).on('resize', fitIDE);
+        fitIDE();
+
+        // === Resizable Panels ===
+        var dragT = null, $ov = null;
+        function startDrag(t, e) {
+            dragT = t; e.preventDefault();
+            $ov = $('<div class="drag-overlay">').css('cursor', t === 'v' ? 'col-resize' : 'row-resize').appendTo('body');
+            $('body').addClass('dragging').css('cursor', t === 'v' ? 'col-resize' : 'row-resize');
+        }
+        $('.dv-v').on('mousedown', function(e) { startDrag('v', e); });
+        $(document).on('mousedown', '.dv-h', function(e) { startDrag('h', e); });
+        $(document).on('mousemove', function(e) {
+            if (!dragT) return;
+            if (dragT === 'v') {
+                var r = document.querySelector('.ide').getBoundingClientRect();
+                var w = Math.max(250, Math.min(r.width - 400, e.clientX - r.left - 6));
+                document.querySelector('.ide-L').style.width = w + 'px';
+            } else {
+                var r = document.querySelector('.ide-R').getBoundingClientRect();
+                var h = Math.max(80, Math.min(r.height - 180, r.bottom - e.clientY));
+                document.querySelector('.ide-bot').style.height = h + 'px';
+            }
+            ed.resize();
+        });
+        $(document).on('mouseup', function() {
+            if (!dragT) return;
+            dragT = null;
+            if ($ov) { $ov.remove(); $ov = null; }
+            $('body').removeClass('dragging').css('cursor', '');
+            ed.resize();
         });
 
-        // ===== Multiple Testcase Management (LeetCode-style) =====
-        var testcases = []; // [{input: '', expected: '', isSample: false}]
-        var activeTC = 0;
+        // === Bottom Tabs ===
+        $('.bot-tabs .bt').click(function() {
+            var t = $(this).data('t');
+            $('.bot-tabs .bt').removeClass('on'); $(this).addClass('on');
+            $('.pnl').removeClass('on'); $('#' + t).addClass('on');
+        });
 
-        function addTestcase(input, expected, isSample) {
-            testcases.push({input: input || '', expected: expected || '', isSample: !!isSample});
-            renderTCTabs();
-            switchTC(testcases.length - 1);
-        }
+        // === Toggles ===
+        $(document).on('click', '.ide-L-head .toggle', function() {
+            $(this).toggleClass('open closed');
+            $(this).next('.toggled').slideToggle(150);
+        });
 
-        function removeTestcase(idx) {
-            if (testcases.length <= 1) return;
-            testcases.splice(idx, 1);
-            if (activeTC >= testcases.length) activeTC = testcases.length - 1;
-            renderTCTabs();
-            renderTCContent();
-        }
-
-        function switchTC(idx) {
-            saveCurrentTC();
-            activeTC = idx;
-            renderTCTabs();
-            renderTCContent();
-        }
-
-        function saveCurrentTC() {
-            if (activeTC >= 0 && activeTC < testcases.length) {
-                var $inp = $('#tc-input-area');
-                if ($inp.length) testcases[activeTC].input = $inp.val();
+        // === Testcases ===
+        var tcs = [], ai = 0;
+        function esc(s) { return $('<span>').text(s || '').html(); }
+        function addTC(inp, exp, sam) { tcs.push({i: inp||'', e: exp||'', s: !!sam}); rTabs(); swTC(tcs.length-1); }
+        function rmTC(x) { if (tcs.length<=1) return; tcs.splice(x,1); if (ai>=tcs.length) ai=tcs.length-1; rTabs(); rTC(); }
+        function swTC(x) { svTC(); ai = x; rTabs(); rTC(); }
+        function svTC() { var $v = $('#tc-in'); if ($v.length && ai < tcs.length) tcs[ai].i = $v.val(); }
+        function rTabs() {
+            var $b = $('#tc-bar').empty();
+            var ci = 0;
+            for (var j = 0; j < tcs.length; j++) {
+                var lbl;
+                if (tcs[j].s) { lbl = 'Sample ' + (j+1); }
+                else { ci++; lbl = 'Custom ' + ci; }
+                var $t = $('<span class="tc-t">').toggleClass('on', j===ai).data('x', j);
+                $t.append($('<span>').text(lbl));
+                if (!tcs[j].s && tcs.length > 1)
+                    $t.append($('<span class="tc-x">&times;</span>').data('x', j));
+                $b.append($t);
             }
+            $b.append('<span class="tc-add">+ Add</span>');
         }
+        function rTC() {
+            var tc = tcs[ai], h = '<div class="tc-lbl">Input</div>';
+            h += '<textarea id="tc-in" class="tc-ta" placeholder="Enter input...">' + esc(tc.i) + '</textarea>';
+            if (tc.s && tc.e) h += '<div class="tc-lbl">Expected Output</div><div class="tc-exp">' + esc(tc.e) + '</div>';
+            $('#tc-body').html(h);
+        }
+        $(document).on('click', '#tc-bar .tc-t', function(e) { if (!$(e.target).hasClass('tc-x')) swTC($(this).data('x')); });
+        $(document).on('click', '#tc-bar .tc-x', function(e) { e.stopPropagation(); rmTC($(this).data('x')); });
+        $(document).on('click', '#tc-bar .tc-add', function() {
+            var customCount = 0;
+            for (var k = 0; k < tcs.length; k++) { if (!tcs[k].s) customCount++; }
+            if (customCount >= 5) { alert('Maximum 5 custom testcases'); return; }
+            svTC(); addTC('','',false);
+        });
 
-        function renderTCTabs() {
-            var $bar = $('#tc-tabs-bar');
-            $bar.empty();
-            for (var i = 0; i < testcases.length; i++) {
-                var label = testcases[i].isSample ? 'Sample ' + (i + 1) : 'Case ' + (i + 1);
-                var $tab = $('<span class="tc-tab">').toggleClass('active', i === activeTC).data('idx', i);
-                $tab.append($('<span>').text(label));
-                if (!testcases[i].isSample && testcases.length > 1) {
-                    var $close = $('<span class="tc-tab-close">&times;</span>').data('idx', i);
-                    $tab.append($close);
+        $.getJSON(SAMP, function(d) {
+            var s = d.samples || [];
+            if (s.length) { tcs = []; for (var j = 0; j < s.length; j++) tcs.push({i: s[j].input||'', e: s[j].output||'', s: true}); ai = 0; rTabs(); rTC(); }
+        });
+        addTC('', '', false);
+
+        // === Results ===
+        var LR = null, ari = 0;
+        var ST = {AC:'Accepted',SC:'Short Circuited',CE:'Compile Error',WA:'Wrong Answer',
+            RTE:'Runtime Error',TLE:'Time Limit Exceeded',MLE:'Memory Limit Exceeded',
+            OLE:'Output Limit Exceeded',IE:'Internal Error',AB:'Aborted',IR:'Invalid Return'};
+        function ft(t) { return t != null ? t.toFixed(3) + 's' : '—'; }
+        function fm(m) { return m != null ? (m/1024).toFixed(2) + ' MB' : '—'; }
+
+        function countSamples() { var n=0; for(var k=0;k<tcs.length;k++) if(tcs[k].s) n++; return n; }
+        function showRes(d) {
+            LR = d; ari = 0; var $p = $('#ide-res'); var ns = countSamples();
+            if (d.status !== 'done') {
+                var r = d.status;
+                var h = '<div class="rs bg-' + r + '"><span class="rs-st case-' + r + '">' + (ST[r]||r) + '</span></div>';
+                if (d.error) h += '<div class="rs-err"><pre>' + esc(d.error) + '</pre></div>';
+                $p.html(h); return;
+            }
+            // Count passed/total only for sample cases (first ns results)
+            var passed = 0;
+            for (var j = 0; j < Math.min(ns, (d.testcases||[]).length); j++) {
+                if (d.testcases[j].status === 'AC') passed++;
+            }
+            var sampleResult = ns > 0 ? (passed === ns ? 'AC' : d.result) : d.result;
+            var r = sampleResult;
+            var h = '<div class="rs bg-' + r + '">';
+            h += '<span class="rs-st case-' + r + '">' + (ST[r]||r) + '</span>';
+            h += '<span class="rs-meta">';
+            if (ns > 0) h += '<span>' + passed + '/' + ns + ' samples passed</span>';
+            if (d.time != null) h += '<span>' + ft(d.time) + '</span>';
+            if (d.memory != null) h += '<span>' + fm(d.memory) + '</span>';
+            h += '</span></div>';
+            if (d.testcases && d.testcases.length) {
+                h += '<div id="rc-bar" class="rc-bar">';
+                for (var j = 0; j < d.testcases.length; j++) {
+                    var isSam = j < ns;
+                    var s = d.testcases[j].status || 'IE';
+                    var isRuntimeErr = !isSam && s !== 'AC' && s !== 'WA' && s !== 'SC';
+                    var lbl = isSam ? 'Sample ' + (j+1) : 'Custom ' + (j-ns+1);
+                    h += '<span class="rc-t' + ((isSam || isRuntimeErr) ? ' rc-' + s : '') + (j===0?' on':'') + '" data-x="' + j + '">' + lbl + '</span>';
                 }
-                $bar.append($tab);
+                h += '</div><div id="rc-det"></div>';
             }
-            $bar.append($('<span class="tc-add-btn">+ Add</span>'));
+            if (d.error) h += '<div class="rs-err"><pre>' + esc(d.error) + '</pre></div>';
+            $p.html(h);
+            if (d.testcases && d.testcases.length) showCase(0);
         }
-
-        function renderTCContent() {
-            var tc = testcases[activeTC];
-            var $content = $('#tc-case-content');
-            var html = '<div class="tc-label">Input:</div>';
-            html += '<textarea id="tc-input-area" class="tc-textarea" placeholder="Enter input...">' +
-                    $('<span>').text(tc.input).html() + '</textarea>';
-            if (tc.expected) {
-                html += '<div class="tc-label" style="margin-top:8px;">Expected Output:</div>';
-                html += '<div class="tc-expected-output">' + $('<span>').text(tc.expected).html() + '</div>';
-            }
-            $content.html(html);
-        }
-
-        // Event delegation for testcase tabs
-        $(document).on('click', '#tc-tabs-bar .tc-tab', function(e) {
-            if ($(e.target).hasClass('tc-tab-close')) return;
-            switchTC($(this).data('idx'));
-        });
-        $(document).on('click', '#tc-tabs-bar .tc-tab-close', function(e) {
-            e.stopPropagation();
-            removeTestcase($(this).data('idx'));
-        });
-        $(document).on('click', '#tc-tabs-bar .tc-add-btn', function() {
-            saveCurrentTC();
-            addTestcase('', '', false);
-        });
-
-        // ===== Load sample testcases =====
-        $.getJSON('{{ url("sample_testcases", problem.code) }}', function(data) {
-            var samples = data.samples || [];
-            if (samples.length > 0) {
-                testcases = [];
-                for (var i = 0; i < samples.length; i++) {
-                    testcases.push({
-                        input: samples[i].input || '',
-                        expected: samples[i].output || '',
-                        isSample: true,
-                    });
+        function truncOut(tc) { var s = tc.output || ''; if (tc.output_truncated) return s + '\\n… (output truncated)'; return s; }
+        function showCase(x) {
+            if (!LR || !LR.testcases) return;
+            ari = x;
+            $('#rc-bar .rc-t').removeClass('on');
+            $('#rc-bar .rc-t[data-x="'+x+'"]').addClass('on');
+            var tc = LR.testcases[x], s = tc.status || 'IE';
+            var ns = countSamples();
+            var isSam = x < ns;
+            var h = '';
+            if (isSam) {
+                // Sample case: show status, time, memory, Input, Output, Expected
+                h += '<div class="rd-meta">';
+                h += '<span class="rs-st case-' + s + '" style="font-size:13px">' + (ST[s]||s) + '</span>';
+                h += '<span>' + ft(tc.time) + '</span><span>' + fm(tc.memory) + '</span></div>';
+                if (x < tcs.length && tcs[x])
+                    h += '<div class="rd-row"><div class="rd-lbl">Input</div><div class="rd-val">' + esc(tcs[x].i) + '</div></div>';
+                h += '<div class="rd-row"><div class="rd-lbl">Output</div><div class="rd-val">' + esc(truncOut(tc)) + '</div></div>';
+                if (tcs[x] && tcs[x].e)
+                    h += '<div class="rd-row"><div class="rd-lbl">Expected</div><div class="rd-val">' + esc(tcs[x].e) + '</div></div>';
+                if (tc.feedback)
+                    h += '<div class="rd-row"><div class="rd-lbl">Feedback</div><div class="rd-val">' + esc(tc.feedback) + '</div></div>';
+            } else {
+                // Custom case: no expected output comparison
+                // Show runtime errors (TLE/RTE/MLE/OLE/IR) but hide AC/WA (meaningless without expected)
+                var isRuntimeErr = s !== 'AC' && s !== 'WA' && s !== 'SC';
+                if (isRuntimeErr) {
+                    h += '<div class="rd-meta">';
+                    h += '<span class="rs-st case-' + s + '" style="font-size:13px">' + (ST[s]||s) + '</span>';
+                    h += '<span>' + ft(tc.time) + '</span><span>' + fm(tc.memory) + '</span></div>';
                 }
-                activeTC = 0;
-                renderTCTabs();
-                renderTCContent();
+                var ci = x;  // index into tcs[]
+                if (ci < tcs.length && tcs[ci])
+                    h += '<div class="rd-row"><div class="rd-lbl">Input</div><div class="rd-val">' + esc(tcs[ci].i) + '</div></div>';
+                h += '<div class="rd-row"><div class="rd-lbl">Output</div><div class="rd-val">' + esc(truncOut(tc)) + '</div></div>';
             }
-        });
+            $('#rc-det').html(h);
+        }
+        $(document).on('click', '#rc-bar .rc-t', function() { showCase(+$(this).data('x')); });
 
-        // Initialize with one empty testcase
-        addTestcase('', '', false);
-
-        // ===== Run =====
-        var currentRunId = null;
-        var pollTimer = null;
-
+        // === Run ===
+        var rid = null, pc = 0;
         $('#btn-run').click(function() {
-            var source = editor.getValue();
-            var langId = $langSelect.val();
-
-            if (!source.trim()) {
-                alert('Please enter source code');
-                return;
-            }
-
-            $('#btn-run').prop('disabled', true).text('Running...');
-            $('#ide-result').html('<div class="status">Running...</div>');
-            $('.ide-bottom-tabs .tab[data-target="panel-result"]').click();
-
+            var src = ed.getValue(), l = lid();
+            if (!src.trim()) return;
+            if (_t) { clearTimeout(_t); _t = null; } save();
+            $(this).prop('disabled', true).text('Running...');
+            $('.bot-tabs .bt[data-t="pnl-res"]').click();
+            $('#ide-res').html('<div class="rs-ph">Running...</div>');
             $.ajax({
-                url: '{{ url("run_submit", problem.code) }}',
-                method: 'POST',
-                contentType: 'application/json',
-                headers: {'X-CSRFToken': '{{ csrf_token }}'},
-                data: JSON.stringify({
-                    source: source,
-                    language: parseInt(langId)
-                }),
-                success: function(resp) {
-                    currentRunId = resp.run_id;
-                    pendingCount = 0;
-                    pollForResult();
-                },
-                error: function(xhr) {
-                    var err = 'Error';
-                    try { err = JSON.parse(xhr.responseText).error || err; } catch(e) {}
-                    $('#ide-result').html('<div class="status status-ie">' + $('<span>').text(err).html() + '</div>');
+                url: RURL, method: 'POST', contentType: 'application/json',
+                headers: {'X-CSRFToken': TK},
+                data: JSON.stringify({source: src, language: parseInt(l)}),
+                success: function(r) { rid = r.run_id; pc = 0; doPoll(); },
+                error: function(x) {
+                    var e = 'Error'; try { e = JSON.parse(x.responseText).error || e; } catch(ex) {}
+                    $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">' + esc(e) + '</span></div>');
                     $('#btn-run').prop('disabled', false).text('▶ Run');
                 }
             });
         });
-
-        var pendingCount = 0;
-        var MAX_POLL_COUNT = 60;
-        var runPollBase = '{{ url("run_poll", "0") }}'.replace('/0', '/');
-        function pollForResult() {
-            if (!currentRunId) return;
-            $.getJSON(runPollBase + currentRunId, function(data) {
-                if (data.status === 'PENDING') {
-                    pendingCount++;
-                    if (pendingCount >= MAX_POLL_COUNT) {
-                        $('#ide-result').html('<div class="status status-ie">Timed out waiting for result</div>');
-                        $('#btn-run').prop('disabled', false).text('▶ Run');
-                        currentRunId = null;
-                        pendingCount = 0;
-                        return;
+        function doPoll() {
+            if (!rid) return;
+            $.getJSON(POLL + rid, function(d) {
+                if (d.status === 'PENDING') {
+                    if (++pc >= 60) {
+                        $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Timed out</span></div>');
+                        $('#btn-run').prop('disabled', false).text('▶ Run'); rid = null; return;
                     }
-                    var msg = 'Running...';
-                    if (data.grading_status === 'QU') msg = 'Queued, waiting for judge...';
-                    else if (data.grading_status === 'P') msg = 'Processing...';
-                    else if (data.grading_status === 'G') msg = 'Grading...';
-                    else if (pendingCount >= 3) msg = 'Waiting for a suitable judge...';
-                    $('#ide-result').html('<div class="status">' + msg + '</div>');
-                    pollTimer = setTimeout(pollForResult, 1000);
-                    return;
+                    var m = d.grading_status === 'QU' ? 'Queued...' : d.grading_status === 'P' ? 'Processing...' : d.grading_status === 'G' ? 'Grading...' : 'Waiting...';
+                    $('#ide-res').html('<div class="rs-ph">' + m + '</div>');
+                    setTimeout(doPoll, 1000); return;
                 }
-                pendingCount = 0;
-                showResult(data);
-                $('#btn-run').prop('disabled', false).text('▶ Run');
-                currentRunId = null;
+                showRes(d); $('#btn-run').prop('disabled', false).text('▶ Run'); rid = null;
             }).fail(function() {
-                pendingCount = 0;
-                $('#ide-result').html('<div class="status status-ie">Failed to poll result</div>');
-                $('#btn-run').prop('disabled', false).text('▶ Run');
-                currentRunId = null;
+                $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Poll failed</span></div>');
+                $('#btn-run').prop('disabled', false).text('▶ Run'); rid = null;
             });
         }
 
-        function showResult(data) {
-            // data.status can be: 'done', 'CE', 'IE', 'AB'
-            // data.result (when status=='done'): 'AC', 'WA', 'TLE', 'MLE', 'RTE', 'OLE', 'IR', 'SC'
-            var result = data.status === 'done' ? data.result : data.status;
-            var statusClass = {
-                'AC': 'status-ok', 'SC': 'status-ok',
-                'CE': 'status-ce', 'WA': 'status-rte', 'RTE': 'status-rte',
-                'TLE': 'status-tle', 'MLE': 'status-mle', 'OLE': 'status-tle',
-                'IE': 'status-ie', 'AB': 'status-ie', 'IR': 'status-rte'
-            }[result] || 'status-ie';
-            var statusText = {
-                'AC': 'Accepted', 'SC': 'Short Circuited',
-                'CE': 'Compile Error', 'WA': 'Wrong Answer', 'RTE': 'Runtime Error',
-                'TLE': 'Time Limit Exceeded', 'MLE': 'Memory Limit Exceeded',
-                'OLE': 'Output Limit Exceeded', 'IE': 'Internal Error',
-                'AB': 'Aborted', 'IR': 'Invalid Return'
-            }[result] || result;
-
-            var html = '<div class="status ' + statusClass + '">' + statusText + '</div>';
-
-            if (data.status === 'done') {
-                html += '<div class="meta">';
-                html += 'Passed: ' + (data.passed || 0) + '/' + (data.total_cases || 0);
-                html += ' &nbsp;|&nbsp; Time: ' + (data.time || 0).toFixed(3) + 's';
-                html += ' &nbsp;|&nbsp; Memory: ' + ((data.memory || 0) / 1024).toFixed(2) + ' MB';
-                html += '</div>';
-
-                // Show per-testcase results (LeetCode style - no scores)
-                if (data.testcases && data.testcases.length > 0) {
-                    html += '<table style="width:100%; margin-top:8px; font-size:12px; border-collapse:collapse;">';
-                    html += '<tr style="background:#f0f0f0; font-weight:bold;"><td style="padding:4px 8px;">#</td><td style="padding:4px 8px;">Status</td><td style="padding:4px 8px;">Time</td><td style="padding:4px 8px;">Memory</td></tr>';
-                    for (var i = 0; i < data.testcases.length; i++) {
-                        var tc = data.testcases[i];
-                        var tcClass = tc.status === 'AC' ? 'status-ok' : (tc.status === 'WA' ? 'status-rte' : (tc.status === 'TLE' ? 'status-tle' : (tc.status === 'MLE' ? 'status-mle' : 'status-ie')));
-                        html += '<tr style="border-bottom:1px solid #eee;">';
-                        html += '<td style="padding:4px 8px;">' + tc.case + '</td>';
-                        html += '<td style="padding:4px 8px;" class="' + tcClass + '">' + tc.status + '</td>';
-                        html += '<td style="padding:4px 8px;">' + (tc.time || 0).toFixed(3) + 's</td>';
-                        html += '<td style="padding:4px 8px;">' + ((tc.memory || 0) / 1024).toFixed(2) + ' MB</td>';
-                        html += '</tr>';
-                    }
-                    html += '</table>';
-                }
-            }
-
-            if (data.error) {
-                html += '<div class="tc-label" style="margin-top:8px;">Error:</div>';
-                html += '<pre style="color:#dc3545;">' + $('<span>').text(data.error).html() + '</pre>';
-            }
-            $('#ide-result').html(html);
-        }
-
-        // ===== Submit (reuse existing flow) =====
-        $('#btn-submit').click(function() {
-            var source = editor.getValue();
-            var langId = $langSelect.val();
-            if (!source.trim()) {
-                alert('Please enter source code');
-                return;
-            }
-            var $form = $('<form method="POST" action="{{ url("problem_submit", problem.code) }}">');
-            $form.append($('<input type="hidden" name="csrfmiddlewaretoken">').val('{{ csrf_token }}'));
-            $form.append($('<input type="hidden" name="source">').val(source));
-            $form.append($('<input type="hidden" name="language">').val(langId));
-            $form.append($('<input type="hidden" name="judge">').val(''));
-            $form.appendTo('body').submit();
+        // === Submit ===
+        $('#btn-sub').click(function() {
+            var src = ed.getValue();
+            if (!src.trim()) return;
+            if (_t) { clearTimeout(_t); _t = null; } save();
+            var $f = $('<form method="POST" action="' + SUBM + '">');
+            $f.append($('<input type="hidden" name="csrfmiddlewaretoken">').val(TK));
+            $f.append($('<input type="hidden" name="source">').val(src));
+            $f.append($('<input type="hidden" name="language">').val(lid()));
+            $f.append($('<input type="hidden" name="judge">').val(''));
+            $f.appendTo('body').submit();
         });
 
-        // Add copy-code-buttons to problem content
-        if (window.add_code_copy_buttons) {
-            window.add_code_copy_buttons($('#problem-content'));
-        }
+        if (window.add_code_copy_buttons) window.add_code_copy_buttons($('#problem-content'));
     });
     </script>
 {% endblock %}
@@ -553,121 +579,175 @@
 {% block header %}{% endblock %}
 
 {% block body %}
-    <div class="ide-container">
-        {# ===== LEFT PANE: Problem Statement ===== #}
-        <div class="ide-left">
-            <div class="ide-left-header">
-                <div>
-                    {% if request.user.is_authenticated %}
-                        {% if problem.id in completed_problem_ids %}
-                            <a href="{{ url('user_submissions', problem.code, request.user.username) }}">
-                                <i class="solved-problem-color fa fa-check-circle"></i>
-                            </a>
-                        {% elif problem.id in attempted_problems %}
-                            <a href="{{ url('user_submissions', problem.code, request.user.username) }}">
-                                <i class="attempted-problem-color fa fa-frown-o"></i>
-                            </a>
-                        {% endif %}
+<div class="ide">
+    {# ===== LEFT ===== #}
+    <div class="ide-L panel-frame">
+        <div class="ide-L-head">
+            {# Title #}
+            <div class="ide-ttl">
+                {% if request.user.is_authenticated %}
+                    {% if problem.id in completed_problem_ids %}
+                        <a href="{{ url('user_submissions', problem.code, request.user.username) }}"><i class="solved-problem-color fa fa-check-circle"></i></a>
+                    {% elif problem.id in attempted_problems %}
+                        <a href="{{ url('user_submissions', problem.code, request.user.username) }}"><i class="attempted-problem-color fa fa-frown-o"></i></a>
                     {% endif %}
-                    <h2>{{ title }}</h2>
-                    {% if has_pdf_render %}
-                        <a href="{{ url('problem_pdf', problem.code) }}" style="margin-left:10px; font-size:13px;">
-                            <i class="fa fa-file-pdf-o"></i> PDF
-                        </a>
-                    {% endif %}
-                </div>
-
-                <div class="ide-problem-meta">
-                    <span><i class="fa fa-check"></i>
-                        {% if contest_problem %}
-                            {{ contest_problem.points }}{% if contest_problem.partial %} (partial){% endif %}
-                        {% else %}
-                            {{ problem.points|floatformat(2) }}{% if problem.partial %} (partial){% endif %}
-                        {% endif %}
-                        pts
-                    </span>
-                    <span><i class="fa fa-clock-o"></i> {{ problem.time_limit }}s</span>
-                    <span><i class="fa fa-server"></i> {{ problem.memory_limit|kbsimpleformat }}</span>
-                    {% if problem.io_method.method == 'file' %}
-                        <span><i class="fa fa-keyboard-o"></i> {{ problem.io_method.input }}</span>
-                        <span><i class="fa fa-print"></i> {{ problem.io_method.output }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="ide-left-links">
-                    {% if request.in_contest and contest_problem %}
-                        {% set contest = contest_problem.contest %}
-                        <a href="{{ url('contest_user_submissions', contest.key, request.user.username, problem.code) }}">{{ _('My submissions') }}</a>
-                        {% if contest.can_see_full_submission_list(request.user) %}
-                            <a href="{{ url('chronological_submissions', problem.code) }}">{{ _('All submissions') }}</a>
-                            <a href="{{ url('contest_ranked_submissions', contest.key, problem.code) }}">{{ _('Best submissions') }}</a>
-                        {% endif %}
+                {% endif %}
+                <h3>{{ title }}</h3>
+                <span class="ide-pts">
+                    {% if contest_problem %}
+                        {{ contest_problem.points }}{% if contest_problem.partial %} (partial){% endif %}
                     {% else %}
-                        {% if request.user.is_authenticated and has_submissions %}
-                            <a href="{{ url('user_submissions', problem.code, request.user.username) }}">{{ _('My submissions') }}</a>
-                        {% endif %}
-                        <a href="{{ url('chronological_submissions', problem.code) }}">{{ _('All submissions') }}</a>
-                        <a href="{{ url('ranked_submissions', problem.code) }}">{{ _('Best submissions') }}</a>
+                        {{ problem.points|floatformat(2) }} pts
                     {% endif %}
-
-                    {% if (editorial and editorial.is_accessible_by(request.user)) and not request.in_contest %}
-                        <a href="{{ url('problem_editorial', problem.code) }}">{{ _('Read editorial') }}</a>
-                    {% endif %}
-
-                    {% if can_edit_problem %}
-                        <a href="{{ url('problem_ticket_list', problem.code) }}">{{ _('Manage tickets') }}
-                            {% if num_open_tickets %}<span class="badge">{{ num_open_tickets }}</span>{% endif %}
-                        </a>
-                        <a href="{{ url('problem_edit', problem.code) }}">{{ _('Edit problem') }}</a>
-                        {% if not problem.is_manually_managed %}
-                            <a href="{{ url('problem_data', problem.code) }}">{{ _('Edit test data') }}</a>
-                        {% endif %}
-                    {% elif request.user.is_authenticated and has_tickets %}
-                        <a href="{{ url('problem_ticket_list', problem.code) }}">{{ _('My tickets') }}
-                            {% if num_open_tickets %}<span class="badge">{{ num_open_tickets }}</span>{% endif %}
-                        </a>
-                    {% endif %}
-
-                    {% if problem.is_subs_manageable_by(request.user) %}
-                        <a href="{{ url('problem_manage_submissions', problem.code) }}">{{ _('Manage submissions') }}</a>
-                    {% endif %}
-
-                    {% if perms.judge.clone_problem and can_edit_problem %}
-                        <a href="{{ url('problem_clone', problem.code) }}">{{ _('Clone problem') }}</a>
-                    {% endif %}
-                </div>
+                </span>
+                {% if has_pdf_render %}
+                    <a href="{{ url('problem_pdf', problem.code) }}" style="margin-left:auto;font-size:12px;color:var(--accent)"><i class="fa fa-file-pdf-o"></i> PDF</a>
+                {% endif %}
             </div>
 
-            <div class="ide-left-body">
-                {% if problem.is_suggesting %}
-                    <div class="alert alert-warning alert-dismissable">
-                        <a class="close">x</a>
-                        <b>{{ _('This problem is only a suggestion!') }}</b><br>
-                        {{ _('This problem cannot be accessed by normal users until it is approved by an admin or staff.') }}
-                    </div>
+            {# Info grid #}
+            <div class="ide-info">
+                <span class="ii"><i class="fa fa-clock-o"></i> <b>{{ problem.time_limit }}s</b></span>
+                <span class="ii"><i class="fa fa-server"></i> <b>{{ problem.memory_limit|kbsimpleformat }}</b></span>
+                {% if problem.io_method.method == 'standard' %}
+                    <span class="ii"><i class="fa fa-keyboard-o"></i> stdin / stdout</span>
+                {% elif problem.io_method.method == 'file' %}
+                    <span class="ii"><i class="fa fa-file-o"></i> {{ problem.io_method.input }} / {{ problem.io_method.output }}</span>
                 {% endif %}
+            </div>
+            {% if problem.language_time_limit %}
+                <div class="ide-ll">{% for n, l in problem.language_time_limit %}<span>{{ n }}: {{ l }}s</span>{% endfor %}</div>
+            {% endif %}
+            {% if problem.language_memory_limit %}
+                <div class="ide-ll">{% for n, l in problem.language_memory_limit %}<span>{{ n }}: {{ l|kbsimpleformat }}</span>{% endfor %}</div>
+            {% endif %}
 
-                <div id="problem-content" class="content-description">
-                    {% include "problem/problem-detail.html" %}
+            {# Authors / Source #}
+            {% if not contest_problem or not contest_problem.contest.hide_problem_authors %}
+                {% with authors=problem.authors.all() %}
+                    {% if authors %}
+                        <div class="ide-au"><i class="fa fa-pencil-square-o"></i>
+                            {% trans trimmed count=authors|length %}Author:{% pluralize count %}Authors:{% endtrans %}
+                            {{ link_users(authors) }}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                {% if problem.suggester %}
+                    <div class="ide-au"><i class="fa fa-pencil-square-o"></i> {{ _("Suggester:") }} {{ link_user(problem.suggester) }}</div>
+                {% endif %}
+            {% endif %}
+            {% if problem.source %}
+                <div class="ide-au"><i class="fa fa-book"></i> {{ _('Source:') }} {{ problem.source }}</div>
+            {% endif %}
+
+            {# Toggles #}
+            {% if not contest_problem or not contest_problem.contest.hide_problem_tags %}
+                <div class="toggle closed unselectable" style="margin-top:4px">
+                    <i class="fa fa-chevron-right fa-fw"></i>
+                    {% trans trimmed count=problem.types_list|length %}Problem type{% pluralize count %}Problem types{% endtrans %}
                 </div>
+                <div style="display:none" class="toggled">{{ problem.types_list|join(", ") }}</div>
+            {% endif %}
+            {% if show_languages %}
+                <div class="toggle closed unselectable">
+                    <i class="fa fa-chevron-right fa-fw"></i>{{ _('Allowed languages') }}
+                </div>
+                <div style="display:none" class="toggled">
+                    {% with usable=problem.usable_common_names, langs=problem.languages_list() %}
+                        {% for lang in langs %}
+                            {%- if lang in usable %}{{ lang }}{% else %}<s title="{{ _('No %(lang)s judge online', lang=lang) }}">{{ lang }}</s>{% endif -%}
+                            {% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    {% endwith %}
+                </div>
+            {% endif %}
+            {% if problem.is_editable_by(request.user) and available_judges %}
+                <div class="ide-au" style="margin-top:3px"><i class="fa fa-database"></i>
+                    {% trans trimmed count=available_judges|length %}Judge:{% pluralize count %}Judges:{% endtrans %}
+                    {% for j in available_judges %}{{ j.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+                </div>
+            {% endif %}
 
-                {% if request.user.is_authenticated and not request.profile.mute %}
-                    <hr>
-                    <a href="{{ url('new_problem_ticket', problem.code) }}" class="button clarify">
-                        {%- if comment_lock and request.profile.current_contest.live -%}
-                            {{ _('Request clarification') }}
-                        {%- else -%}
-                            {{ _('Report an issue') }}
-                        {%- endif -%}
-                    </a>
+            {# Submission limit (contest) #}
+            {% if request.user.is_authenticated and request.in_contest and submission_limit %}
+                <div class="ide-au" style="margin-top:3px;color:var(--orange)">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    {% if submissions_left is defined and submissions_left > 0 %}
+                        {{ submissions_left }} {{ _('submissions left') }}
+                    {% elif submissions_left is defined %}
+                        {{ _('0 submissions left') }}
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {# Links #}
+            <div class="ide-lnk">
+                {% if request.in_contest and contest_problem %}
+                    {% set contest = contest_problem.contest %}
+                    <a href="{{ url('contest_user_submissions', contest.key, request.user.username, problem.code) }}">{{ _('My submissions') }}</a>
+                    {% if contest.can_see_full_submission_list(request.user) %}
+                        <a href="{{ url('chronological_submissions', problem.code) }}">{{ _('All submissions') }}</a>
+                        <a href="{{ url('contest_ranked_submissions', contest.key, problem.code) }}">{{ _('Best submissions') }}</a>
+                    {% endif %}
+                {% else %}
+                    {% if request.user.is_authenticated and has_submissions %}
+                        <a href="{{ url('user_submissions', problem.code, request.user.username) }}">{{ _('My submissions') }}</a>
+                    {% endif %}
+                    <a href="{{ url('chronological_submissions', problem.code) }}">{{ _('All submissions') }}</a>
+                    <a href="{{ url('ranked_submissions', problem.code) }}">{{ _('Best submissions') }}</a>
+                {% endif %}
+                {% if (editorial and editorial.is_accessible_by(request.user)) and not request.in_contest %}
+                    <a href="{{ url('problem_editorial', problem.code) }}">{{ _('Read editorial') }}</a>
+                {% endif %}
+                {% if can_edit_problem %}
+                    <a href="{{ url('problem_ticket_list', problem.code) }}">{{ _('Manage tickets') }}{% if num_open_tickets %} <span class="badge">{{ num_open_tickets }}</span>{% endif %}</a>
+                    <a href="{{ url('problem_edit', problem.code) }}">{{ _('Edit problem') }}</a>
+                    {% if not problem.is_manually_managed %}
+                        <a href="{{ url('problem_data', problem.code) }}">{{ _('Edit test data') }}</a>
+                    {% endif %}
+                {% elif request.user.is_authenticated and has_tickets %}
+                    <a href="{{ url('problem_ticket_list', problem.code) }}">{{ _('My tickets') }}{% if num_open_tickets %} <span class="badge">{{ num_open_tickets }}</span>{% endif %}</a>
+                {% endif %}
+                {% if problem.is_subs_manageable_by(request.user) %}
+                    <a href="{{ url('problem_manage_submissions', problem.code) }}">{{ _('Manage submissions') }}</a>
+                {% endif %}
+                {% if perms.judge.clone_problem and can_edit_problem %}
+                    <a href="{{ url('problem_clone', problem.code) }}">{{ _('Clone problem') }}</a>
                 {% endif %}
             </div>
         </div>
+        <div class="ide-L-body">
+            {% if problem.is_suggesting %}
+                <div class="alert alert-warning alert-dismissable">
+                    <a class="close">x</a>
+                    <b>{{ _('This problem is only a suggestion!') }}</b><br>
+                    {{ _('This problem cannot be accessed by normal users until it is approved by an admin or staff.') }}
+                </div>
+            {% endif %}
+            <div id="problem-content" class="content-description">
+                {% include "problem/problem-detail.html" %}
+            </div>
+            {% if request.user.is_authenticated and not request.profile.mute %}
+                <hr>
+                <a href="{{ url('new_problem_ticket', problem.code) }}" class="button clarify">
+                    {%- if comment_lock and request.profile.current_contest.live -%}
+                        {{ _('Request clarification') }}
+                    {%- else -%}
+                        {{ _('Report an issue') }}
+                    {%- endif -%}
+                </a>
+            {% endif %}
+        </div>
+    </div>
 
-        {# ===== RIGHT PANE: Editor + Testcases ===== #}
-        <div class="ide-right">
-            <div class="ide-toolbar">
-                <select id="ide-language">
+    {# Vertical divider #}
+    <div class="dv dv-v"></div>
+
+    {# ===== RIGHT ===== #}
+    <div class="ide-R">
+        <div class="ide-top-frame">
+            <div class="ide-bar">
+                <select id="ide-lang">
                     {% if form %}
                         {% for lang in form.fields.language.queryset %}
                             <option value="{{ lang.id }}" data-ace="{{ lang.ace }}"
@@ -678,36 +758,32 @@
                     {% endif %}
                 </select>
                 <button id="btn-run" class="btn-run" type="button">▶ Run</button>
-                <button id="btn-submit" class="btn-submit" type="button">Submit</button>
+                <button id="btn-sub" class="btn-sub" type="button">Submit</button>
+                <span class="bar-sp"></span>
+                <span class="save-st"><span id="sv-dot" class="dot saved"></span><span id="sv-txt">Saved</span></span>
             </div>
-            <div class="ide-editor-area">
-                <div class="ide-editor-wrapper">
-                    <div id="ide-ace-editor"></div>
-                </div>
+            <div class="ide-editor"><div id="ace-ed"></div></div>
+        </div>
+        <div class="dv dv-h"></div>
+        <div class="ide-bot">
+            <div class="bot-tabs">
+                <div class="bt on" data-t="pnl-tc">Testcase</div>
+                <div class="bt" data-t="pnl-res">Result</div>
             </div>
-            <div class="ide-bottom">
-                <div class="ide-bottom-tabs">
-                    <div class="tab active" data-target="panel-testcase">Testcase</div>
-                    <div class="tab" data-target="panel-result">Result</div>
+            <div class="bot-content">
+                <div id="pnl-tc" class="pnl on">
+                    <div id="tc-bar" class="tc-bar"></div>
+                    <div id="tc-body"></div>
                 </div>
-                <div class="ide-bottom-content">
-                    <div id="panel-testcase" class="ide-panel active">
-                        <div id="tc-tabs-bar" class="tc-tabs-bar"></div>
-                        <div id="tc-case-content" class="tc-case-content"></div>
-                    </div>
-                    <div id="panel-result" class="ide-panel">
-                        <div id="ide-result" class="ide-result">
-                            <div style="color: #999;">Run your code to see results here.</div>
-                        </div>
-                    </div>
+                <div id="pnl-res" class="pnl">
+                    <div id="ide-res"><div class="rs-ph">Run your code to see results here.</div></div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block bodyend %}
-    {% if REQUIRE_JAX %}
-        {% include "mathjax-load.html" %}
-    {% endif %}
+    {% if REQUIRE_JAX %}{% include "mathjax-load.html" %}{% endif %}
 {% endblock %}
