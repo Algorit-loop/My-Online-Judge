@@ -112,7 +112,7 @@ def judge_submission(submission, rejudge=False, batch_rejudge=False, judge_id=No
     return success
 
 
-def judge_run_submission(run_submission, sample_input_files=None):
+def judge_run_submission(run_submission, sample_input_files=None, custom_inputs=None):
     """Send a run-request to the bridge. Uses RunSubmission model, not Submission."""
     from .models.run_submission import RunSubmission
 
@@ -133,6 +133,7 @@ def judge_run_submission(run_submission, sample_input_files=None):
             'banned-judges': [],
             'priority': DEFAULT_PRIORITY,
             'sample-input-files': sample_input_files or [],
+            'custom-inputs': custom_inputs or [],
         })
     except BaseException:
         logger.exception('Failed to send run-request to judge')

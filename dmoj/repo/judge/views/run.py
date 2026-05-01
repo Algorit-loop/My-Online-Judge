@@ -72,6 +72,21 @@ class RunSubmitView(LoginRequiredMixin, View):
         if not sample_cases:
             return JsonResponse({'error': 'No sample testcases configured for this problem.'}, status=400)
 
+        # Custom inputs (optional)
+        custom_inputs = data.get('custom_inputs', [])
+        if not isinstance(custom_inputs, list):
+            return JsonResponse({'error': 'custom_inputs must be a list'}, status=400)
+        if len(custom_inputs) > 5:
+            return JsonResponse({'error': 'Maximum 5 custom inputs allowed'}, status=400)
+        # Validate and truncate each custom input
+        validated_inputs = []
+        for ci in custom_inputs:
+            if not isinstance(ci, str):
+                return JsonResponse({'error': 'Each custom input must be a string'}, status=400)
+            if len(ci) > 65536:
+                return JsonResponse({'error': 'Custom input too long (max 64KB)'}, status=400)
+            validated_inputs.append(ci)
+
         # Create RunSubmission
         run_sub = RunSubmission(
             user=request.profile,
@@ -83,7 +98,7 @@ class RunSubmitView(LoginRequiredMixin, View):
         run_sub.save()
 
         # Dispatch to judge via bridge
-        success = judge_run_submission(run_sub, sample_input_files=sample_cases)
+        success = judge_run_submission(run_sub, sample_input_files=sample_cases, custom_inputs=validated_inputs)
         if not success:
             run_sub.delete()
             return JsonResponse({'error': 'Failed to dispatch to judge'}, status=503)
@@ -117,12 +132,8 @@ class RunPollView(LoginRequiredMixin, View):
             result['time'] = run_sub.time
             result['memory'] = run_sub.memory
 
-            passed = 0
             testcases = []
             for tc in run_sub.case_results:
-                is_ac = tc.get('status') == 'AC'
-                if is_ac:
-                    passed += 1
                 testcases.append({
                     'case': tc.get('case'),
                     'status': tc.get('status'),
@@ -130,8 +141,8 @@ class RunPollView(LoginRequiredMixin, View):
                     'memory': tc.get('memory'),
                     'output': tc.get('output', ''),
                 })
-            result['passed'] = passed
-            result['total_cases'] = len(testcases)
+            result['passed'] = int(run_sub.case_points)
+            result['total_cases'] = int(run_sub.case_total)
             result['testcases'] = testcases
         elif run_sub.status in ('CE', 'IE'):
             result['error'] = run_sub.error or ''

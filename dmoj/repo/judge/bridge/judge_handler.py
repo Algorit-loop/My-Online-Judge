@@ -65,6 +65,7 @@ class JudgeHandler(ZlibPacketHandler):
         }
         self._is_run = False
         self._run_test_cases = []
+        self._run_num_samples = 0
         self._working = False
         self._no_response_job = None
         self.executors = {}
@@ -276,12 +277,13 @@ class JudgeHandler(ZlibPacketHandler):
             },
         })
 
-    def run_submit(self, id, problem, language, source, sample_input_files):
+    def run_submit(self, id, problem, language, source, sample_input_files, custom_inputs=None):
         data = self.get_related_run_data(id)
         if data is None:
             raise RuntimeError('RunSubmission vanished: %s' % id)
         self._working = id
         self._is_run = True
+        self._run_num_samples = len(data.sample_input_files)
         self._no_response_job = threading.Timer(20, self._kill_if_no_response)
         self._no_response_job.start()
         self.send({
@@ -303,6 +305,7 @@ class JudgeHandler(ZlibPacketHandler):
                 'file-size-limit': data.file_size_limit,
                 'sample-testcase-only': True,
                 'sample-input-files': data.sample_input_files,
+                'custom-inputs': custom_inputs or [],
             },
         })
 
@@ -587,34 +590,36 @@ class JudgeHandler(ZlibPacketHandler):
         self._post_update_submission(submission.id, 'grading-end', done=True)
 
     def _on_run_grading_end(self, packet):
-        """Handle grading-end for a RunSubmission. No scoring, no stats/events/contest updates."""
+        """Handle grading-end for a RunSubmission. Only sample cases affect scoring."""
         try:
             run_sub = RunSubmission.objects.get(id=packet['submission-id'])
         except RunSubmission.DoesNotExist:
             logger.warning('Unknown run submission: %s', packet['submission-id'])
             return
 
+        num_samples = self._run_num_samples
+        status_codes = ['SC', 'AC', 'WA', 'MLE', 'TLE', 'IR', 'RTE', 'OLE']
+
+        # Only sample cases (first num_samples) count for scoring/result
         time = 0.0
         memory = 0
         status = 0
-        status_codes = ['SC', 'AC', 'WA', 'MLE', 'TLE', 'IR', 'RTE', 'OLE']
         passed = 0
-        total_cases = len(self._run_test_cases)
-
-        for case in self._run_test_cases:
+        for i, case in enumerate(self._run_test_cases):
             time = max(time, case['time'])
             memory = max(memory, case['memory'])
-            i = status_codes.index(case['status'])
-            if i > status:
-                status = i
-            if case['status'] == 'AC':
-                passed += 1
+            if i < num_samples:
+                s = status_codes.index(case['status'])
+                if s > status:
+                    status = s
+                if case['status'] == 'AC':
+                    passed += 1
 
         run_sub.status = 'D'
         run_sub.time = time
         run_sub.memory = memory
         run_sub.case_points = passed
-        run_sub.case_total = total_cases
+        run_sub.case_total = num_samples
         run_sub.points = 0
         run_sub.result = status_codes[status]
         run_sub.case_results = self._run_test_cases
@@ -622,7 +627,7 @@ class JudgeHandler(ZlibPacketHandler):
 
         json_log.info(self._make_json_log(
             packet, action='run-grading-end', time=time, memory=memory,
-            passed=passed, total_cases=total_cases, result=run_sub.result,
+            passed=passed, total_cases=num_samples, result=run_sub.result,
             finish=True,
         ))
 

@@ -438,36 +438,31 @@
         function ft(t) { return t != null ? t.toFixed(3) + 's' : '—'; }
         function fm(m) { return m != null ? (m/1024).toFixed(2) + ' MB' : '—'; }
 
-        function countSamples() { var n=0; for(var k=0;k<tcs.length;k++) if(tcs[k].s) n++; return n; }
         function showRes(d) {
-            LR = d; ari = 0; var $p = $('#ide-res'); var ns = countSamples();
+            LR = d; ari = 0; var $p = $('#ide-res');
             if (d.status !== 'done') {
                 var r = d.status;
                 var h = '<div class="rs bg-' + r + '"><span class="rs-st case-' + r + '">' + (ST[r]||r) + '</span></div>';
                 if (d.error) h += '<div class="rs-err"><pre>' + esc(d.error) + '</pre></div>';
                 $p.html(h); return;
             }
-            // Count passed/total only for sample cases (first ns results)
-            var passed = 0;
-            for (var j = 0; j < Math.min(ns, (d.testcases||[]).length); j++) {
-                if (d.testcases[j].status === 'AC') passed++;
-            }
-            var sampleResult = ns > 0 ? (passed === ns ? 'AC' : d.result) : d.result;
-            var r = sampleResult;
+            var r = d.result;
+            var passed = d.passed;
+            var total = d.total_cases;
             var h = '<div class="rs bg-' + r + '">';
             h += '<span class="rs-st case-' + r + '">' + (ST[r]||r) + '</span>';
             h += '<span class="rs-meta">';
-            if (ns > 0) h += '<span>' + passed + '/' + ns + ' samples passed</span>';
+            if (total > 0) h += '<span>' + passed + '/' + total + ' samples passed</span>';
             if (d.time != null) h += '<span>' + ft(d.time) + '</span>';
             if (d.memory != null) h += '<span>' + fm(d.memory) + '</span>';
             h += '</span></div>';
             if (d.testcases && d.testcases.length) {
                 h += '<div id="rc-bar" class="rc-bar">';
                 for (var j = 0; j < d.testcases.length; j++) {
-                    var isSam = j < ns;
+                    var isSam = j < total;
                     var s = d.testcases[j].status || 'IE';
                     var isRuntimeErr = !isSam && s !== 'AC' && s !== 'WA' && s !== 'SC';
-                    var lbl = isSam ? 'Sample ' + (j+1) : 'Custom ' + (j-ns+1);
+                    var lbl = isSam ? 'Sample ' + (j+1) : 'Custom ' + (j-total+1);
                     h += '<span class="rc-t' + ((isSam || isRuntimeErr) ? ' rc-' + s : '') + (j===0?' on':'') + '" data-x="' + j + '">' + lbl + '</span>';
                 }
                 h += '</div><div id="rc-det"></div>';
@@ -483,8 +478,7 @@
             $('#rc-bar .rc-t').removeClass('on');
             $('#rc-bar .rc-t[data-x="'+x+'"]').addClass('on');
             var tc = LR.testcases[x], s = tc.status || 'IE';
-            var ns = countSamples();
-            var isSam = x < ns;
+            var isSam = x < LR.total_cases;
             var h = '';
             if (isSam) {
                 // Sample case: show status, time, memory, Input, Output, Expected
@@ -499,17 +493,15 @@
                 if (tc.feedback)
                     h += '<div class="rd-row"><div class="rd-lbl">Feedback</div><div class="rd-val">' + esc(tc.feedback) + '</div></div>';
             } else {
-                // Custom case: no expected output comparison
-                // Show runtime errors (TLE/RTE/MLE/OLE/IR) but hide AC/WA (meaningless without expected)
+                // Custom case: show runtime errors but hide AC/WA (meaningless without expected)
                 var isRuntimeErr = s !== 'AC' && s !== 'WA' && s !== 'SC';
                 if (isRuntimeErr) {
                     h += '<div class="rd-meta">';
                     h += '<span class="rs-st case-' + s + '" style="font-size:13px">' + (ST[s]||s) + '</span>';
                     h += '<span>' + ft(tc.time) + '</span><span>' + fm(tc.memory) + '</span></div>';
                 }
-                var ci = x;  // index into tcs[]
-                if (ci < tcs.length && tcs[ci])
-                    h += '<div class="rd-row"><div class="rd-lbl">Input</div><div class="rd-val">' + esc(tcs[ci].i) + '</div></div>';
+                if (x < tcs.length && tcs[x])
+                    h += '<div class="rd-row"><div class="rd-lbl">Input</div><div class="rd-val">' + esc(tcs[x].i) + '</div></div>';
                 h += '<div class="rd-row"><div class="rd-lbl">Output</div><div class="rd-val">' + esc(truncOut(tc)) + '</div></div>';
             }
             $('#rc-det').html(h);
@@ -522,13 +514,19 @@
             var src = ed.getValue(), l = lid();
             if (!src.trim()) return;
             if (_t) { clearTimeout(_t); _t = null; } save();
+            svTC(); // save current testcase textarea
+            // Collect custom inputs (non-sample testcases)
+            var ci = [];
+            for (var k = 0; k < tcs.length; k++) {
+                if (!tcs[k].s) ci.push(tcs[k].i || '');
+            }
             $(this).prop('disabled', true).text('Running...');
             $('.bot-tabs .bt[data-t="pnl-res"]').click();
             $('#ide-res').html('<div class="rs-ph">Running...</div>');
             $.ajax({
                 url: RURL, method: 'POST', contentType: 'application/json',
                 headers: {'X-CSRFToken': TK},
-                data: JSON.stringify({source: src, language: parseInt(l)}),
+                data: JSON.stringify({source: src, language: parseInt(l), custom_inputs: ci}),
                 success: function(r) { rid = r.run_id; pc = 0; doPoll(); },
                 error: function(x) {
                     var e = 'Error'; try { e = JSON.parse(x.responseText).error || e; } catch(ex) {}
