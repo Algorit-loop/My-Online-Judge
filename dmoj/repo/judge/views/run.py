@@ -150,7 +150,7 @@ class RunPollView(LoginRequiredMixin, View):
         return JsonResponse(result)
 
 
-class SampleTestCaseView(LoginRequiredMixin, View):
+class SampleTestCaseView(View):
     """Return sample test cases for a problem."""
 
     def get(self, request, problem):

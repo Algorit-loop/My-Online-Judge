@@ -446,6 +446,7 @@ class ProblemDetail(ProblemMixin, SolvedProblemMixin, ProblemSubmitMixin, Commen
                                           context['description'], 'problem')
         context['meta_description'] = self.object.summary or metadata[0]
         context['og_image'] = self.object.og_image or metadata[1]
+        context['ACE_URL'] = settings.ACE_URL
 
         if user.is_authenticated:
             submit_context = self.get_submit_context()

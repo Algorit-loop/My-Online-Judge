@@ -1,8 +1,6 @@
 {% extends "base.html" %}
 
 {% block media %}
-    {% if not comment_lock %}{% include "comments/media-css.html" %}{% endif %}
-    {% if request.user.is_authenticated and form %}{{ form.media.css }}{% endif %}
     <style>
         /* === Full-viewport IDE reset === */
         html, body { overflow: hidden !important; height: 100% !important; margin: 0 !important; padding: 0 !important; }
@@ -255,6 +253,21 @@
         .rs-ph { color: #bbb; font-size: 14px; padding: 30px 0; text-align: center; }
         #ide-res { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .rc-bar { flex-shrink: 0; }
+
+        /* === Login overlay for guests === */
+        .ide-login-overlay {
+            position: absolute; inset: 0; z-index: 10;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: var(--bg); gap: 12px;
+        }
+        .ide-login-overlay i { font-size: 36px; color: #ccc; }
+        .ide-login-overlay p { font-size: 14px; color: var(--text2); margin: 0; text-align: center; }
+        .ide-login-overlay a {
+            display: inline-block; padding: 8px 24px; border-radius: 6px;
+            background: var(--accent); color: #fff; font-weight: 600; font-size: 13px;
+            text-decoration: none; transition: filter .15s;
+        }
+        .ide-login-overlay a:hover { filter: brightness(.9); }
     </style>
 {% endblock %}
 
@@ -285,13 +298,126 @@
             });
         </script>
     {% endcompress %}
+    {% if request.user.is_authenticated %}
     <script src="{{ ACE_URL }}/ace.js" type="text/javascript"></script>
+    {% endif %}
     <script type="text/javascript">
     $(function() {
-        // === Config ===
-        var P = {{ problem.code|htmltojs }}, UID = {{ request.user.id if request.user.is_authenticated else 0 }},
+        var AUTHED = {{ 'true' if request.user.is_authenticated else 'false' }};
+        var LOGIN_URL = '{{ url("auth_login") }}?next={{ request.path|urlencode }}';
+        var SAMP = '{{ url("sample_testcases", problem.code) }}';
+
+        // === Shared: Resize IDE to viewport ===
+        function fitIDE() {
+            var nh = ($('#navigation').outerHeight() || 0) +
+                     ($('#contest-info:visible').outerHeight() || 0);
+            $('.ide').css('top', nh + 'px');
+            if (window._ed) window._ed.resize();
+        }
+        $(window).on('resize', fitIDE);
+        fitIDE();
+
+        // === Shared: Resizable Panels ===
+        var dragT = null, $ov = null;
+        function startDrag(t, e) {
+            dragT = t; e.preventDefault();
+            $ov = $('<div class="drag-overlay">').css('cursor', t === 'v' ? 'col-resize' : 'row-resize').appendTo('body');
+            $('body').addClass('dragging').css('cursor', t === 'v' ? 'col-resize' : 'row-resize');
+        }
+        $('.dv-v').on('mousedown', function(e) { startDrag('v', e); });
+        $(document).on('mousedown', '.dv-h', function(e) { startDrag('h', e); });
+        $(document).on('mousemove', function(e) {
+            if (!dragT) return;
+            if (dragT === 'v') {
+                var r = document.querySelector('.ide').getBoundingClientRect();
+                var w = Math.max(250, Math.min(r.width - 400, e.clientX - r.left - 6));
+                document.querySelector('.ide-L').style.width = w + 'px';
+            } else {
+                var r = document.querySelector('.ide-R').getBoundingClientRect();
+                var h = Math.max(80, Math.min(r.height - 180, r.bottom - e.clientY));
+                document.querySelector('.ide-bot').style.height = h + 'px';
+            }
+            if (window._ed) window._ed.resize();
+        });
+        $(document).on('mouseup', function() {
+            if (!dragT) return;
+            dragT = null;
+            if ($ov) { $ov.remove(); $ov = null; }
+            $('body').removeClass('dragging').css('cursor', '');
+            if (window._ed) window._ed.resize();
+        });
+
+        // === Shared: Bottom Tabs ===
+        $('.bot-tabs .bt').click(function() {
+            var t = $(this).data('t');
+            $('.bot-tabs .bt').removeClass('on'); $(this).addClass('on');
+            $('.pnl').removeClass('on'); $('#' + t).addClass('on');
+        });
+
+        // === Shared: Toggles ===
+        $(document).on('click', '.ide-L-head .toggle', function() {
+            $(this).toggleClass('open closed');
+            $(this).next('.toggled').slideToggle(150);
+        });
+
+        // === Shared: Testcases ===
+        var tcs = [], ai = 0;
+        function esc(s) { return $('<span>').text(s || '').html(); }
+        function addTC(inp, exp, sam) { tcs.push({i: inp||'', e: exp||'', s: !!sam}); rTabs(); swTC(tcs.length-1); }
+        function rmTC(x) { if (tcs.length<=1) return; tcs.splice(x,1); if (ai>=tcs.length) ai=tcs.length-1; rTabs(); rTC(); }
+        function swTC(x) { svTC(); ai = x; rTabs(); rTC(); }
+        function svTC() { var $v = $('#tc-in'); if ($v.length && ai < tcs.length) tcs[ai].i = $v.val(); }
+        function rTabs() {
+            var $b = $('#tc-bar').empty();
+            var ci = 0;
+            for (var j = 0; j < tcs.length; j++) {
+                var lbl;
+                if (tcs[j].s) { lbl = 'Sample ' + (j+1); }
+                else { ci++; lbl = 'Custom ' + ci; }
+                var $t = $('<span class="tc-t">').toggleClass('on', j===ai).data('x', j);
+                $t.append($('<span>').text(lbl));
+                if (!tcs[j].s && tcs.length > 1)
+                    $t.append($('<span class="tc-x">&times;</span>').data('x', j));
+                $b.append($t);
+            }
+            if (AUTHED) {
+                $b.append('<span class="tc-add">+ Add</span>');
+            }
+        }
+        function rTC() {
+            var tc = tcs[ai], h = '<div class="tc-lbl">Input</div>';
+            if (tc.s) {
+                // Sample: read-only display for both guests and authed
+                h += '<div class="tc-exp">' + esc(tc.i) + '</div>';
+            } else {
+                h += '<textarea id="tc-in" class="tc-ta" placeholder="Enter input...">' + esc(tc.i) + '</textarea>';
+            }
+            if (tc.s && tc.e) h += '<div class="tc-lbl">Expected Output</div><div class="tc-exp">' + esc(tc.e) + '</div>';
+            $('#tc-body').html(h);
+        }
+        $(document).on('click', '#tc-bar .tc-t', function(e) { if (!$(e.target).hasClass('tc-x')) swTC($(this).data('x')); });
+        $(document).on('click', '#tc-bar .tc-x', function(e) { e.stopPropagation(); rmTC($(this).data('x')); });
+        $(document).on('click', '#tc-bar .tc-add', function() {
+            if (!AUTHED) { window.location.href = LOGIN_URL; return; }
+            var customCount = 0;
+            for (var k = 0; k < tcs.length; k++) { if (!tcs[k].s) customCount++; }
+            if (customCount >= 5) { alert('Maximum 5 custom testcases'); return; }
+            svTC(); addTC('','',false);
+        });
+
+        $.getJSON(SAMP, function(d) {
+            var s = d.samples || [];
+            if (s.length) { tcs = []; for (var j = 0; j < s.length; j++) tcs.push({i: s[j].input||'', e: s[j].output||'', s: true}); ai = 0; rTabs(); rTC(); }
+        });
+        if (AUTHED) addTC('', '', false);
+        else if (!tcs.length) { tcs.push({i:'', e:'', s:true}); rTabs(); rTC(); }
+
+        {% if request.user.is_authenticated %}
+        // ============================================================
+        // === Authenticated user: full IDE functionality ===
+        // ============================================================
+        var P = {{ problem.code|htmltojs }}, UID = {{ request.user.id }},
             TMPL = '{{ url("language_template_ajax") }}',
-            SAMP = '{{ url("sample_testcases", problem.code) }}',
             RURL = '{{ url("run_submit", problem.code) }}',
             POLL = '{{ url("run_poll", 0) }}'.replace('/0', '/'),
             SUBM = '{{ url("problem_submit", problem.code) }}',
@@ -299,7 +425,8 @@
 
         // === ACE Editor ===
         var ed = ace.edit('ace-ed');
-        ed.setTheme('ace/theme/{{ request.profile.resolved_ace_theme if request.user.is_authenticated else "twilight" }}');
+        window._ed = ed;
+        ed.setTheme('ace/theme/{{ request.profile.resolved_ace_theme }}');
         ed.getSession().setUseWrapMode(true);
         ed.setShowPrintMargin(false);
         ed.setFontSize(14);
@@ -333,102 +460,7 @@
         }
         $L.on('change', function() { save(); setMode(); loadCode(lid()); });
         setMode(); loadCode(lid());
-
-        // === Resize IDE to viewport ===
-        function fitIDE() {
-            var nh = ($('#navigation').outerHeight() || 0) +
-                     ($('#contest-info:visible').outerHeight() || 0);
-            $('.ide').css('top', nh + 'px');
-            ed.resize();
-        }
-        $(window).on('resize', fitIDE);
         fitIDE();
-
-        // === Resizable Panels ===
-        var dragT = null, $ov = null;
-        function startDrag(t, e) {
-            dragT = t; e.preventDefault();
-            $ov = $('<div class="drag-overlay">').css('cursor', t === 'v' ? 'col-resize' : 'row-resize').appendTo('body');
-            $('body').addClass('dragging').css('cursor', t === 'v' ? 'col-resize' : 'row-resize');
-        }
-        $('.dv-v').on('mousedown', function(e) { startDrag('v', e); });
-        $(document).on('mousedown', '.dv-h', function(e) { startDrag('h', e); });
-        $(document).on('mousemove', function(e) {
-            if (!dragT) return;
-            if (dragT === 'v') {
-                var r = document.querySelector('.ide').getBoundingClientRect();
-                var w = Math.max(250, Math.min(r.width - 400, e.clientX - r.left - 6));
-                document.querySelector('.ide-L').style.width = w + 'px';
-            } else {
-                var r = document.querySelector('.ide-R').getBoundingClientRect();
-                var h = Math.max(80, Math.min(r.height - 180, r.bottom - e.clientY));
-                document.querySelector('.ide-bot').style.height = h + 'px';
-            }
-            ed.resize();
-        });
-        $(document).on('mouseup', function() {
-            if (!dragT) return;
-            dragT = null;
-            if ($ov) { $ov.remove(); $ov = null; }
-            $('body').removeClass('dragging').css('cursor', '');
-            ed.resize();
-        });
-
-        // === Bottom Tabs ===
-        $('.bot-tabs .bt').click(function() {
-            var t = $(this).data('t');
-            $('.bot-tabs .bt').removeClass('on'); $(this).addClass('on');
-            $('.pnl').removeClass('on'); $('#' + t).addClass('on');
-        });
-
-        // === Toggles ===
-        $(document).on('click', '.ide-L-head .toggle', function() {
-            $(this).toggleClass('open closed');
-            $(this).next('.toggled').slideToggle(150);
-        });
-
-        // === Testcases ===
-        var tcs = [], ai = 0;
-        function esc(s) { return $('<span>').text(s || '').html(); }
-        function addTC(inp, exp, sam) { tcs.push({i: inp||'', e: exp||'', s: !!sam}); rTabs(); swTC(tcs.length-1); }
-        function rmTC(x) { if (tcs.length<=1) return; tcs.splice(x,1); if (ai>=tcs.length) ai=tcs.length-1; rTabs(); rTC(); }
-        function swTC(x) { svTC(); ai = x; rTabs(); rTC(); }
-        function svTC() { var $v = $('#tc-in'); if ($v.length && ai < tcs.length) tcs[ai].i = $v.val(); }
-        function rTabs() {
-            var $b = $('#tc-bar').empty();
-            var ci = 0;
-            for (var j = 0; j < tcs.length; j++) {
-                var lbl;
-                if (tcs[j].s) { lbl = 'Sample ' + (j+1); }
-                else { ci++; lbl = 'Custom ' + ci; }
-                var $t = $('<span class="tc-t">').toggleClass('on', j===ai).data('x', j);
-                $t.append($('<span>').text(lbl));
-                if (!tcs[j].s && tcs.length > 1)
-                    $t.append($('<span class="tc-x">&times;</span>').data('x', j));
-                $b.append($t);
-            }
-            $b.append('<span class="tc-add">+ Add</span>');
-        }
-        function rTC() {
-            var tc = tcs[ai], h = '<div class="tc-lbl">Input</div>';
-            h += '<textarea id="tc-in" class="tc-ta" placeholder="Enter input...">' + esc(tc.i) + '</textarea>';
-            if (tc.s && tc.e) h += '<div class="tc-lbl">Expected Output</div><div class="tc-exp">' + esc(tc.e) + '</div>';
-            $('#tc-body').html(h);
-        }
-        $(document).on('click', '#tc-bar .tc-t', function(e) { if (!$(e.target).hasClass('tc-x')) swTC($(this).data('x')); });
-        $(document).on('click', '#tc-bar .tc-x', function(e) { e.stopPropagation(); rmTC($(this).data('x')); });
-        $(document).on('click', '#tc-bar .tc-add', function() {
-            var customCount = 0;
-            for (var k = 0; k < tcs.length; k++) { if (!tcs[k].s) customCount++; }
-            if (customCount >= 5) { alert('Maximum 5 custom testcases'); return; }
-            svTC(); addTC('','',false);
-        });
-
-        $.getJSON(SAMP, function(d) {
-            var s = d.samples || [];
-            if (s.length) { tcs = []; for (var j = 0; j < s.length; j++) tcs.push({i: s[j].input||'', e: s[j].output||'', s: true}); ai = 0; rTabs(); rTC(); }
-        });
-        addTC('', '', false);
 
         // === Results ===
         var LR = null, ari = 0;
@@ -481,7 +513,6 @@
             var isSam = x < LR.total_cases;
             var h = '';
             if (isSam) {
-                // Sample case: show status, time, memory, Input, Output, Expected
                 h += '<div class="rd-meta">';
                 h += '<span class="rs-st case-' + s + '" style="font-size:13px">' + (ST[s]||s) + '</span>';
                 h += '<span>' + ft(tc.time) + '</span><span>' + fm(tc.memory) + '</span></div>';
@@ -493,7 +524,6 @@
                 if (tc.feedback)
                     h += '<div class="rd-row"><div class="rd-lbl">Feedback</div><div class="rd-val">' + esc(tc.feedback) + '</div></div>';
             } else {
-                // Custom case: show runtime errors but hide AC/WA (meaningless without expected)
                 var isRuntimeErr = s !== 'AC' && s !== 'WA' && s !== 'SC';
                 if (isRuntimeErr) {
                     h += '<div class="rd-meta">';
@@ -514,8 +544,7 @@
             var src = ed.getValue(), l = lid();
             if (!src.trim()) return;
             if (_t) { clearTimeout(_t); _t = null; } save();
-            svTC(); // save current testcase textarea
-            // Collect custom inputs (non-sample testcases)
+            svTC();
             var ci = [];
             for (var k = 0; k < tcs.length; k++) {
                 if (!tcs[k].s) ci.push(tcs[k].i || '');
@@ -566,6 +595,15 @@
             $f.append($('<input type="hidden" name="judge">').val(''));
             $f.appendTo('body').submit();
         });
+
+        {% else %}
+        // === Guest: redirect Run/Submit to login ===
+        $('#btn-run, #btn-sub').click(function(e) {
+            e.preventDefault();
+            window.location.href = LOGIN_URL;
+        });
+
+        {% endif %}
 
         if (window.add_code_copy_buttons) window.add_code_copy_buttons($('#problem-content'));
     });
@@ -622,6 +660,7 @@
 
             {# Authors / Source #}
             {% if not contest_problem or not contest_problem.contest.hide_problem_authors %}
+                {% cache 86400 'problem_authors' problem.id LANGUAGE_CODE %}
                 {% with authors=problem.authors.all() %}
                     {% if authors %}
                         <div class="ide-au"><i class="fa fa-pencil-square-o"></i>
@@ -633,6 +672,7 @@
                 {% if problem.suggester %}
                     <div class="ide-au"><i class="fa fa-pencil-square-o"></i> {{ _("Suggester:") }} {{ link_user(problem.suggester) }}</div>
                 {% endif %}
+                {% endcache %}
             {% endif %}
             {% if problem.source %}
                 <div class="ide-au"><i class="fa fa-book"></i> {{ _('Source:') }} {{ problem.source }}</div>
@@ -706,6 +746,9 @@
                 {% elif request.user.is_authenticated and has_tickets %}
                     <a href="{{ url('problem_ticket_list', problem.code) }}">{{ _('My tickets') }}{% if num_open_tickets %} <span class="badge">{{ num_open_tickets }}</span>{% endif %}</a>
                 {% endif %}
+                {% if perms.judge.edit_type_group_all_problem %}
+                    <a href="{{ url('problem_edit_type_group', problem.code) }}">{{ _('Edit type group') }}</a>
+                {% endif %}
                 {% if problem.is_subs_manageable_by(request.user) %}
                     <a href="{{ url('problem_manage_submissions', problem.code) }}">{{ _('Manage submissions') }}</a>
                 {% endif %}
@@ -745,6 +788,7 @@
     <div class="ide-R">
         <div class="ide-top-frame">
             <div class="ide-bar">
+                {% if request.user.is_authenticated %}
                 <select id="ide-lang">
                     {% if form %}
                         {% for lang in form.fields.language.queryset %}
@@ -755,12 +799,25 @@
                         {% endfor %}
                     {% endif %}
                 </select>
+                {% endif %}
                 <button id="btn-run" class="btn-run" type="button">▶ Run</button>
                 <button id="btn-sub" class="btn-sub" type="button">Submit</button>
                 <span class="bar-sp"></span>
+                {% if request.user.is_authenticated %}
                 <span class="save-st"><span id="sv-dot" class="dot saved"></span><span id="sv-txt">Saved</span></span>
+                {% endif %}
             </div>
-            <div class="ide-editor"><div id="ace-ed"></div></div>
+            <div class="ide-editor" style="position:relative">
+                {% if request.user.is_authenticated %}
+                <div id="ace-ed"></div>
+                {% else %}
+                <div class="ide-login-overlay">
+                    <i class="fa fa-lock"></i>
+                    <p>{{ _('Please log in or sign up to use the code editor') }}</p>
+                    <a href="{{ url('auth_login') }}?next={{ request.path|urlencode }}">{{ _('Log in') }}</a>
+                </div>
+                {% endif %}
+            </div>
         </div>
         <div class="dv dv-h"></div>
         <div class="ide-bot">
