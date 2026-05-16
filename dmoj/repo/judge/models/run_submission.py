@@ -1,10 +1,16 @@
+import hashlib
+import hmac
+
+from django.conf import settings
 from django.db import models
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from judge.models.problem import Problem
 from judge.models.profile import Profile
 from judge.models.runtime import Language
 from judge.models.submission import SUBMISSION_RESULT, SUBMISSION_STATUS
+from judge.utils.unicode import utf8bytes
 
 __all__ = ['RunSubmission']
 
@@ -34,6 +40,15 @@ class RunSubmission(models.Model):
     judged_date = models.DateTimeField(verbose_name=_('submission judge time'), default=None, null=True)
     source = models.TextField(verbose_name=_('source code'), max_length=65536)
     case_results = models.JSONField(verbose_name=_('test case results'), default=list, blank=True)
+
+    @classmethod
+    def get_id_secret(cls, run_id):
+        return (hmac.new(utf8bytes(settings.EVENT_DAEMON_RUN_KEY), b'%d' % run_id, hashlib.sha512)
+                    .hexdigest()[:16] + '%08x' % run_id)
+
+    @cached_property
+    def id_secret(self):
+        return self.get_id_secret(self.id)
 
     class Meta:
         verbose_name = _('run submission')

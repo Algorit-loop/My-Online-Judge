@@ -359,6 +359,7 @@ class JudgeHandler(ZlibPacketHandler):
         id = packet['submission-id']
         if self._is_run:
             RunSubmission.objects.filter(id=id).update(status='P', judged_on=self.judge)
+            event.post('run_%s' % RunSubmission.get_id_secret(id), {'type': 'processing'})
             json_log.info(self._make_json_log(packet, action='run-processing'))
         else:
             if Submission.objects.filter(id=id).update(status='P', judged_on=self.judge):
@@ -470,6 +471,8 @@ class JudgeHandler(ZlibPacketHandler):
             if RunSubmission.objects.filter(id=packet['submission-id']).update(
                     status='G', current_testcase=1, batch=False, judged_date=timezone.now()):
                 self._run_test_cases = []
+                event.post('run_%s' % RunSubmission.get_id_secret(packet['submission-id']),
+                           {'type': 'grading-begin'})
                 json_log.info(self._make_json_log(packet, action='run-grading-begin'))
             else:
                 logger.warning('Unknown run submission: %s', packet['submission-id'])
@@ -626,6 +629,8 @@ class JudgeHandler(ZlibPacketHandler):
         run_sub.case_results = self._run_test_cases
         run_sub.save()
 
+        event.post('run_%s' % run_sub.id_secret, {'type': 'grading-end'})
+
         json_log.info(self._make_json_log(
             packet, action='run-grading-end', time=time, memory=memory,
             passed=passed, total_cases=num_samples, result=run_sub.result,
@@ -640,6 +645,8 @@ class JudgeHandler(ZlibPacketHandler):
         if is_run:
             RunSubmission.objects.filter(id=packet['submission-id']).update(
                 status='CE', result='CE', error=packet['log'])
+            event.post('run_%s' % RunSubmission.get_id_secret(packet['submission-id']),
+                       {'type': 'compile-error'})
             json_log.info(self._make_json_log(packet, action='run-compile-error', log=packet['log'],
                                               finish=True, result='CE'))
             return
@@ -659,6 +666,8 @@ class JudgeHandler(ZlibPacketHandler):
 
         if self._is_run:
             RunSubmission.objects.filter(id=packet['submission-id']).update(error=packet['log'])
+            event.post('run_%s' % RunSubmission.get_id_secret(packet['submission-id']),
+                       {'type': 'compile-message'})
             json_log.info(self._make_json_log(packet, action='run-compile-message', log=packet['log']))
         else:
             if Submission.objects.filter(id=packet['submission-id']).update(error=packet['log']):
@@ -681,6 +690,7 @@ class JudgeHandler(ZlibPacketHandler):
 
         if is_run:
             RunSubmission.objects.filter(id=id).update(status='IE', result='IE', error=packet['message'])
+            event.post('run_%s' % RunSubmission.get_id_secret(id), {'type': 'internal-error'})
             json_log.info(self._make_json_log(packet, action='run-internal-error', message=packet['message'],
                                               finish=True, result='IE'))
             return
@@ -702,6 +712,8 @@ class JudgeHandler(ZlibPacketHandler):
 
         if is_run:
             RunSubmission.objects.filter(id=packet['submission-id']).update(status='AB', result='AB', points=0)
+            event.post('run_%s' % RunSubmission.get_id_secret(packet['submission-id']),
+                       {'type': 'aborted'})
             json_log.info(self._make_json_log(packet, action='run-aborted', finish=True, result='AB'))
             return
 
@@ -765,6 +777,7 @@ class JudgeHandler(ZlibPacketHandler):
                     'extended_feedback': result.get('extended-feedback') or '',
                     'output': result['output'],
                 })
+            event.post('run_%s' % RunSubmission.get_id_secret(id), {'type': 'test-case'})
             return
 
         if not Submission.objects.filter(id=id).update(current_testcase=max_position + 1):

@@ -563,7 +563,69 @@
         $(document).on('click', '#rc-bar .rc-t', function() { showCase(+$(this).data('x')); });
 
         // === Run ===
-        var rid = null, pc = 0;
+        var rid = null, runSecret = null;
+        var USE_WSEVENT = !!(window.event_dispatcher);
+
+        function fetchResult() {
+            if (!rid) return;
+            $.getJSON(POLL + rid, function(d) {
+                if (d.status === 'PENDING') return; // still pending, wait for next event
+                showRes(d);
+                runDone();
+            }).fail(function() {
+                $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Poll failed</span></div>');
+                runDone();
+            });
+        }
+
+        function runDone() {
+            $('#btn-run').prop('disabled', false).text('▶ Run');
+            rid = null; runSecret = null;
+        }
+
+        function onRunEvent(message) {
+            switch (message.type) {
+                case 'processing':
+                    $('#ide-res').html('<div class="rs-ph">Processing...</div>');
+                    break;
+                case 'grading-begin':
+                    $('#ide-res').html('<div class="rs-ph">Grading...</div>');
+                    break;
+                case 'test-case':
+                    // Progress — keep showing "Grading..."
+                    break;
+                case 'compile-message':
+                    break;
+                case 'grading-end':
+                case 'compile-error':
+                case 'internal-error':
+                case 'aborted':
+                    fetchResult();
+                    break;
+            }
+        }
+
+        // Fallback polling (when wsevent is unavailable)
+        var pc = 0, pollTimer = null;
+        function doPollFallback() {
+            if (!rid) return;
+            $.getJSON(POLL + rid, function(d) {
+                if (d.status === 'PENDING') {
+                    if (++pc >= 60) {
+                        $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Timed out</span></div>');
+                        runDone(); return;
+                    }
+                    var m = d.grading_status === 'QU' ? 'Queued...' : d.grading_status === 'P' ? 'Processing...' : d.grading_status === 'G' ? 'Grading...' : 'Waiting...';
+                    $('#ide-res').html('<div class="rs-ph">' + m + '</div>');
+                    pollTimer = setTimeout(doPollFallback, 1000); return;
+                }
+                showRes(d); runDone();
+            }).fail(function() {
+                $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Poll failed</span></div>');
+                runDone();
+            });
+        }
+
         $('#btn-run').click(function() {
             var src = ed.getValue(), l = lid();
             if (!src.trim()) return;
@@ -584,6 +646,8 @@
                     ci.push(inp);
                 }
             }
+            // Cancel previous run wsevent/poll
+            if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
             $(this).prop('disabled', true).text('Running...');
             $('.bot-tabs .bt[data-t="pnl-res"]').click();
             $('#ide-res').html('<div class="rs-ph">Running...</div>');
@@ -591,7 +655,16 @@
                 url: RURL, method: 'POST', contentType: 'application/json',
                 headers: {'X-CSRFToken': TK},
                 data: JSON.stringify({source: src, language: parseInt(l), custom_inputs: ci}),
-                success: function(r) { rid = r.run_id; pc = 0; doPoll(); },
+                success: function(r) {
+                    rid = r.run_id;
+                    runSecret = r.id_secret;
+                    if (USE_WSEVENT && runSecret) {
+                        event_dispatcher.on('run_' + runSecret, onRunEvent);
+                    } else {
+                        pc = 0;
+                        doPollFallback();
+                    }
+                },
                 error: function(x) {
                     var e = 'Error'; try { e = JSON.parse(x.responseText).error || e; } catch(ex) {}
                     $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">' + esc(e) + '</span></div>');
@@ -599,24 +672,6 @@
                 }
             });
         });
-        function doPoll() {
-            if (!rid) return;
-            $.getJSON(POLL + rid, function(d) {
-                if (d.status === 'PENDING') {
-                    if (++pc >= 60) {
-                        $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Timed out</span></div>');
-                        $('#btn-run').prop('disabled', false).text('▶ Run'); rid = null; return;
-                    }
-                    var m = d.grading_status === 'QU' ? 'Queued...' : d.grading_status === 'P' ? 'Processing...' : d.grading_status === 'G' ? 'Grading...' : 'Waiting...';
-                    $('#ide-res').html('<div class="rs-ph">' + m + '</div>');
-                    setTimeout(doPoll, 1000); return;
-                }
-                showRes(d); $('#btn-run').prop('disabled', false).text('▶ Run'); rid = null;
-            }).fail(function() {
-                $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Poll failed</span></div>');
-                $('#btn-run').prop('disabled', false).text('▶ Run'); rid = null;
-            });
-        }
 
         // === Submit ===
         $('#btn-sub').click(function() {
