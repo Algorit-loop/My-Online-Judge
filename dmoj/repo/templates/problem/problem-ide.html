@@ -496,7 +496,7 @@
             if (d.status !== 'done') {
                 var r = d.status;
                 var h = '<div class="rs bg-' + r + '"><span class="rs-st case-' + r + '">' + (ST[r]||r) + '</span></div>';
-                if (d.error) h += '<div class="rs-err"><pre>' + esc(d.error) + '</pre></div>';
+                if (d.error) h += '<div class="rs-err"><pre>' + esc(stripAnsi(d.error)) + '</pre></div>';
                 $p.html(h); return;
             }
             var r = d.result;
@@ -520,9 +520,12 @@
                 }
                 h += '</div><div id="rc-det"></div>';
             }
-            if (d.error) h += '<div class="rs-err"><pre>' + esc(d.error) + '</pre></div>';
+            if (d.error) h += '<div class="rs-err"><pre>' + esc(stripAnsi(d.error)) + '</pre></div>';
             $p.html(h);
             if (d.testcases && d.testcases.length) showCase(0);
+        }
+        function stripAnsi(s) {
+            return (s || '').replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').replace(/\x1b[()][A-Za-z0-9]/g, '').replace(/\x1b./g, '');
         }
         function truncOut(tc) { return tc.output || ''; }
         function showCase(x) {
