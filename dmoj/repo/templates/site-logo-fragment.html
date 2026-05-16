@@ -1,4 +1,3 @@
-<!-- {# Logo tạm thời bị ẩn -->
 {% if request.in_contest and request.participation.contest.logo_override_image %}
     <img src="{{ request.participation.contest.logo_override_image|camo }}" alt="{{ SITE_NAME }}" height="40" style="border: none; padding-top: 4px;">
 {% elif logo_override_image is defined and logo_override_image %}
@@ -9,4 +8,3 @@
              onerror="this.src=&quot;{{ logo_url }}&quot;; this.onerror=null" style="border: none; padding-top: 4px">
     {% endwith %}
 {% endif %}
-<!-- #} -->

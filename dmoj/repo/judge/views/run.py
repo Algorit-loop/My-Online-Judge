@@ -52,8 +52,9 @@ class RunSubmitView(LoginRequiredMixin, View):
         if not source or not language_id:
             return JsonResponse({'error': 'source and language are required'}, status=400)
 
-        if len(source) > 65536:
-            return JsonResponse({'error': 'Source code too long'}, status=400)
+        max_source_length = getattr(settings, 'DMOJ_IDE_MAX_SOURCE_LENGTH', 65536)
+        if len(source) > max_source_length:
+            return JsonResponse({'error': 'Source code too long (max %d characters)' % max_source_length}, status=400)
 
         try:
             language = Language.objects.get(id=language_id)
@@ -76,15 +77,17 @@ class RunSubmitView(LoginRequiredMixin, View):
         custom_inputs = data.get('custom_inputs', [])
         if not isinstance(custom_inputs, list):
             return JsonResponse({'error': 'custom_inputs must be a list'}, status=400)
-        if len(custom_inputs) > 5:
-            return JsonResponse({'error': 'Maximum 5 custom inputs allowed'}, status=400)
-        # Validate and truncate each custom input
+        max_custom_testcases = getattr(settings, 'DMOJ_IDE_MAX_CUSTOM_TESTCASES', 5)
+        if len(custom_inputs) > max_custom_testcases:
+            return JsonResponse({'error': 'Maximum %d custom inputs allowed' % max_custom_testcases}, status=400)
+        # Validate each custom input
+        max_input_length = getattr(settings, 'DMOJ_IDE_MAX_CUSTOM_INPUT_LENGTH', 65536)
         validated_inputs = []
         for ci in custom_inputs:
             if not isinstance(ci, str):
                 return JsonResponse({'error': 'Each custom input must be a string'}, status=400)
-            if len(ci) > 65536:
-                return JsonResponse({'error': 'Custom input too long (max 64KB)'}, status=400)
+            if len(ci) > max_input_length:
+                return JsonResponse({'error': 'Custom input too long (max %d characters)' % max_input_length}, status=400)
             validated_inputs.append(ci)
 
         # Create RunSubmission

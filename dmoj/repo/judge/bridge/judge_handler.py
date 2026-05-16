@@ -306,6 +306,7 @@ class JudgeHandler(ZlibPacketHandler):
                 'sample-testcase-only': True,
                 'sample-input-files': data.sample_input_files,
                 'custom-inputs': custom_inputs or [],
+                'run-output-limit': getattr(settings, 'DMOJ_IDE_MAX_OUTPUT_DISPLAY_LENGTH', 65536),
             },
         })
 

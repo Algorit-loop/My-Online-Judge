@@ -196,6 +196,12 @@
             transition: border-color .12s, background .12s; overflow-y: auto;
         }
         .tc-ta:focus { border-color: var(--accent); background: #fff; outline: none; }
+        .tc-counter {
+            font-size: 11px; color: var(--text3); text-align: right;
+            padding: 2px 4px 0; flex-shrink: 0;
+        }
+        .tc-counter-warn { color: var(--orange); }
+        .tc-counter-err { color: var(--red); font-weight: 600; }
         .tc-exp {
             background: #f7f7f7; border: 1px solid #eaeaea; border-radius: 6px; padding: 8px;
             font-family: var(--mono); font-size: 13px; flex: 1; min-height: 40px;
@@ -237,13 +243,17 @@
         .rc-t.rc-CE,.rc-t.rc-IE,.rc-t.rc-AB { color: #888; border-color: #aaa; }
         .rc-t.rc-CE.on,.rc-t.rc-IE.on,.rc-t.rc-AB.on { background: #f9fafb; }
 
-        .rd-meta { font-size: 12px; color: #999; margin-bottom: 8px; display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
-        #rc-det { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-        .rd-row { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-        .rd-lbl { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 3px; flex-shrink: 0; }
+        .rd-meta { font-size: 12px; color: #999; margin-bottom: 6px; display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
+        /* #pnl-res is the single scroll container — identical role to .bot-content for Testcase */
+        #pnl-res { overflow-y: auto; }
+        #ide-res { display: flex; flex-direction: column; flex: none; }
+        #rc-det { display: flex; flex-direction: column; gap: 6px; }
+        .rd-row { display: flex; flex-direction: column; }
+        .rd-lbl { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 3px; }
         .rd-val {
             background: #f7f7f7; border: 1px solid #eaeaea; border-radius: 6px; padding: 8px;
-            font-family: var(--mono); font-size: 13px; flex: 1; min-height: 32px;
+            font-family: var(--mono); font-size: 13px; line-height: 1.5;
+            min-height: calc(3em + 16px); /* 2 text lines (2 × 1.5em) + top/bottom padding */
             white-space: pre-wrap; word-wrap: break-word; overflow-y: auto;
         }
         .rs-err pre {
@@ -251,8 +261,6 @@
             color: var(--red); font-size: 13px; white-space: pre-wrap; max-height: 180px; overflow-y: auto;
         }
         .rs-ph { color: #bbb; font-size: 14px; padding: 30px 0; text-align: center; }
-        #ide-res { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-        .rc-bar { flex-shrink: 0; }
 
         /* === Login overlay for guests === */
         .ide-login-overlay {
@@ -306,6 +314,11 @@
         var AUTHED = {{ 'true' if request.user.is_authenticated else 'false' }};
         var LOGIN_URL = '{{ url("auth_login") }}?next={{ request.path|urlencode }}';
         var SAMP = '{{ url("sample_testcases", problem.code) }}';
+
+        // IDE limits from settings
+        var MAX_CUSTOM_TC = {{ IDE_MAX_CUSTOM_TESTCASES }};
+        var MAX_INPUT_LEN = {{ IDE_MAX_CUSTOM_INPUT_LENGTH }};
+        var MAX_SOURCE_LEN = {{ IDE_MAX_SOURCE_LENGTH }};
 
         // === Shared: Resize IDE to viewport ===
         function fitIDE() {
@@ -390,18 +403,26 @@
                 // Sample: read-only display for both guests and authed
                 h += '<div class="tc-exp">' + esc(tc.i) + '</div>';
             } else {
-                h += '<textarea id="tc-in" class="tc-ta" placeholder="Enter input...">' + esc(tc.i) + '</textarea>';
+                h += '<textarea id="tc-in" class="tc-ta" placeholder="Enter input..." maxlength="' + MAX_INPUT_LEN + '">' + esc(tc.i) + '</textarea>';
+                h += '<div id="tc-in-counter" class="tc-counter">' + (tc.i || '').length + ' / ' + MAX_INPUT_LEN + '</div>';
             }
             if (tc.s && tc.e) h += '<div class="tc-lbl">Expected Output</div><div class="tc-exp">' + esc(tc.e) + '</div>';
             $('#tc-body').html(h);
         }
+        $(document).on('input', '#tc-in', function() {
+            var len = $(this).val().length;
+            var $c = $('#tc-in-counter');
+            $c.text(len + ' / ' + MAX_INPUT_LEN);
+            $c.toggleClass('tc-counter-warn', len > MAX_INPUT_LEN * 0.9);
+            $c.toggleClass('tc-counter-err', len >= MAX_INPUT_LEN);
+        });
         $(document).on('click', '#tc-bar .tc-t', function(e) { if (!$(e.target).hasClass('tc-x')) swTC($(this).data('x')); });
         $(document).on('click', '#tc-bar .tc-x', function(e) { e.stopPropagation(); rmTC($(this).data('x')); });
         $(document).on('click', '#tc-bar .tc-add', function() {
             if (!AUTHED) { window.location.href = LOGIN_URL; return; }
             var customCount = 0;
             for (var k = 0; k < tcs.length; k++) { if (!tcs[k].s) customCount++; }
-            if (customCount >= 5) { alert('Maximum 5 custom testcases'); return; }
+            if (customCount >= MAX_CUSTOM_TC) { alert('Maximum ' + MAX_CUSTOM_TC + ' custom testcases'); return; }
             svTC(); addTC('','',false);
         });
 
@@ -503,7 +524,7 @@
             $p.html(h);
             if (d.testcases && d.testcases.length) showCase(0);
         }
-        function truncOut(tc) { var s = tc.output || ''; if (tc.output_truncated) return s + '\\n… (output truncated)'; return s; }
+        function truncOut(tc) { return tc.output || ''; }
         function showCase(x) {
             if (!LR || !LR.testcases) return;
             ari = x;
@@ -543,11 +564,22 @@
         $('#btn-run').click(function() {
             var src = ed.getValue(), l = lid();
             if (!src.trim()) return;
+            if (src.length > MAX_SOURCE_LEN) {
+                alert('Source code too long (max ' + MAX_SOURCE_LEN + ' characters, current: ' + src.length + ')');
+                return;
+            }
             if (_t) { clearTimeout(_t); _t = null; } save();
             svTC();
             var ci = [];
             for (var k = 0; k < tcs.length; k++) {
-                if (!tcs[k].s) ci.push(tcs[k].i || '');
+                if (!tcs[k].s) {
+                    var inp = tcs[k].i || '';
+                    if (inp.length > MAX_INPUT_LEN) {
+                        alert('Custom input ' + (ci.length + 1) + ' too long (max ' + MAX_INPUT_LEN + ' characters, current: ' + inp.length + ')');
+                        return;
+                    }
+                    ci.push(inp);
+                }
             }
             $(this).prop('disabled', true).text('Running...');
             $('.bot-tabs .bt[data-t="pnl-res"]').click();
@@ -587,6 +619,10 @@
         $('#btn-sub').click(function() {
             var src = ed.getValue();
             if (!src.trim()) return;
+            if (src.length > MAX_SOURCE_LEN) {
+                alert('Source code too long (max ' + MAX_SOURCE_LEN + ' characters, current: ' + src.length + ')');
+                return;
+            }
             if (_t) { clearTimeout(_t); _t = null; } save();
             var $f = $('<form method="POST" action="' + SUBM + '">');
             $f.append($('<input type="hidden" name="csrfmiddlewaretoken">').val(TK));

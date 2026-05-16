@@ -536,6 +536,13 @@ class JudgeWorker:
             # Reset batch tracking since we removed batch structure
             batch_dependencies = []
 
+            # Override output_prefix_length for RUN mode so the IDE gets full output
+            # up to the configured limit (sent from bridge via meta 'run-output-limit').
+            run_output_limit = self.submission.meta.get('run-output-limit', 0)
+            if run_output_limit > 0:
+                for _, case in flattened_cases:
+                    case.output_prefix_length = run_output_limit
+
         case_number = 0
         is_short_circuiting = False
         is_short_circuiting_enabled = self.submission.short_circuit

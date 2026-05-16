@@ -448,6 +448,11 @@ class ProblemDetail(ProblemMixin, SolvedProblemMixin, ProblemSubmitMixin, Commen
         context['og_image'] = self.object.og_image or metadata[1]
         context['ACE_URL'] = settings.ACE_URL
 
+        # IDE limits
+        context['IDE_MAX_CUSTOM_TESTCASES'] = getattr(settings, 'DMOJ_IDE_MAX_CUSTOM_TESTCASES', 5)
+        context['IDE_MAX_CUSTOM_INPUT_LENGTH'] = getattr(settings, 'DMOJ_IDE_MAX_CUSTOM_INPUT_LENGTH', 65536)
+        context['IDE_MAX_SOURCE_LENGTH'] = getattr(settings, 'DMOJ_IDE_MAX_SOURCE_LENGTH', 65536)
+
         if user.is_authenticated:
             submit_context = self.get_submit_context()
             context.update(submit_context)

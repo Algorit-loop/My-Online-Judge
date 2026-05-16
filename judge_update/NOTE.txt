@@ -1,2 +1,10 @@
-/home/nhanguyen_judge/judge-server/dmoj/judge.py
-/home/nhanguyen_judge/judge-server/dmoj/packet.py
+docker run --name ultra_speed_judge_01 \
+  --network="host" \
+  -v /home/algoritonlinejudge/judge-server/dmoj/judge.py:/judge/dmoj/judge.py:ro \
+  -v /home/algoritonlinejudge/judge-server/dmoj/result.py:/judge/dmoj/result.py:ro \
+  -v /home/algoritonlinejudge/judge-server/dmoj/packet.py:/judge/dmoj/packet.py:ro \
+  -v /home/algoritonlinejudge/aloj-docker/dmoj/problems:/problems \
+  --cap-add=SYS_PTRACE \
+  -d --restart=always \
+  vnoj/judge-tiervnoj:latest \
+  run -p 9999 -c /problems/ultra_speed_judge_01.yml localhost -A 0.0.0.0 -a 9111
