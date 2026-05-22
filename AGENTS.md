@@ -80,7 +80,7 @@ Nộp bài → Site (lưu DB, status=QU)
 aloj-docker/
 ├── AGENTS.md                  # File này
 └── dmoj/
-    ├── docker-compose.yml     # Định nghĩa toàn bộ services
+    ├── docker-compose.yml     # Định nghĩa toàn bộ services (container: aloj_*)
     ├── base/Dockerfile        # Base image dùng chung
     ├── bridged/Dockerfile     # Bridge daemon
     ├── celery/Dockerfile      # Celery worker
@@ -99,7 +99,7 @@ aloj-docker/
     ├── problems/              # Dữ liệu test + judge YML configs
     ├── database/              # MariaDB data volume (bind mount)
     ├── media/                 # File upload (submission_file, martor, pdf)
-    ├── repo/                  # Source code VNOJ (git submodule)
+    ├── repo/                  # Source code ALOJ (git submodule)
     │   ├── resources/         # SCSS, JS, static assets
     │   │   ├── submission.scss
     │   │   ├── base.scss, style.scss, navbar.scss
@@ -161,13 +161,13 @@ judge-server/
 
 | Container | Image | Mô tả | Network |
 |---|---|---|---|
-| `db` (vnoj_mysql) | `mariadb` | Cơ sở dữ liệu chính | `db` |
-| `redis` (vnoj_redis) | `redis:alpine` | Cache + Celery broker | `site` |
-| `site` (vnoj_site) | `vnoj/vnoj-site` | Django app (uWSGI :8000) | `site`, `nginx`, `db` |
-| `celery` (vnoj_celery) | `vnoj/vnoj-celery` | Celery async worker | `site`, `db` |
-| `bridged` (vnoj_bridged) | `vnoj/vnoj-bridged` | Bridge daemon | `site`, `nginx`, `db` |
-| `wsevent` (vnoj_wsevent) | `vnoj/vnoj-wsevent` | WebSocket event server | `site`, `nginx` |
-| `nginx` (vnoj_nginx) | `nginx:alpine` | Reverse proxy (port **80**) | `nginx` |
+| `db` (aloj_mysql) | `mariadb` | Cơ sở dữ liệu chính | `db` |
+| `redis` (aloj_redis) | `redis:alpine` | Cache + Celery broker | `site` |
+| `site` (aloj_site) | `aloj/aloj-site` | Django app (uWSGI :8000) | `site`, `nginx`, `db` |
+| `celery` (aloj_celery) | `aloj/aloj-celery` | Celery async worker | `site`, `db` |
+| `bridged` (aloj_bridged) | `aloj/aloj-bridged` | Bridge daemon | `site`, `nginx`, `db` |
+| `wsevent` (aloj_wsevent) | `aloj/aloj-wsevent` | WebSocket event server | `site`, `nginx` |
+| `nginx` (aloj_nginx) | `nginx:alpine` | Reverse proxy (port **80**) | `nginx` |
 
 ### Volumes Docker
 
@@ -180,7 +180,7 @@ judge-server/
 | `./database/` | MariaDB data (bind mount) |
 | `./media/` | File media upload |
 | `./problems/` | Test data bài tập |
-| `./repo/` | Source code VNOJ (mount → `/site/`) |
+| `./repo/` | Source code ALOJ (mount → `/site/`) |
 
 ### Docker Networks
 
@@ -573,7 +573,7 @@ docker logs -f judge01
 
 ```bash
 # Database
-docker exec vnoj_mysql mysqldump -uroot -p$MYSQL_ROOT_PASSWORD dmoj > backup.sql
+docker exec aloj_mysql mysqldump -uroot -p$MYSQL_ROOT_PASSWORD dmoj > backup.sql
 
 # Problems
 tar -czf problems_backup.tar.gz problems/

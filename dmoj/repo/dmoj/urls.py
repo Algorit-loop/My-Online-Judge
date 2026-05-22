@@ -472,7 +472,7 @@ if 'newsletter' in settings.INSTALLED_APPS:
 if 'impersonate' in settings.INSTALLED_APPS:
     urlpatterns.append(path('impersonate/', include('impersonate.urls')))
 
-if settings.VNOJ_ENABLE_API:
+if settings.ALOJ_ENABLE_API:
     urlpatterns.append(
         path('api/v2/', include([
             path('contests', api.api_v2.APIContestList.as_view()),
@@ -490,7 +490,7 @@ if settings.VNOJ_ENABLE_API:
         ])),
     )
 
-if settings.VNOJ_ENABLE_SYNC_API:
+if settings.ALOJ_ENABLE_SYNC_API:
     urlpatterns.append(
         path('api/v2/sync/', include([
             path(

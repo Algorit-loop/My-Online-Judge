@@ -105,7 +105,7 @@ class BlogPost(models.Model):
         if self.visible and self.organization is None:
             for author in self.authors.all():
                 # Blog votes are counted as comment votes
-                author.update_contribution_points(delta * settings.VNOJ_CP_COMMENT)
+                author.update_contribution_points(delta * settings.ALOJ_CP_COMMENT)
 
     def get_absolute_url(self):
         return reverse('blog_post', args=(self.id, self.slug))

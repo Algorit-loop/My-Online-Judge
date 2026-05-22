@@ -9,7 +9,7 @@ from django.views.debug import ExceptionReporter
 
 
 def new_webhook():
-    cache.add('error_discord_webhook_throttle', 0, settings.VNOJ_DISCORD_WEBHOOK_THROTTLING[1])
+    cache.add('error_discord_webhook_throttle', 0, settings.ALOJ_DISCORD_WEBHOOK_THROTTLING[1])
     return cache.incr('error_discord_webhook_throttle')
 
 
@@ -22,9 +22,9 @@ class ThrottledDiscordWebhookHandler(logging.Handler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Send at most (VNOJ_DISCORD_WEBHOOK_THROTTLING[0]) message in
-        # (VNOJ_DISCORD_WEBHOOK_THROTTLING[1]) seconds
-        self.throttle = settings.VNOJ_DISCORD_WEBHOOK_THROTTLING[0]
+        # Send at most (ALOJ_DISCORD_WEBHOOK_THROTTLING[0]) message in
+        # (ALOJ_DISCORD_WEBHOOK_THROTTLING[1]) seconds
+        self.throttle = settings.ALOJ_DISCORD_WEBHOOK_THROTTLING[0]
 
     def emit(self, record):
         # Adapt from `dmoj.throttle_mail.ThrottledEmailHandler`

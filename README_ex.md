@@ -1,4 +1,4 @@
-# Hướng Dẫn Chi Tiết Thiết Lập Máy Chấm (Judge Server) - ALOJ
+# Hướng Dẫn Chi Tiết Thiết Lập Máy Chấm (Judge Server) - VNOJ
 
 ## Mục Lục
 1. [Kiến Trúc Hệ Thống](#kiến-trúc-hệ-thống)
@@ -22,7 +22,7 @@
 ## Kiến Trúc Hệ Thống
 
 ### Tổng Quan
-Hệ thống ALOJ bao gồm 3 thành phần chính:
+Hệ thống VNOJ bao gồm 3 thành phần chính:
 - **Site Server**: Máy chủ web chính chứa giao diện và logic quản lý
 - **Bridge**: Daemon trung gian kết nối Judge với Site (chạy trong Docker)
 - **Judge Server**: Máy chấm thực thi bài tập, có thể chạy cục bộ hoặc từ xa
@@ -264,7 +264,7 @@ WebSocket.onmessage = (event) => {
         └─────────────────────┬─────────────────────┘
                               │
 ┌─────────────────────────────▼───────────────────────────────┐
-│ 4. Bridge Daemon (Docker container aloj_bridged)           │
+│ 4. Bridge Daemon (Docker container vnoj_bridged)           │
 │    - Port 9998: Lắng nghe từ Site                        │
 │    - Port 9999: Kết nối tới Judge                        │
 │    - Quản lý trạng thái: 'QU'→'P'→'G'→'D'               │
@@ -277,7 +277,7 @@ WebSocket.onmessage = (event) => {
         └─────────────────────┬─────────────────────┘
                               │
 ┌─────────────────────────────▼───────────────────────────────┐
-│ 6. Judge Server (Docker: vnoj/judge-tiervnoj:latest)       │
+│ 6. Judge Server (Docker: vnoj/judge-tier1:latest)          │
 │    - Biên dịch source code                                 │
 │    - Chạy với test cases                                  │
 │    - Gửi từng test result qua port 9999                 │
@@ -518,7 +518,6 @@ Chỉnh sửa dòng `server_name`:
 ```nginx
 server {
     listen 80;
-    listen       [::]:80;
     server_name 192.168.1.60;  # Thay đổi thành IP hoặc domain của bạn
     # ... phần cấu hình khác
 }
@@ -1038,7 +1037,7 @@ DMOJ có logger riêng cho JSON (structured logging):
 
 ```bash
 # Tìm JSON logs từ bridged container
-docker exec aloj_bridged tail -f /var/log/judge-json.log
+docker exec vnoj_bridged tail -f /var/log/judge-json.log
 
 # Hoặc trong điểm mount logs (nếu có)
 tail -f dmoj/logs/judge-json.log
@@ -1077,7 +1076,7 @@ docker logs judge01 | grep -i "memory\|mle"
 docker logs judge01 | grep -i "error\|runtime"
 
 # Tìm tất cả sự kiện của submission #123
-docker logs aloj_bridged | grep "123"
+docker logs vnoj_bridged | grep "123"
 
 # Xem number of submissions processed
 docker logs judge01 | grep "grading-end" | wc -l
@@ -1087,7 +1086,7 @@ docker logs judge01 | grep "grading-end" | wc -l
 
 ```bash
 # Truy cập MySQL trong Docker
-docker exec -it aloj_mysql mysql -u dmoj -p dmoj
+docker exec -it vnoj_mysql mysql -u dmoj -p dmoj
 
 # Trong MySQL prompt:
 # Xem submission vừa nộp
@@ -1138,11 +1137,11 @@ while true; do
     echo ""
     
     echo "Judge Queue:"
-    docker exec aloj_mysql mysql -u dmoj -p dmoj -e "SELECT COUNT(*) as queued FROM judge_submission WHERE status='QU';" 2>/dev/null
+    docker exec vnoj_mysql mysql -u dmoj -p dmoj -e "SELECT COUNT(*) as queued FROM judge_submission WHERE status='QU';" 2>/dev/null
     
     echo ""
     echo "Latest Submissions:"
-    docker exec aloj_mysql mysql -u dmoj -p dmoj -e "SELECT id, result, points FROM judge_submission ORDER BY id DESC LIMIT 5;" 2>/dev/null
+    docker exec vnoj_mysql mysql -u dmoj -p dmoj -e "SELECT id, result, points FROM judge_submission ORDER BY id DESC LIMIT 5;" 2>/dev/null
     
     echo ""
     echo "Press Ctrl+C to stop"
@@ -1301,7 +1300,7 @@ DMOJ_PASSWORD_RESET_LIMIT_WINDOW = 3600
 **A:** 
 ```bash
 # Sao lưu database
-docker exec aloj_mysql mysqldump -uroot -p$MYSQL_ROOT_PASSWORD dmoj > backup.sql
+docker exec vnoj_mysql mysqldump -uroot -p$MYSQL_ROOT_PASSWORD dmoj > backup.sql
 
 # Sao lưu thư mục problems
 tar -czf problems_backup.tar.gz problems/

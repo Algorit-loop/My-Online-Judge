@@ -286,7 +286,7 @@ class ProblemSubmitMixin:
                                    _('You have exceeded the submission limit for this problem.')), None
 
         # Organization credit check
-        if settings.VNOJ_ENABLE_ORGANIZATION_CREDIT_LIMITATION:
+        if settings.ALOJ_ENABLE_ORGANIZATION_CREDIT_LIMITATION:
             # check if the problem belongs to any organization
             organization = None
             if self.object.is_organization_private:
@@ -349,7 +349,7 @@ class ProblemSubmitMixin:
         new_submission.judge(force_judge=True, judge_id=form.cleaned_data['judge'])
 
         # In contest mode, we should log the ip
-        if settings.VNOJ_OFFICIAL_CONTEST_MODE:
+        if settings.ALOJ_OFFICIAL_CONTEST_MODE:
             ip = request.META['REMOTE_ADDR']
             # I didn't log the timestamp here because
             # the logger can handle it.
