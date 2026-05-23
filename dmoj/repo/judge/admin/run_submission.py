@@ -2,7 +2,7 @@ import re
 from operator import itemgetter
 
 from django.contrib import admin
-from django.utils.html import format_html, format_html_join
+from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext, gettext_lazy as _
 
@@ -122,7 +122,7 @@ class RunSubmissionAdmin(admin.ModelAdmin):
             from ansi2html import Ansi2HTMLConverter
             html = Ansi2HTMLConverter(inline=True).convert(obj.error, full=False)
         except Exception:
-            html = _ANSI_ESCAPE.sub('', obj.error)
+            html = escape(_ANSI_ESCAPE.sub('', obj.error))
         return mark_safe(
             '<pre style="font-family:monospace;font-size:13px;background:#1e1e1e;color:#d4d4d4;'
             'border:1px solid #444;padding:10px;overflow:auto;max-height:400px;'
