@@ -234,10 +234,10 @@ DMOJ_SUBMISSION_LIMIT = 5
 DMOJ_SUBMISSIONS_REJUDGE_LIMIT = 10
 
 # IDE RUN limits
-DMOJ_IDE_MAX_CUSTOM_TESTCASES = 5          # Maximum number of custom testcases per RUN
-DMOJ_IDE_MAX_CUSTOM_INPUT_LENGTH = 16384   # Maximum characters per custom input (64KB)
-DMOJ_IDE_MAX_OUTPUT_DISPLAY_LENGTH = 16384 # Maximum characters for output display (truncate beyond this)
-DMOJ_IDE_MAX_SOURCE_LENGTH = 16384         # Maximum characters for source code (64KB)
+DMOJ_IDE_MAX_CUSTOM_TESTCASES = 3         # Maximum number of custom testcases per RUN
+DMOJ_IDE_MAX_CUSTOM_INPUT_LENGTH = 8192   # Maximum characters per custom input
+DMOJ_IDE_MAX_OUTPUT_DISPLAY_LENGTH = 8192 # Maximum characters for output display (truncate beyond this)
+DMOJ_IDE_MAX_SOURCE_LENGTH = 8192         # Maximum characters for source code
 
 # Whether to allow users to view source code: 'all' | 'all-solved' | 'only-own'
 DMOJ_SUBMISSION_SOURCE_VISIBILITY = 'all-solved'
