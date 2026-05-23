@@ -564,7 +564,6 @@
 
         // === Run ===
         var rid = null, runSecret = null;
-        var USE_WSEVENT = !!(window.event_dispatcher);
 
         function fetchResult() {
             if (!rid) return;
@@ -580,6 +579,9 @@
 
         function runDone() {
             $('#btn-run').prop('disabled', false).text('▶ Run');
+            if (runSecret && typeof event_dispatcher.off === 'function') {
+                event_dispatcher.off('run_' + runSecret);
+            }
             rid = null; runSecret = null;
         }
 
@@ -605,27 +607,6 @@
             }
         }
 
-        // Fallback polling (when wsevent is unavailable)
-        var pc = 0, pollTimer = null;
-        function doPollFallback() {
-            if (!rid) return;
-            $.getJSON(POLL + rid, function(d) {
-                if (d.status === 'PENDING') {
-                    if (++pc >= 60) {
-                        $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Timed out</span></div>');
-                        runDone(); return;
-                    }
-                    var m = d.grading_status === 'QU' ? 'Queued...' : d.grading_status === 'P' ? 'Processing...' : d.grading_status === 'G' ? 'Grading...' : 'Waiting...';
-                    $('#ide-res').html('<div class="rs-ph">' + m + '</div>');
-                    pollTimer = setTimeout(doPollFallback, 1000); return;
-                }
-                showRes(d); runDone();
-            }).fail(function() {
-                $('#ide-res').html('<div class="rs bg-IE"><span class="rs-st case-IE">Poll failed</span></div>');
-                runDone();
-            });
-        }
-
         $('#btn-run').click(function() {
             var src = ed.getValue(), l = lid();
             if (!src.trim()) return;
@@ -646,8 +627,8 @@
                     ci.push(inp);
                 }
             }
-            // Cancel previous run wsevent/poll
-            if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+            // Cancel previous run wsevent
+            if (runSecret) { event_dispatcher.off('run_' + runSecret); }
             $(this).prop('disabled', true).text('Running...');
             $('.bot-tabs .bt[data-t="pnl-res"]').click();
             $('#ide-res').html('<div class="rs-ph">Running...</div>');
@@ -658,12 +639,7 @@
                 success: function(r) {
                     rid = r.run_id;
                     runSecret = r.id_secret;
-                    if (USE_WSEVENT && runSecret) {
-                        event_dispatcher.on('run_' + runSecret, onRunEvent);
-                    } else {
-                        pc = 0;
-                        doPollFallback();
-                    }
+                    event_dispatcher.on('run_' + runSecret, onRunEvent);
                 },
                 error: function(x) {
                     var e = 'Error'; try { e = JSON.parse(x.responseText).error || e; } catch(ex) {}
