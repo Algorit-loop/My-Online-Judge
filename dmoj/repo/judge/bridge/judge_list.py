@@ -236,7 +236,13 @@ class JudgeList(object):
                     on_long_queue.delay()
 
     def judge_run(self, id, problem, language, source, judge_id, priority,
-                  banned_judges=[], sample_input_files=[], custom_inputs=[]):
+                  banned_judges=None, sample_input_files=None, custom_inputs=None):
+        if banned_judges is None:
+            banned_judges = []
+        if sample_input_files is None:
+            sample_input_files = []
+        if custom_inputs is None:
+            custom_inputs = []
         with self.lock:
             key = self._key(id, True)
             if key in self.submission_map or key in self.node_map:

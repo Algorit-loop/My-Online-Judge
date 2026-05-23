@@ -106,7 +106,7 @@ class RunSubmitView(LoginRequiredMixin, View):
             run_sub.delete()
             return JsonResponse({'error': 'Failed to dispatch to judge'}, status=503)
 
-        return JsonResponse({'run_id': run_sub.id})
+        return JsonResponse({'run_id': run_sub.id, 'id_secret': run_sub.id_secret})
 
 
 class RunPollView(LoginRequiredMixin, View):

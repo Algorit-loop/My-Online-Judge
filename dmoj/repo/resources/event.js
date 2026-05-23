@@ -133,6 +133,17 @@ function WSEventDispatcher(websocket_path, polling_base, last_msg) {
         this.events[event_name].registerCallback(callback);
     };
 
+    this.off = function (event_name) {
+        if (!this.events[event_name]) return;
+        delete this.events[event_name];
+        var idx = this.channels.indexOf(event_name);
+        if (idx !== -1) {
+            this.channels.splice(idx, 1);
+            clearTimeout(filter_timeout);
+            set_filters();
+        }
+    };
+
     this.onwsclose = function (callback) {
         if (!this.events[onwsclose_secret]) {
             this.events[onwsclose_secret] = new Event();

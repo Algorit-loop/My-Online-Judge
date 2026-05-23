@@ -60,7 +60,7 @@ DATABASES = {
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 # ---- tao them -----
 SESSION_COOKIE_AGE = 3600 * 24 * 4  # 4 ngày
-SESSION_SAVE_EVERY_REQUEST = True  # Reset mỗi lần user có hoạt động
+SESSION_SAVE_EVERY_REQUEST = False  # Reset mỗi lần user có hoạt động
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Không xóa session khi tắt trình duyệt
 # ---------------------
 
