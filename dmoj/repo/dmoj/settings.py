@@ -77,6 +77,8 @@ ALOJ_DISPLAY_RANKS = (
     ('admin', _('Admin')),
     ('teacher', _('Teacher')),
 )
+# Backward-compatible alias for migrations that reference the old name
+VNOJ_DISPLAY_RANKS = ALOJ_DISPLAY_RANKS
 
 # Maximum number of organization a single user can be admin, to be able to
 # create new organization, without the `spam_organization` permission
