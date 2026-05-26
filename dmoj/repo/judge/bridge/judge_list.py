@@ -232,7 +232,7 @@ class JudgeList(object):
                     self.priority[priority],
                 )
                 logger.info('Queued submission: %d', id)
-                if self.queue.size == settings.VNOJ_LONG_QUEUE_ALERT_THRESHOLD + self.priorities:
+                if self.queue.size == settings.ALOJ_LONG_QUEUE_ALERT_THRESHOLD + self.priorities:
                     on_long_queue.delay()
 
     def judge_run(self, id, problem, language, source, judge_id, priority,

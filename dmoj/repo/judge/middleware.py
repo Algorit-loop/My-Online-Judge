@@ -45,7 +45,7 @@ class DMOJLoginMiddleware(object):
 
     def __call__(self, request):
         # Don't require user to change their password in contest mode
-        request.official_contest_mode = settings.VNOJ_OFFICIAL_CONTEST_MODE
+        request.official_contest_mode = settings.ALOJ_OFFICIAL_CONTEST_MODE
         if request.user.is_authenticated:
             profile = request.profile = request.user.profile
             if uwsgi:
@@ -235,7 +235,7 @@ class OrganizationSubdomainMiddleware(object):
 
     def __call__(self, request):
         subdomain: str = request.get_host().split('.')[0]
-        if subdomain.isnumeric() or subdomain in settings.VNOJ_IGNORED_ORGANIZATION_SUBDOMAINS:
+        if subdomain.isnumeric() or subdomain in settings.ALOJ_IGNORED_ORGANIZATION_SUBDOMAINS:
             return self.get_response(request)
 
         request.organization = get_object_or_404(Organization, slug=subdomain)

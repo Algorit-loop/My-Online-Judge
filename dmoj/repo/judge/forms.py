@@ -66,7 +66,7 @@ class ProfileForm(ModelForm):
 
         # Make sure that users cannot change their `about` in contest mode
         # because the user can put the solution in that profile
-        if settings.VNOJ_OFFICIAL_CONTEST_MODE:
+        if settings.ALOJ_OFFICIAL_CONTEST_MODE:
             fields.remove('about')
 
         has_math_config = bool(settings.MATHOID_URL)
@@ -79,7 +79,7 @@ class ProfileForm(ModelForm):
     def clean_about(self):
         if 'about' in self.changed_data and not self.instance.has_enough_solves:
             raise ValidationError(_('You must solve at least %d problems before you can update your profile.')
-                                  % settings.VNOJ_INTERACT_MIN_PROBLEM_COUNT)
+                                  % settings.ALOJ_INTERACT_MIN_PROBLEM_COUNT)
         return self.cleaned_data['about']
 
     def clean(self):
@@ -116,7 +116,7 @@ class UserForm(ModelForm):
         fields = ['first_name']
 
         # In contest mode, we don't want user to change their name.
-        if settings.VNOJ_OFFICIAL_CONTEST_MODE:
+        if settings.ALOJ_OFFICIAL_CONTEST_MODE:
             fields.remove('first_name')
 
     def clean_first_name(self):
@@ -145,9 +145,9 @@ class LanguageLimitForm(ModelForm):
     def clean_time_limit(self):
         has_high_perm = self.user and self.user.has_perm('judge.high_problem_timelimit')
         timelimit = self.cleaned_data['time_limit']
-        if timelimit and timelimit > settings.VNOJ_PROBLEM_TIMELIMIT_LIMIT and not has_high_perm:
+        if timelimit and timelimit > settings.ALOJ_PROBLEM_TIMELIMIT_LIMIT and not has_high_perm:
             raise forms.ValidationError(_('You cannot set time limit higher than %d seconds')
-                                        % settings.VNOJ_PROBLEM_TIMELIMIT_LIMIT,
+                                        % settings.ALOJ_PROBLEM_TIMELIMIT_LIMIT,
                                         'problem_timelimit_too_long')
         return self.cleaned_data['time_limit']
 
@@ -212,9 +212,9 @@ class ProblemEditForm(ModelForm):
     def clean_time_limit(self):
         has_high_perm = self.user and self.user.has_perm('judge.high_problem_timelimit')
         timelimit = self.cleaned_data['time_limit']
-        if timelimit and timelimit > settings.VNOJ_PROBLEM_TIMELIMIT_LIMIT and not has_high_perm:
+        if timelimit and timelimit > settings.ALOJ_PROBLEM_TIMELIMIT_LIMIT and not has_high_perm:
             raise forms.ValidationError(_('You cannot set time limit higher than %d seconds')
-                                        % settings.VNOJ_PROBLEM_TIMELIMIT_LIMIT,
+                                        % settings.ALOJ_PROBLEM_TIMELIMIT_LIMIT,
                                         'problem_timelimit_too_long')
         return self.cleaned_data['time_limit']
 
@@ -774,9 +774,9 @@ class ContestForm(ModelForm):
 
         has_long_perm = self.user and self.user.has_perm('judge.long_contest_duration')
         if end_time and start_time and \
-           (end_time - start_time).days > settings.VNOJ_CONTEST_DURATION_LIMIT and not has_long_perm:
+           (end_time - start_time).days > settings.ALOJ_CONTEST_DURATION_LIMIT and not has_long_perm:
             raise forms.ValidationError(_('Contest duration cannot be longer than %d days')
-                                        % settings.VNOJ_CONTEST_DURATION_LIMIT,
+                                        % settings.ALOJ_CONTEST_DURATION_LIMIT,
                                         'contest_duration_too_long')
         return cleaned_data
 

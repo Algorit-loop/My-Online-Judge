@@ -210,7 +210,7 @@ class UserAboutPage(UserPage):
         timezone_offset = pytz.timezone(user_timezone).utcoffset(datetime.datetime.utcnow()).seconds
 
         submissions_count = self.object.submission_set.count()
-        if submissions_count > settings.VNOJ_LOW_POWER_MODE_CONFIG['heat_map_limit']:
+        if submissions_count > settings.ALOJ_LOW_POWER_MODE_CONFIG['heat_map_limit']:
             submissions = []
         else:
             submissions = (
@@ -304,7 +304,7 @@ class UserCommentPage(CustomUserMixin, DiggPaginatorMixin, ListView):
             context['is_new_user'] = self.request.profile.is_new_user
             context['interact_min_problem_count_msg'] = \
                 _('You need to have solved at least %d problems before your voice can be heard.') \
-                % settings.VNOJ_INTERACT_MIN_PROBLEM_COUNT
+                % settings.ALOJ_INTERACT_MIN_PROBLEM_COUNT
 
         return context
 

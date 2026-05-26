@@ -50,25 +50,25 @@ DMOJ_PP_STEP = 0.98514
 DMOJ_PP_ENTRIES = 300
 DMOJ_PP_BONUS_FUNCTION = lambda n: 0.05 * n  # 15 * (1 - 0.997 ** n)  # noqa: E731; 100 bai nua diem: 0.9930924
 
-VNOJ_ORG_PP_STEP = 0.95
-VNOJ_ORG_PP_ENTRIES = 100
-VNOJ_ORG_PP_SCALE = 1
+ALOJ_ORG_PP_STEP = 0.95
+ALOJ_ORG_PP_ENTRIES = 100
+ALOJ_ORG_PP_SCALE = 1
 
-VNOJ_ENABLE_API = False
-VNOJ_ENABLE_SYNC_API = True  # need to make this true for testing :sad:
+ALOJ_ENABLE_API = False
+ALOJ_ENABLE_SYNC_API = True  # need to make this true for testing :sad:
 # GLOBAL_API_KEY = 'test-api-key-123'
 
-VNOJ_OFFICIAL_CONTEST_MODE = False
+ALOJ_OFFICIAL_CONTEST_MODE = False
 
 # Contribution points function
 # Both should be int
-VNOJ_CP_COMMENT = 1   # Each comment vote equals 1 CP
-VNOJ_CP_TICKET = 10   # Each good ticket equals CP
-VNOJ_CP_PROBLEM = 20  # Each suggested problem equal 20 CP
+ALOJ_CP_COMMENT = 1   # Each comment vote equals 1 CP
+ALOJ_CP_TICKET = 10   # Each good ticket equals CP
+ALOJ_CP_PROBLEM = 20  # Each suggested problem equal 20 CP
 
-VNOJ_HOMEPAGE_TOP_USERS_COUNT = 10
+ALOJ_HOMEPAGE_TOP_USERS_COUNT = 10
 
-VNOJ_DISPLAY_RANKS = (
+ALOJ_DISPLAY_RANKS = (
     ('user', _('Normal User')),
     ('setter', _('Problem Setter')),
     ('daor', _('Bedao Team')),
@@ -80,61 +80,61 @@ VNOJ_DISPLAY_RANKS = (
 
 # Maximum number of organization a single user can be admin, to be able to
 # create new organization, without the `spam_organization` permission
-VNOJ_ORGANIZATION_ADMIN_LIMIT = 3
+ALOJ_ORGANIZATION_ADMIN_LIMIT = 3
 # Maximum timelimit (second) that a user can set for a problem
 # without the `high_problem_timelimit` permission
-VNOJ_PROBLEM_TIMELIMIT_LIMIT = 5
+ALOJ_PROBLEM_TIMELIMIT_LIMIT = 5
 # Maximum contest duration (day) that a user can set for a contest
 # without the `long_contest_duration` permission
-VNOJ_CONTEST_DURATION_LIMIT = 14
+ALOJ_CONTEST_DURATION_LIMIT = 14
 # Maximum number of test cases that a user can create for a problem
 # without the `create_mass_testcases` permission
-VNOJ_TESTCASE_HARD_LIMIT = 100
+ALOJ_TESTCASE_HARD_LIMIT = 100
 # If a user without the `create_mass_testcases` permission create more than this amount of test
 # they will receive a warning
-VNOJ_TESTCASE_SOFT_LIMIT = 50
+ALOJ_TESTCASE_SOFT_LIMIT = 50
 # Minimum problem count required to interact (comment, vote and update profile)
-VNOJ_INTERACT_MIN_PROBLEM_COUNT = 5
+ALOJ_INTERACT_MIN_PROBLEM_COUNT = 5
 # Minimum problem count required to create new blogs
-VNOJ_BLOG_MIN_PROBLEM_COUNT = 10
+ALOJ_BLOG_MIN_PROBLEM_COUNT = 10
 
 # Comment validation settings
-VNOJ_COMMENT_MIN_CONTRIBUTION = -20
-VNOJ_COMMENT_MIN_LENGTH = 10
-VNOJ_COMMENT_MAX_LENGTH = 10000
-VNOJ_COMMENT_BLACKLIST_TERMS = []
-VNOJ_COMMENT_RATE_LIMIT_COUNT = None  # maximum number of comments allowed within the time window
-VNOJ_COMMENT_RATE_LIMIT_WINDOW = datetime.timedelta(seconds=600)
+ALOJ_COMMENT_MIN_CONTRIBUTION = -20
+ALOJ_COMMENT_MIN_LENGTH = 10
+ALOJ_COMMENT_MAX_LENGTH = 10000
+ALOJ_COMMENT_BLACKLIST_TERMS = []
+ALOJ_COMMENT_RATE_LIMIT_COUNT = None  # maximum number of comments allowed within the time window
+ALOJ_COMMENT_RATE_LIMIT_WINDOW = datetime.timedelta(seconds=600)
 
-VNOJ_TESTCASE_VISIBLE_LENGTH = 60
+ALOJ_TESTCASE_VISIBLE_LENGTH = 60
 
-VNOJ_TAG_PROBLEM_MIN_RATING = 1900  # Minimum rating to be able to tag a problem
+ALOJ_TAG_PROBLEM_MIN_RATING = 1900  # Minimum rating to be able to tag a problem
 
-VNOJ_SHOULD_BAN_FOR_CHEATING_IN_CONTESTS = False
-VNOJ_CONTEST_CHEATING_BAN_MESSAGE = 'Banned for multiple cheating offenses during contests'
-VNOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING = 3
+ALOJ_SHOULD_BAN_FOR_CHEATING_IN_CONTESTS = False
+ALOJ_CONTEST_CHEATING_BAN_MESSAGE = 'Banned for multiple cheating offenses during contests'
+ALOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING = 3
 
 # List of subdomain that will be ignored in organization subdomain middleware
-VNOJ_IGNORED_ORGANIZATION_SUBDOMAINS = ['oj', 'www', 'localhost']
+ALOJ_IGNORED_ORGANIZATION_SUBDOMAINS = ['oj', 'www', 'localhost']
 
 # Enable organization credit system, if true, org will not be able to submit submissions
 # if they run out of credit
-VNOJ_ENABLE_ORGANIZATION_CREDIT_LIMITATION = False
-VNOJ_PRICE_PER_HOUR = 50
+ALOJ_ENABLE_ORGANIZATION_CREDIT_LIMITATION = False
+ALOJ_PRICE_PER_HOUR = 50
 
 
-VNOJ_LONG_QUEUE_ALERT_THRESHOLD = 10
+ALOJ_LONG_QUEUE_ALERT_THRESHOLD = 10
 
 # Low power mode: Optimize queries by limiting data scope for performance
-VNOJ_LOW_POWER_MODE = False
-VNOJ_LOW_POWER_MODE_CONFIG = {
+ALOJ_LOW_POWER_MODE = False
+ALOJ_LOW_POWER_MODE_CONFIG = {
     # limit the number of submissions pages
     'max_page': 5,
     # avoid drawing heat map for users with too many submissions
     'heat_map_limit': 20_000,
 }
 
-VNOJ_MAGAZINE_TAG_SLUG = None
+ALOJ_MAGAZINE_TAG_SLUG = None
 
 CELERY_TIMEZONE = 'UTC'
 
@@ -227,7 +227,7 @@ DMOJ_PROBLEM_HOT_PROBLEM_COUNT = 7
 DMOJ_PROBLEM_STATEMENT_DISALLOWED_CHARACTERS = {'“', '”', '‘', '’', '−', 'ﬀ', 'ﬁ', 'ﬂ', 'ﬃ', 'ﬄ'}
 DMOJ_RATING_COLORS = True
 DMOJ_EMAIL_THROTTLING = (10, 60)
-VNOJ_DISCORD_WEBHOOK_THROTTLING = (10, 60)  # Max 10 messages in 60 seconds
+ALOJ_DISCORD_WEBHOOK_THROTTLING = (10, 60)  # Max 10 messages in 60 seconds
 
 # Maximum number of submissions a single user can queue without the `spam_submission` permission
 DMOJ_SUBMISSION_LIMIT = 5
