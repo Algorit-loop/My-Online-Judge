@@ -1,0 +1,310 @@
+{% extends "user/user-base.html" %}
+
+{% block title_ruler %}{% endblock %}
+
+{% block title_row %}
+    {% set tab = 'api_keys' %}
+    {% set user = request.profile %}
+    {% include "user/user-tabs.html" %}
+{% endblock %}
+
+{% block user_content %}
+<div id="api-keys-page">
+    <p style="color:#666; font-size:0.92em; margin-bottom:1.2em;">
+        {{ _('Add API keys from AI providers to enable AI-powered features. Keys are encrypted before storage.') }}
+    </p>
+
+    <div class="api-keys-add-form">
+        <h4 style="margin:0 0 10px; font-weight:600;">{{ _('Add API Key') }}</h4>
+        <div class="add-form-row">
+            <select id="add-provider" style="width:200px;">
+                <option value="">-- {{ _('Select provider') }} --</option>
+                {% for code, name in providers %}
+                <option value="{{ code }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" id="add-apikey" placeholder="{{ _('Paste your API key here') }}"
+                   autocomplete="off" spellcheck="false" class="add-apikey-input">
+            <button type="button" id="btn-add" class="button">
+                <i class="fa fa-plus"></i> {{ _('Add') }}
+            </button>
+        </div>
+        <div id="add-error" style="color:#c62828; font-size:0.85em; margin-top:6px; display:none;"></div>
+    </div>
+
+    <div class="h-scrollable-table">
+        <table class="table striped" id="keys-table" style="display:none;">
+            <thead>
+                <tr>
+                    <th>{{ _('Provider') }}</th>
+                    <th>{{ _('API Key') }}</th>
+                    <th>{{ _('Status') }}</th>
+                    <th>{{ _('Test') }}</th>
+                    <th>{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody id="keys-tbody"></tbody>
+        </table>
+    </div>
+    <div id="keys-empty" style="color:#999; padding:20px; text-align:center; font-style:italic;">
+        <i class="fa fa-info-circle"></i> {{ _('No API keys added yet.') }}
+    </div>
+
+    <div id="logs-section" style="margin-top:2em; border-top:1px solid #eee; padding-top:1em;">
+        <h4 style="font-weight:600; margin-bottom:10px;">{{ _('Test Logs') }}</h4>
+        <div class="h-scrollable-table">
+            <table class="table striped" id="logs-table">
+                <thead>
+                    <tr>
+                        <th>{{ _('Time') }}</th>
+                        <th>{{ _('Provider') }}</th>
+                        <th>{{ _('Model') }}</th>
+                        <th>{{ _('Result') }}</th>
+                        <th>{{ _('Time (ms)') }}</th>
+                        <th>{{ _('Detail') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-tbody">
+                    <tr id="logs-empty-row">
+                        <td colspan="6" style="text-align:center; color:#999; font-style:italic;">
+                            {{ _('No test logs yet.') }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js_media %}
+<script>
+$(function() {
+    var MODELS = {{ provider_models_json|safe }};
+    var LIST_URL = '{{ url("api_key_list") }}';
+    var ADD_URL = '{{ url("api_key_add") }}';
+    var TEST_URL = '{{ url("api_key_test", 0) }}';
+    var DELETE_URL = '{{ url("api_key_delete", 0) }}';
+    var ALL_LOGS_URL = '{{ url("api_key_all_logs") }}';
+
+    function getCsrf() {
+        var m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '{{ csrf_token }}';
+    }
+
+    function post(url, data) {
+        return $.ajax({
+            url: url, type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data || {}),
+            headers: {'X-CSRFToken': getCsrf()}
+        });
+    }
+
+    function esc(t) { return $('<span>').text(t || '').html(); }
+
+    function loadKeys() {
+        $.getJSON(LIST_URL, function(resp) {
+            var keys = resp.keys || [];
+            var $tb = $('#keys-tbody').empty();
+            if (!keys.length) {
+                $('#keys-table').hide();
+                $('#keys-empty').show();
+                return;
+            }
+            $('#keys-table').show();
+            $('#keys-empty').hide();
+
+            keys.forEach(function(k) {
+                var $tr = $('<tr>');
+                $tr.append($('<td>').text(k.provider_display));
+                $tr.append($('<td>').html('<code>****' + esc(k.key_last4) + '</code>'));
+                $tr.append($('<td>').html(statusHtml(k)));
+
+                // Model select + test btn
+                var $td = $('<td style="white-space:nowrap;">');
+                var models = MODELS[k.provider] || [];
+                var $sel = $('<select class="mdl-sel">');
+                models.forEach(function(m) {
+                    $sel.append($('<option>').val(m[0]).text(m[1]).prop('selected', m[0] === k.default_model));
+                });
+                var $test = $('<button type="button" class="button" style="padding:4px 12px; font-size:0.85em; margin-left:12px;">')
+                    .html('<i class="fa fa-plug"></i> Test');
+                $test.click(function() { doTest(k.id, $sel.val(), $(this)); });
+                $td.append($sel).append($test);
+                $tr.append($td);
+
+                // Actions — only delete
+                var $acts = $('<td>');
+                var $del = $('<button type="button" class="button" style="padding:4px 10px; font-size:0.85em; background:linear-gradient(to bottom,#d9534f,#c9302c);">')
+                    .html('<i class="fa fa-trash"></i>').attr('title', '{{ _("Delete") }}');
+                $del.click(function() { doDelete(k.id); });
+                $acts.append($del);
+                $tr.append($acts);
+                $tb.append($tr);
+            });
+        });
+    }
+
+    function statusHtml(k) {
+        if (k.status === 'verified')
+            return '<span style="color:#2e7d32;font-weight:500"><i class="fa fa-check-circle"></i> ' + esc(k.status_display) + '</span>';
+        if (k.status === 'failed')
+            return '<span style="color:#c62828;font-weight:500"><i class="fa fa-times-circle"></i> ' + esc(k.status_display) + '</span>'
+                + (k.status_detail ? '<br><small style="color:#c62828">' + esc(k.status_detail) + '</small>' : '');
+        return '<span style="color:#f57c00;font-weight:500"><i class="fa fa-clock-o"></i> ' + esc(k.status_display) + '</span>';
+    }
+
+    function doTest(id, model, $btn) {
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+        post(TEST_URL.replace('/0/', '/' + id + '/'), {model: model})
+            .done(function(d) { loadKeys(); if (d.log) prependLog(d.log); })
+            .fail(function(xhr) { alert('Test failed: ' + (tryParse(xhr) || xhr.status)); })
+            .always(function() { $btn.prop('disabled', false).html('<i class="fa fa-plug"></i> Test'); });
+    }
+
+    function doDelete(id) {
+        if (!confirm('{{ _("Delete this API key and all its test logs?") }}')) return;
+        post(DELETE_URL.replace('/0/', '/' + id + '/'))
+            .done(function() { loadKeys(); loadAllLogs(); })
+            .fail(function(xhr) { alert('Delete failed: ' + (tryParse(xhr) || xhr.status)); });
+    }
+
+    function loadAllLogs() {
+        $.getJSON(ALL_LOGS_URL, function(resp) {
+            var $tb = $('#logs-tbody').empty();
+            var logs = resp.logs || [];
+            if (!logs.length) {
+                $tb.append($('<tr id="logs-empty-row">').append(
+                    $('<td colspan="6" style="text-align:center;color:#999;font-style:italic;">').text('{{ _("No test logs yet.") }}')
+                ));
+                return;
+            }
+            logs.forEach(function(l) { $tb.append(makeLogRow(l)); });
+        });
+    }
+
+    function prependLog(l) {
+        $('#logs-empty-row').remove();
+        $('#logs-tbody').prepend(makeLogRow(l));
+    }
+
+    function makeLogRow(l) {
+        var $tr = $('<tr>');
+        $tr.append($('<td>').text(new Date(l.tested_at).toLocaleString()));
+        $tr.append($('<td>').text(l.provider_display || ''));
+        $tr.append($('<td>').html('<code>' + esc(l.model_tested) + '</code>'));
+        $tr.append($('<td>').html(l.success
+            ? '<span style="color:#2e7d32"><i class="fa fa-check"></i> OK</span>'
+            : '<span style="color:#c62828"><i class="fa fa-times"></i> Failed</span>'));
+        $tr.append($('<td>').text(l.response_time_ms ? l.response_time_ms + 'ms' : '—'));
+        $tr.append($('<td>').text(l.detail || '—'));
+        return $tr;
+    }
+
+    function tryParse(xhr) {
+        try { return JSON.parse(xhr.responseText).error; } catch(e) { return null; }
+    }
+
+    // Add key handler
+    $('#btn-add').click(function() {
+        var provider = $('#add-provider').val();
+        var key = $('#add-apikey').val().trim();
+        var $err = $('#add-error').hide().text('');
+
+        if (!provider) { $err.text('{{ _("Please select a provider") }}').show(); return; }
+        if (!key) { $err.text('{{ _("Please enter an API key") }}').show(); return; }
+        if (key.length < 10) { $err.text('{{ _("API key too short") }}').show(); return; }
+
+        var $btn = $(this).prop('disabled', true);
+        post(ADD_URL, {provider: provider, api_key: key})
+            .done(function() { $('#add-apikey').val(''); loadKeys(); })
+            .fail(function(xhr) { $err.text(tryParse(xhr) || 'Failed (' + xhr.status + ')').show(); })
+            .always(function() { $btn.prop('disabled', false); });
+    });
+
+    $('#add-apikey').keydown(function(e) { if (e.key === 'Enter') { e.preventDefault(); $('#btn-add').click(); } });
+
+    // Init select2 on provider selector
+    $('#add-provider').select2({
+        theme: '{{ DMOJ_SELECT2_THEME }}',
+        minimumResultsForSearch: Infinity
+    });
+
+    loadKeys();
+    loadAllLogs();
+});
+</script>
+{% endblock %}
+
+{% block user_media %}
+<style>
+    #api-keys-page { padding: 0 10px; }
+    .api-keys-add-form { margin-bottom:1.5em; padding:12px 16px; border:1px solid #eee; border-radius:4px; background:#fafafa; }
+
+    /* Add-form row: all elements same height, vertically centered */
+    .add-form-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .add-form-row .button {
+        height: 34px;
+        line-height: 34px;
+        padding-top: 0;
+        padding-bottom: 0;
+        white-space: nowrap;
+    }
+
+    /* select2 for provider — match input height */
+    #add-provider + .select2-container {
+        height: 34px;
+    }
+    #add-provider + .select2-container .select2-selection--single {
+        height: 34px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    #add-provider + .select2-container .select2-selection--single .select2-selection__rendered {
+        line-height: 34px;
+        padding-left: 10px;
+        padding-right: 28px;
+    }
+    #add-provider + .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 34px;
+    }
+
+    /* API key input */
+    .add-apikey-input {
+        height: 34px;
+        padding: 0 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 13px;
+        width: 320px;
+        max-width: 100%;
+        box-sizing: border-box;
+        vertical-align: middle;
+    }
+    .add-apikey-input:focus { outline: none; border-color: #66afe9; box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 4px rgba(102,175,233,.6); }
+
+    /* Model select inside table */
+    .mdl-sel {
+        padding: 4px 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 0.88em;
+        height: 30px;
+        background: #fff;
+        cursor: pointer;
+        min-width: 160px;
+        vertical-align: middle;
+    }
+    .mdl-sel:focus { outline: none; border-color: #66afe9; }
+
+    #keys-table td, #logs-table td { text-align:left; vertical-align:middle; font-size:0.9em; }
+    #keys-table th, #logs-table th { text-align:left; }
+</style>
+{% endblock %}

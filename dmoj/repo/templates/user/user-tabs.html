@@ -30,5 +30,6 @@
     {% endif %}
     {% if user.user == request.user %}
         {{ make_tab('edit', 'fa-edit', url('user_edit_profile'), _('Edit profile')) }}
+        {{ make_tab('api_keys', 'fa-key', url('api_key_page'), _('AI API Keys')) }}
     {% endif %}
 {% endblock %}

@@ -89,6 +89,18 @@ register_patterns = [
     path('api/token/remove/', user.remove_api_token, name='remove_api_token'),
 ]
 
+from judge.views import api_key as api_key_views
+
+register_patterns += [
+    path('api-keys/', api_key_views.APIKeyPageView.as_view(), name='api_key_page'),
+    path('api-keys/list/', api_key_views.api_key_list, name='api_key_list'),
+    path('api-keys/add/', api_key_views.api_key_add, name='api_key_add'),
+    path('api-keys/logs/', api_key_views.api_key_all_logs, name='api_key_all_logs'),
+    path('api-keys/<int:key_id>/test/', api_key_views.api_key_test, name='api_key_test'),
+    path('api-keys/<int:key_id>/delete/', api_key_views.api_key_delete, name='api_key_delete'),
+    path('api-keys/<int:key_id>/logs/', api_key_views.api_key_logs, name='api_key_logs'),
+]
+
 
 def exception(request):
     if not request.user.is_superuser:
