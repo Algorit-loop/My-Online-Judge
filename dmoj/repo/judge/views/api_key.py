@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from judge.models.api_key import (
     AIAPIKey, AIAPIKeyTestLog,
-    AI_PROVIDER_CHOICES, AI_PROVIDER_MODELS, AI_PROVIDER_DEFAULT_MODELS,
+    AI_PROVIDER_CHOICES, AI_PROVIDER_MODELS, AI_PROVIDER_DEFAULT_MODELS, AI_PROVIDER_CONFIGS,
 )
 from judge.views.user import UserPage
 
@@ -134,7 +134,7 @@ def api_key_test(request, key_id):
     if not model:
         model = key.default_model or AI_PROVIDER_DEFAULT_MODELS.get(key.provider, '')
 
-    valid_models = [m[0] for m in AI_PROVIDER_MODELS.get(key.provider, [])]
+    valid_models = AI_PROVIDER_MODELS.get(key.provider, [])
     if model not in valid_models:
         return JsonResponse({'error': _('Invalid model for this provider')}, status=400)
 
@@ -231,19 +231,30 @@ def api_key_all_logs(request):
 
 
 # === Provider test functions ===
+# Timeout is set to 90s because thinking/reasoning models (o3, DeepSeek-R1, etc.)
+# can take 60s+ before responding.
+_API_TEST_TIMEOUT = 90
+
 
 def _test_openai(api_key, model):
-    url = 'https://api.openai.com/v1/chat/completions'
-    headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'}
+    """OpenAI Responses API: POST /v1/responses with {model, input}."""
+    config = AI_PROVIDER_CONFIGS['openai']
+    url = config['base_url'] + config['endpoint']
+    headers = {
+        'Content-Type': 'application/json',
+        config['auth_header']: config['auth_format'].format(key=api_key),
+    }
     payload = json.dumps({
         'model': model,
-        'messages': [{'role': 'user', 'content': 'Reply exactly: OK'}],
-        'max_tokens': 5,
+        'input': 'Reply exactly: OK',
+        'max_output_tokens': 5,
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=_API_TEST_TIMEOUT) as resp:
             data = json.loads(resp.read())
+            if 'output' not in data and 'id' not in data:
+                return False, _('Unexpected response format')
             return True, _('Connection successful')
     except urllib.error.HTTPError as e:
         return False, _parse_http_error(e)
@@ -252,16 +263,23 @@ def _test_openai(api_key, model):
 
 
 def _test_gemini(api_key, model):
-    url = (f'https://generativelanguage.googleapis.com/v1beta/models/'
-           f'{model}:generateContent?key={api_key}')
-    headers = {'Content-Type': 'application/json'}
+    """Gemini API: POST /v1beta/models/{model}:generateContent, auth via x-goog-api-key header."""
+    config = AI_PROVIDER_CONFIGS['gemini']
+    url = config['base_url'] + config['endpoint'].format(model=model)
+    headers = {
+        'Content-Type': 'application/json',
+        config['auth_header']: config['auth_format'].format(key=api_key),
+    }
     payload = json.dumps({
         'contents': [{'parts': [{'text': 'Reply exactly: OK'}]}],
         'generationConfig': {'maxOutputTokens': 5},
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=_API_TEST_TIMEOUT) as resp:
+            data = json.loads(resp.read())
+            if 'candidates' not in data:
+                return False, _('Unexpected response format')
             return True, _('Connection successful')
     except urllib.error.HTTPError as e:
         return False, _parse_http_error(e)
@@ -270,19 +288,25 @@ def _test_gemini(api_key, model):
 
 
 def _test_claude(api_key, model):
-    url = 'https://api.anthropic.com/v1/messages'
+    """Claude API: POST /v1/messages with {model, messages, max_tokens}, auth via x-api-key header."""
+    config = AI_PROVIDER_CONFIGS['claude']
+    url = config['base_url'] + config['endpoint']
     headers = {
         'Content-Type': 'application/json',
-        'x-api-key': api_key,
-        'anthropic-version': '2023-06-01',
+        config['auth_header']: config['auth_format'].format(key=api_key),
     }
+    headers.update(config.get('extra_headers', {}))
     payload = json.dumps({
-        'model': model, 'max_tokens': 5,
+        'model': model,
+        'max_tokens': 5,
         'messages': [{'role': 'user', 'content': 'Reply exactly: OK'}],
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=_API_TEST_TIMEOUT) as resp:
+            data = json.loads(resp.read())
+            if 'content' not in data:
+                return False, _('Unexpected response format')
             return True, _('Connection successful')
     except urllib.error.HTTPError as e:
         return False, _parse_http_error(e)
@@ -291,8 +315,13 @@ def _test_claude(api_key, model):
 
 
 def _test_deepseek(api_key, model):
-    url = 'https://api.deepseek.com/chat/completions'
-    headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'}
+    """DeepSeek API: POST /chat/completions with {model, messages}, auth via Bearer token."""
+    config = AI_PROVIDER_CONFIGS['deepseek']
+    url = config['base_url'] + config['endpoint']
+    headers = {
+        'Content-Type': 'application/json',
+        config['auth_header']: config['auth_format'].format(key=api_key),
+    }
     payload = json.dumps({
         'model': model,
         'messages': [{'role': 'user', 'content': 'Reply exactly: OK'}],
@@ -300,7 +329,10 @@ def _test_deepseek(api_key, model):
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=_API_TEST_TIMEOUT) as resp:
+            data = json.loads(resp.read())
+            if 'choices' not in data:
+                return False, _('Unexpected response format')
             return True, _('Connection successful')
     except urllib.error.HTTPError as e:
         return False, _parse_http_error(e)

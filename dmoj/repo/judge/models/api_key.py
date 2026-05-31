@@ -19,29 +19,35 @@ AI_PROVIDER_CHOICES = [
 
 AI_PROVIDER_MODELS = {
     'openai': [
-        ('gpt-4o', 'GPT-4o'),
-        ('gpt-4o-mini', 'GPT-4o Mini'),
-        ('gpt-4.1', 'GPT-4.1'),
-        ('gpt-4.1-mini', 'GPT-4.1 Mini'),
-        ('gpt-4.1-nano', 'GPT-4.1 Nano'),
-        ('o3', 'o3'),
-        ('o3-mini', 'o3-mini'),
-        ('o4-mini', 'o4-mini'),
+        'gpt-5.5',
+        'gpt-5.4',
+        'gpt-5.4-mini',
+        'gpt-5.4-nano',
+        'gpt-4.1',
+        'gpt-4o',
+        'gpt-4o-mini',
     ],
     'gemini': [
-        ('gemini-2.5-pro', 'Gemini 2.5 Pro'),
-        ('gemini-2.5-flash', 'Gemini 2.5 Flash'),
-        ('gemini-2.5-flash-lite', 'Gemini 2.5 Flash-Lite'),
-        ('gemini-2.0-flash', 'Gemini 2.0 Flash'),
+        'gemini-3.1-pro-preview',
+        'gemini-3.1-pro-preview-customtools',
+        'gemini-3-flash-preview',
+        'gemini-3.1-flash-lite',
+        'gemini-2.5-pro',
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
     ],
     'claude': [
-        ('claude-opus-4-7', 'Claude Opus 4.7'),
-        ('claude-sonnet-4-6', 'Claude Sonnet 4.6'),
-        ('claude-haiku-4-5', 'Claude Haiku 4.5'),
+        'claude-opus-4-8',
+        'claude-opus-4-7',
+        'claude-sonnet-4-6',
+        'claude-haiku-4-5',
+        'claude-haiku-4-5-20251001',
     ],
     'deepseek': [
-        ('deepseek-chat', 'DeepSeek-V3'),
-        ('deepseek-reasoner', 'DeepSeek-R1'),
+        'deepseek-v4-flash',
+        'deepseek-v4-pro',
+        'deepseek-chat',
+        'deepseek-reasoner',
     ],
 }
 
@@ -50,6 +56,34 @@ AI_PROVIDER_DEFAULT_MODELS = {
     'gemini': 'gemini-2.5-flash',
     'claude': 'claude-sonnet-4-6',
     'deepseek': 'deepseek-chat',
+}
+
+AI_PROVIDER_CONFIGS = {
+    'openai': {
+        'base_url': 'https://api.openai.com',
+        'endpoint': '/v1/responses',
+        'auth_header': 'Authorization',
+        'auth_format': 'Bearer {key}',
+    },
+    'gemini': {
+        'base_url': 'https://generativelanguage.googleapis.com',
+        'endpoint': '/v1beta/models/{model}:generateContent',
+        'auth_header': 'x-goog-api-key',
+        'auth_format': '{key}',
+    },
+    'claude': {
+        'base_url': 'https://api.anthropic.com',
+        'endpoint': '/v1/messages',
+        'auth_header': 'x-api-key',
+        'auth_format': '{key}',
+        'extra_headers': {'anthropic-version': '2023-06-01'},
+    },
+    'deepseek': {
+        'base_url': 'https://api.deepseek.com',
+        'endpoint': '/chat/completions',
+        'auth_header': 'Authorization',
+        'auth_format': 'Bearer {key}',
+    },
 }
 
 STATUS_CHOICES = [

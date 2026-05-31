@@ -126,7 +126,7 @@ $(function() {
                 var models = MODELS[k.provider] || [];
                 var $sel = $('<select class="mdl-sel">');
                 models.forEach(function(m) {
-                    $sel.append($('<option>').val(m[0]).text(m[1]).prop('selected', m[0] === k.default_model));
+                    $sel.append($('<option>').val(m).text(m).prop('selected', m === k.default_model));
                 });
                 var $test = $('<button type="button" class="button" style="padding:4px 12px; font-size:0.85em; margin-left:12px;">')
                     .html('<i class="fa fa-plug"></i> Test');

@@ -2,8 +2,10 @@ from operator import attrgetter
 
 from django import forms
 from django.contrib import admin
+from django.core.validators import FileExtensionValidator
 from django.db import transaction
 from django.forms import ModelForm
+from django.template.defaultfilters import filesizeformat
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.html import format_html
@@ -12,12 +14,19 @@ from reversion.admin import VersionAdmin
 
 from judge.models import LanguageLimit, Problem, ProblemClarification, ProblemTranslation, Profile, Solution
 from judge.utils.views import NoBatchDeleteMixin
+from judge.views.widgets import pdf_statement_uploader
 from judge.widgets import AdminHeavySelect2MultipleWidget, AdminHeavySelect2Widget, AdminMartorWidget, \
     AdminSelect2MultipleWidget, AdminSelect2Widget, CheckboxSelectMultipleWithSelectAll
 
 
 class ProblemForm(ModelForm):
     change_message = forms.CharField(max_length=256, label='Edit reason', required=False)
+    statement_file = forms.FileField(
+        required=False,
+        label=_('Upload PDF statement'),
+        help_text=_('Upload a PDF to set the statement URL automatically. Leave blank to keep existing.'),
+        widget=forms.ClearableFileInput(attrs={'accept': 'application/pdf'}),
+    )
 
     def __init__(self, *args, **kwargs):
         super(ProblemForm, self).__init__(*args, **kwargs)
@@ -29,6 +38,20 @@ class ProblemForm(ModelForm):
         self.fields['change_message'].widget.attrs.update({
             'placeholder': gettext('Describe the changes you made (optional)'),
         })
+
+    def clean_statement_file(self):
+        from django.conf import settings
+        content = self.files.get('statement_file', None)
+        if content is not None:
+            allowed_exts = getattr(settings, 'PDF_STATEMENT_SAFE_EXTS', ['pdf'])
+            max_size = getattr(settings, 'PDF_STATEMENT_MAX_FILE_SIZE', 10 * 1024 * 1024)
+            validator = FileExtensionValidator(allowed_extensions=allowed_exts)
+            validator(content)
+            if content.size > max_size:
+                raise forms.ValidationError(
+                    _('File size is too big! Maximum file size is %s') % filesizeformat(max_size),
+                )
+        return content
 
     class Meta:
         widgets = {
@@ -125,7 +148,7 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
                 'code', 'name', 'suggester', 'is_public', 'is_manually_managed', 'date', 'authors',
                 'curators', 'testers', 'is_organization_private', 'organization', 'submission_source_visibility_mode',
                 'testcase_visibility_mode', 'testcase_result_visibility_mode', 'allow_view_feedback',
-                'is_full_markup', 'pdf_url', 'source', 'description', 'license',
+                'is_full_markup', 'pdf_url', 'statement_file', 'source', 'description', 'license',
             ),
         }),
         (_('IDE'), {'fields': ('enable_new_ide',)}),
@@ -222,6 +245,9 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
         return form
 
     def save_model(self, request, obj, form, change):
+        statement_file = form.cleaned_data.get('statement_file')
+        if statement_file:
+            obj.pdf_url = pdf_statement_uploader(statement_file)
         super(ProblemAdmin, self).save_model(request, obj, form, change)
         if (
             form.changed_data and

@@ -10,6 +10,7 @@ from judge.admin.interface import BlogPostAdmin, BlogPostTagAdmin, FlatPageAdmin
 from judge.admin.organization import OrganizationAdmin, OrganizationRequestAdmin
 from judge.admin.problem import ProblemAdmin
 from judge.admin.profile import ProfileAdmin, UserAdmin
+from judge.admin.ai_api_key import AIAPIKeyAdmin, AIAPIKeyTestLogAdmin
 from judge.admin.run_submission import RunSubmissionAdmin
 from judge.admin.runtime import JudgeAdmin, LanguageAdmin
 from judge.admin.submission import SubmissionAdmin
@@ -20,6 +21,7 @@ from judge.models import Badge, BlogPost, BlogPostTag, Comment, CommentLock, Con
     ContestTag, Judge, Language, License, MiscConfig, NavigationBar, Organization, \
     OrganizationRequest, Problem, ProblemGroup, ProblemType, Profile, RunSubmission, Submission, Tag, \
     TagGroup, TagProblem, Ticket
+from judge.models.api_key import AIAPIKey, AIAPIKeyTestLog
 
 admin.site.register(BlogPost, BlogPostAdmin)
 admin.site.register(BlogPostTag, BlogPostTagAdmin)
@@ -51,3 +53,5 @@ admin.site.register(TagGroup, TagGroupAdmin)
 admin.site.register(TagProblem, TagProblemAdmin)
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+admin.site.register(AIAPIKey, AIAPIKeyAdmin)
+admin.site.register(AIAPIKeyTestLog, AIAPIKeyTestLogAdmin)
