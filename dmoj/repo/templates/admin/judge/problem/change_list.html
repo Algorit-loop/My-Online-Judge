@@ -1,0 +1,13 @@
+{% extends "reversion/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    {% if perms.judge.add_problem %}
+        <li>
+            <a href="{% url 'admin:judge_problem_ai_create' %}" class="action-link">
+                <i class="fa fa-magic"></i> {% trans "Create Problem with AI" %}
+            </a>
+        </li>
+    {% endif %}
+{% endblock %}

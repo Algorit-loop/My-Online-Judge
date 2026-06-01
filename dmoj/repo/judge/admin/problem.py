@@ -1,18 +1,23 @@
+import json
 from operator import attrgetter
 
 from django import forms
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
 from django.core.validators import FileExtensionValidator
 from django.db import transaction
 from django.forms import ModelForm
+from django.http import JsonResponse
 from django.template.defaultfilters import filesizeformat
-from django.urls import reverse_lazy
+from django.template.response import TemplateResponse
+from django.urls import path, reverse_lazy
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext, gettext_lazy as _, ngettext
 from reversion.admin import VersionAdmin
 
 from judge.models import LanguageLimit, Problem, ProblemClarification, ProblemTranslation, Profile, Solution
+from judge.models.api_key import AIAPIKey, AI_PROVIDER_MODELS, VISION_PROVIDERS
 from judge.utils.views import NoBatchDeleteMixin
 from judge.views.widgets import pdf_statement_uploader
 from judge.widgets import AdminHeavySelect2MultipleWidget, AdminHeavySelect2Widget, AdminMartorWidget, \
@@ -170,6 +175,7 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
     list_filter = ('is_public', ProblemCreatorListFilter)
     form = ProblemForm
     date_hierarchy = 'date'
+    change_list_template = 'admin/judge/problem/change_list.html'
 
     def get_actions(self, request):
         actions = super(ProblemAdmin, self).get_actions(request)
@@ -259,3 +265,109 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
         if form.cleaned_data.get('change_message'):
             return form.cleaned_data['change_message']
         return super(ProblemAdmin, self).construct_change_message(request, form, *args, **kwargs)
+
+    def get_urls(self):
+        return [
+            path('ai-create/', self.admin_site.admin_view(self.ai_create_problem_view),
+                 name='judge_problem_ai_create'),
+            path('ai-create/process/', self.admin_site.admin_view(self.ai_create_problem_process),
+                 name='judge_problem_ai_create_process'),
+            path('ai-create/apply/', self.admin_site.admin_view(self.ai_create_problem_apply),
+                 name='judge_problem_ai_create_apply'),
+        ] + super().get_urls()
+
+    def ai_create_problem_view(self, request):
+        """GET: Render the AI problem creation form."""
+        if not request.user.has_perm('judge.add_problem'):
+            raise PermissionDenied()
+
+        # Filter to only vision-capable providers
+        vision_models = {k: v for k, v in AI_PROVIDER_MODELS.items() if k in VISION_PROVIDERS}
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': _('Create Problem with AI'),
+            'provider_models_json': json.dumps(vision_models),
+            'has_permission': True,
+        }
+        return TemplateResponse(request, 'admin/judge/problem/ai_create.html', context)
+
+    def ai_create_problem_process(self, request):
+        """POST: Call AI and return raw text response."""
+        if request.method != 'POST':
+            return JsonResponse({'error': 'Method not allowed'}, status=405)
+        if not request.user.has_perm('judge.add_problem'):
+            raise PermissionDenied()
+
+        from judge.views.ai_problem_creator import call_ai_provider, validate_file
+
+        provider = request.POST.get('provider', '').strip()
+        model = request.POST.get('model', '').strip()
+        output_language = request.POST.get('output_language', 'English').strip()
+        uploaded_file = request.FILES.get('file')
+
+        # Validate provider
+        if provider not in VISION_PROVIDERS:
+            return JsonResponse({'error': _('Invalid provider. Must support vision input.')}, status=400)
+
+        # Validate model
+        valid_models = AI_PROVIDER_MODELS.get(provider, [])
+        if model not in valid_models:
+            return JsonResponse({'error': _('Invalid model for this provider')}, status=400)
+
+        # Validate file
+        is_valid, error = validate_file(uploaded_file)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
+
+        # Get user's API key for this provider
+        try:
+            api_key_obj = AIAPIKey.objects.get(
+                user=request.user.profile, provider=provider, status='verified',
+            )
+        except AIAPIKey.DoesNotExist:
+            return JsonResponse({
+                'error': _('No verified API key found for %s. Please add and verify one first.') % provider,
+            }, status=400)
+
+        plaintext_key = api_key_obj.decrypt_key()
+        if not plaintext_key:
+            return JsonResponse({'error': _('Failed to decrypt API key')}, status=500)
+
+        # Call AI provider — returns raw text
+        success, result = call_ai_provider(provider, model, plaintext_key, uploaded_file, output_language)
+        plaintext_key = None  # noqa: F841
+
+        if not success:
+            return JsonResponse({'error': result}, status=400)
+
+        # Update last_used_at
+        api_key_obj.last_used_at = timezone.now()
+        api_key_obj.save(update_fields=['last_used_at'])
+
+        # Return raw AI text for user to review
+        return JsonResponse({'success': True, 'raw_text': result})
+
+    def ai_create_problem_apply(self, request):
+        """POST: Parse user-edited AI response text into structured data."""
+        if request.method != 'POST':
+            return JsonResponse({'error': 'Method not allowed'}, status=405)
+        if not request.user.has_perm('judge.add_problem'):
+            raise PermissionDenied()
+
+        from judge.views.ai_problem_creator import parse_ai_response
+
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': _('Invalid request')}, status=400)
+
+        text = body.get('text', '').strip()
+        if not text:
+            return JsonResponse({'error': _('No text provided')}, status=400)
+
+        success, result = parse_ai_response(text)
+        if not success:
+            return JsonResponse({'error': result}, status=400)
+
+        return JsonResponse({'success': True, 'data': result})

@@ -5,6 +5,35 @@
     <script>
         django.jQuery(function ($) {
             $('.submissions-link').appendTo('div#bottombar').show();
+
+            // AI Draft: populate form fields from sessionStorage
+            var params = new URLSearchParams(window.location.search);
+            if (params.get('ai_draft') === '1') {
+                var draftJson = sessionStorage.getItem('ai_problem_draft');
+                if (draftJson) {
+                    try {
+                        var draft = JSON.parse(draftJson);
+                        if (draft.name) $('#id_name').val(draft.name);
+                        if (draft.description) {
+                            // Try CodeMirror/Martor editor first, then plain textarea
+                            var descField = $('#id_description');
+                            if (descField.length) descField.val(draft.description);
+                            // Trigger change for any WYSIWYG editors
+                            descField.trigger('change');
+                        }
+                        if (draft.time_limit) $('#id_time_limit').val(draft.time_limit);
+                        if (draft.memory_limit) {
+                            // Model field is in KB, AI returns MB
+                            var memKB = parseInt(draft.memory_limit) * 1024;
+                            $('#id_memory_limit').val(memKB);
+                        }
+                        if (draft.points) $('#id_points').val(draft.points);
+                    } catch (e) {
+                        console.error('AI Draft parse error:', e);
+                    }
+                    sessionStorage.removeItem('ai_problem_draft');
+                }
+            }
         });
     </script>
 {% endblock extrahead %}

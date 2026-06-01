@@ -17,6 +17,9 @@ AI_PROVIDER_CHOICES = [
     ('deepseek', 'DeepSeek'),
 ]
 
+# Providers that support image/PDF vision input
+VISION_PROVIDERS = {'openai', 'gemini', 'claude'}
+
 AI_PROVIDER_MODELS = {
     'openai': [
         'gpt-5.5',
