@@ -6,32 +6,31 @@
         django.jQuery(function ($) {
             $('.submissions-link').appendTo('div#bottombar').show();
 
-            // AI Draft: populate form fields from sessionStorage
+            // AI Draft: populate description from sessionStorage
             var params = new URLSearchParams(window.location.search);
             if (params.get('ai_draft') === '1') {
-                var draftJson = sessionStorage.getItem('ai_problem_draft');
-                if (draftJson) {
-                    try {
-                        var draft = JSON.parse(draftJson);
-                        if (draft.name) $('#id_name').val(draft.name);
-                        if (draft.description) {
-                            // Try CodeMirror/Martor editor first, then plain textarea
-                            var descField = $('#id_description');
-                            if (descField.length) descField.val(draft.description);
-                            // Trigger change for any WYSIWYG editors
-                            descField.trigger('change');
+                var description = sessionStorage.getItem('ai_problem_description');
+                if (description) {
+                    // Set the hidden textarea value
+                    $('#id_description').val(description);
+
+                    // Wait for Martor/Ace editor to initialize, then set its value
+                    var attempts = 0;
+                    var interval = setInterval(function() {
+                        attempts++;
+                        try {
+                            var editor = ace.edit('martor-description');
+                            if (editor) {
+                                editor.setValue(description, -1);
+                                clearInterval(interval);
+                            }
+                        } catch (e) {
+                            // Ace editor not ready yet
                         }
-                        if (draft.time_limit) $('#id_time_limit').val(draft.time_limit);
-                        if (draft.memory_limit) {
-                            // Model field is in KB, AI returns MB
-                            var memKB = parseInt(draft.memory_limit) * 1024;
-                            $('#id_memory_limit').val(memKB);
-                        }
-                        if (draft.points) $('#id_points').val(draft.points);
-                    } catch (e) {
-                        console.error('AI Draft parse error:', e);
-                    }
-                    sessionStorage.removeItem('ai_problem_draft');
+                        if (attempts > 50) clearInterval(interval);
+                    }, 100);
+
+                    sessionStorage.removeItem('ai_problem_description');
                 }
             }
         });

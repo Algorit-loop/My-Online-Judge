@@ -4,121 +4,37 @@
 {% block title %}{% trans "Create Problem with AI" %}{% endblock %}
 
 {% block breadcrumbs %}
-    <div class="breadcrumbs">
-        <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
-        &rsaquo; <a href="{% url 'admin:judge_problem_changelist' %}">{% trans "Problems" %}</a>
-        &rsaquo; {% trans "Create Problem with AI" %}
-    </div>
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+    &rsaquo; <a href="{% url 'admin:judge_problem_changelist' %}">{% trans "Problems" %}</a>
+    &rsaquo; {% trans "Create Problem with AI" %}
+</div>
 {% endblock %}
 
 {% block content %}
 <style>
-    .ai-create-form {
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    .ai-create-form .form-row {
-        margin-bottom: 1.5em;
-    }
-    .ai-create-form label {
-        display: block;
-        font-weight: bold;
-        margin-bottom: 0.3em;
-    }
-    .ai-create-form select,
-    .ai-create-form input[type="file"] {
-        width: 100%;
-        padding: 0.5em;
-        font-size: 1em;
-    }
-    .ai-create-form .help {
-        color: #666;
-        font-size: 0.85em;
-        margin-top: 0.3em;
-    }
-    .ai-create-form .submit-row {
-        margin-top: 2em;
-        text-align: center;
-    }
-    .ai-create-form .submit-row button {
-        padding: 0.7em 2em;
-        font-size: 1.1em;
-        cursor: pointer;
-        margin: 0 0.5em;
-    }
-    #ai-spinner {
-        display: none;
-        text-align: center;
-        margin-top: 1em;
-        font-size: 1.1em;
-        color: #417690;
-    }
-    #ai-error {
-        display: none;
-        margin-top: 1em;
-        padding: 1em;
-        background: #fdd;
-        border: 1px solid #c00;
-        border-radius: 4px;
-        color: #900;
-    }
-    #ai-response-section {
-        display: none;
-        margin-top: 2em;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 1.5em;
-        background: #f9f9f9;
-    }
-    #ai-response-section h3 {
-        margin-top: 0;
-        color: #417690;
-    }
-    #ai-response-text {
-        width: 100%;
-        min-height: 400px;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9em;
-        padding: 1em;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        resize: vertical;
-        white-space: pre-wrap;
-    }
-    #ai-apply-row {
-        margin-top: 1em;
-        text-align: center;
-    }
-    #ai-apply-btn {
-        background: #417690;
-        color: #fff;
-        border: none;
-        padding: 0.7em 2.5em;
-        font-size: 1.1em;
-        cursor: pointer;
-        border-radius: 4px;
-    }
-    #ai-apply-btn:hover {
-        background: #205067;
-    }
-    #ai-apply-btn:disabled {
-        background: #999;
-        cursor: not-allowed;
-    }
-    #ai-success {
-        display: none;
-        margin-top: 1em;
-        padding: 1em;
-        background: #dfd;
-        border: 1px solid #090;
-        border-radius: 4px;
-        color: #060;
-    }
+.ai-create-form { max-width: 800px; margin: 0 auto; }
+.ai-create-form .form-row { margin-bottom: 1.5em; }
+.ai-create-form label { display: block; font-weight: bold; margin-bottom: 0.3em; }
+.ai-create-form select,
+.ai-create-form input[type="file"] { width: 100%; padding: 0.5em; font-size: 1em; }
+.ai-create-form .help { color: #666; font-size: 0.85em; margin-top: 0.3em; }
+.ai-create-form .submit-row { margin-top: 2em; text-align: center; }
+.ai-create-form .submit-row button { padding: 0.7em 2em; font-size: 1.1em; cursor: pointer; }
+#ai-spinner { display: none; text-align: center; margin-top: 1em; font-size: 1.1em; color: #417690; }
+#ai-error { display: none; margin-top: 1em; padding: 1em; background: #fdd; border: 1px solid #c00; border-radius: 4px; color: #900; }
+#ai-response-section { display: none; margin-top: 2em; border: 1px solid #ddd; border-radius: 4px; padding: 1.5em; background: #f9f9f9; }
+#ai-response-section h3 { margin-top: 0; color: #417690; }
+#ai-response-text { width: 100%; min-height: 500px; font-family: 'Courier New', monospace; font-size: 0.9em; padding: 1em; border: 1px solid #ccc; border-radius: 4px; resize: vertical; white-space: pre-wrap; }
+#ai-apply-btn { background: #417690; color: #fff; border: none; padding: 0.7em 2.5em; font-size: 1.1em; cursor: pointer; border-radius: 4px; margin-top: 1em; }
+#ai-apply-btn:hover { background: #205067; }
+#ai-apply-btn:disabled { background: #999; cursor: not-allowed; }
+#ai-success { display: none; margin-top: 1em; padding: 1em; background: #dfd; border: 1px solid #090; border-radius: 4px; color: #060; }
 </style>
 
 <div class="ai-create-form">
     <h2>{% trans "Create Problem with AI" %}</h2>
-    <p>{% trans "Upload an image or PDF of a problem statement. AI will extract the problem details for you to review before applying." %}</p>
+    <p>{% trans "Upload an image or PDF of a problem statement. AI will generate the description content in Markdown for you to review and edit." %}</p>
 
     <form id="ai-create-form" enctype="multipart/form-data">
         {% csrf_token %}
@@ -128,7 +44,6 @@
             <select id="id_provider" name="provider" required>
                 <option value="">-- {% trans "Select provider" %} --</option>
             </select>
-            <p class="help">{% trans "Only providers with verified API keys and vision support are shown." %}</p>
         </div>
 
         <div class="form-row">
@@ -142,7 +57,7 @@
             <label for="id_file">{% trans "Problem Statement (Image/PDF)" %}</label>
             <input type="file" id="id_file" name="file" required
                    accept="image/png,image/jpeg,image/webp,application/pdf">
-            <p class="help">{% trans "Supported: PNG, JPG, WEBP, PDF." %}</p>
+            <p class="help">{% trans "Supported: PNG, JPG, WEBP, PDF. Max 10 MB." %}</p>
         </div>
 
         <div class="form-row">
@@ -151,34 +66,29 @@
                 <option value="Vietnamese">Tiếng Việt</option>
                 <option value="English">English</option>
             </select>
-            <p class="help">{% trans "Language for the generated problem description." %}</p>
         </div>
 
         <div class="submit-row">
             <button type="submit" class="default" id="ai-submit-btn">
-                <i class="fa fa-magic"></i> {% trans "Generate Problem" %}
+                {% trans "Generate Description" %}
             </button>
         </div>
     </form>
 
     <div id="ai-spinner">
-        <i class="fa fa-spinner fa-spin fa-2x"></i>
         <p>{% trans "Processing... This may take up to 2 minutes." %}</p>
     </div>
     <div id="ai-error"></div>
 
     <div id="ai-response-section">
-        <h3>{% trans "AI Response" %}</h3>
-        <p class="help">{% trans "Review and edit the AI response below. The content should be valid JSON. When ready, click Apply to pre-fill the problem creation form." %}</p>
+        <h3>{% trans "Generated Description (Markdown)" %}</h3>
+        <p class="help">{% trans "Review and edit the markdown below. This will be applied to the Description field of the new problem." %}</p>
         <textarea id="ai-response-text"></textarea>
-        <div id="ai-apply-row">
-            <button type="button" id="ai-apply-btn">
-                <i class="fa fa-check"></i> {% trans "Apply" %}
-            </button>
+        <div style="text-align: center;">
+            <button type="button" id="ai-apply-btn">{% trans "Apply to New Problem" %}</button>
         </div>
-        <div id="ai-error-apply" style="display:none; margin-top:1em; padding:1em; background:#fdd; border:1px solid #c00; border-radius:4px; color:#900;"></div>
         <div id="ai-success">
-            <p>{% trans "Problem data parsed successfully! Redirecting to creation form..." %}</p>
+            <p>{% trans "Redirecting to problem creation form..." %}</p>
         </div>
     </div>
 </div>
@@ -189,9 +99,7 @@
 
     var PROVIDER_MODELS = {{ provider_models_json|safe }};
     var PROCESS_URL = "{% url 'admin:judge_problem_ai_create_process' %}";
-    var APPLY_URL = "{% url 'admin:judge_problem_ai_create_apply' %}";
     var ADD_URL = "{% url 'admin:judge_problem_add' %}";
-    var CSRF = '{{ csrf_token }}';
 
     var providerSelect = document.getElementById('id_provider');
     var modelSelect = document.getElementById('id_model');
@@ -202,10 +110,8 @@
     var responseSection = document.getElementById('ai-response-section');
     var responseText = document.getElementById('ai-response-text');
     var applyBtn = document.getElementById('ai-apply-btn');
-    var errorApplyDiv = document.getElementById('ai-error-apply');
     var successDiv = document.getElementById('ai-success');
 
-    // Populate provider dropdown
     var providerNames = {
         'openai': 'OpenAI',
         'gemini': 'Google Gemini',
@@ -218,7 +124,6 @@
         providerSelect.appendChild(opt);
     });
 
-    // Update model dropdown on provider change
     providerSelect.addEventListener('change', function() {
         modelSelect.innerHTML = '<option value="">-- {% trans "Select model" %} --</option>';
         var models = PROVIDER_MODELS[this.value] || [];
@@ -230,13 +135,11 @@
         });
     });
 
-    // Step 1: Generate — call AI and show raw response
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         errorDiv.style.display = 'none';
         responseSection.style.display = 'none';
         successDiv.style.display = 'none';
-        errorApplyDiv.style.display = 'none';
         spinner.style.display = 'block';
         submitBtn.disabled = true;
 
@@ -245,9 +148,7 @@
         fetch(PROCESS_URL, {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
+            headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') }
         })
         .then(function(resp) { return resp.json().then(function(data) { return {status: resp.status, data: data}; }); })
         .then(function(result) {
@@ -260,8 +161,7 @@
                 return;
             }
 
-            // Show raw AI response in editable textarea
-            responseText.value = result.data.raw_text;
+            responseText.value = result.data.description;
             responseSection.style.display = 'block';
             responseText.focus();
         })
@@ -273,50 +173,20 @@
         });
     });
 
-    // Step 2: Apply — parse the (possibly edited) text and redirect
     applyBtn.addEventListener('click', function() {
-        errorApplyDiv.style.display = 'none';
-        successDiv.style.display = 'none';
-        applyBtn.disabled = true;
-
         var text = responseText.value.trim();
         if (!text) {
-            errorApplyDiv.textContent = 'Response text is empty.';
-            errorApplyDiv.style.display = 'block';
-            applyBtn.disabled = false;
+            errorDiv.textContent = 'Description is empty.';
+            errorDiv.style.display = 'block';
             return;
         }
 
-        fetch(APPLY_URL, {
-            method: 'POST',
-            body: JSON.stringify({text: text}),
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': CSRF
-            }
-        })
-        .then(function(resp) { return resp.json().then(function(data) { return {status: resp.status, data: data}; }); })
-        .then(function(result) {
-            applyBtn.disabled = false;
-
-            if (result.status !== 200 || result.data.error) {
-                errorApplyDiv.textContent = result.data.error || 'Unknown error';
-                errorApplyDiv.style.display = 'block';
-                return;
-            }
-
-            // Store parsed data and redirect to add form
-            sessionStorage.setItem('ai_problem_draft', JSON.stringify(result.data.data));
-            successDiv.style.display = 'block';
-            setTimeout(function() {
-                window.location.href = ADD_URL + '?ai_draft=1';
-            }, 1000);
-        })
-        .catch(function(err) {
-            applyBtn.disabled = false;
-            errorApplyDiv.textContent = 'Network error: ' + err.message;
-            errorApplyDiv.style.display = 'block';
-        });
+        sessionStorage.setItem('ai_problem_description', text);
+        successDiv.style.display = 'block';
+        applyBtn.disabled = true;
+        setTimeout(function() {
+            window.location.href = ADD_URL + '?ai_draft=1';
+        }, 500);
     });
 })();
 </script>

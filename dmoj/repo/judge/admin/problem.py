@@ -272,16 +272,12 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
                  name='judge_problem_ai_create'),
             path('ai-create/process/', self.admin_site.admin_view(self.ai_create_problem_process),
                  name='judge_problem_ai_create_process'),
-            path('ai-create/apply/', self.admin_site.admin_view(self.ai_create_problem_apply),
-                 name='judge_problem_ai_create_apply'),
         ] + super().get_urls()
 
     def ai_create_problem_view(self, request):
-        """GET: Render the AI problem creation form."""
         if not request.user.has_perm('judge.add_problem'):
             raise PermissionDenied()
 
-        # Filter to only vision-capable providers
         vision_models = {k: v for k, v in AI_PROVIDER_MODELS.items() if k in VISION_PROVIDERS}
 
         context = {
@@ -293,7 +289,6 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
         return TemplateResponse(request, 'admin/judge/problem/ai_create.html', context)
 
     def ai_create_problem_process(self, request):
-        """POST: Call AI and return raw text response."""
         if request.method != 'POST':
             return JsonResponse({'error': 'Method not allowed'}, status=405)
         if not request.user.has_perm('judge.add_problem'):
@@ -306,21 +301,17 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
         output_language = request.POST.get('output_language', 'English').strip()
         uploaded_file = request.FILES.get('file')
 
-        # Validate provider
         if provider not in VISION_PROVIDERS:
             return JsonResponse({'error': _('Invalid provider. Must support vision input.')}, status=400)
 
-        # Validate model
         valid_models = AI_PROVIDER_MODELS.get(provider, [])
         if model not in valid_models:
             return JsonResponse({'error': _('Invalid model for this provider')}, status=400)
 
-        # Validate file
         is_valid, error = validate_file(uploaded_file)
         if not is_valid:
             return JsonResponse({'error': error}, status=400)
 
-        # Get user's API key for this provider
         try:
             api_key_obj = AIAPIKey.objects.get(
                 user=request.user.profile, provider=provider, status='verified',
@@ -334,40 +325,13 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
         if not plaintext_key:
             return JsonResponse({'error': _('Failed to decrypt API key')}, status=500)
 
-        # Call AI provider — returns raw text
         success, result = call_ai_provider(provider, model, plaintext_key, uploaded_file, output_language)
         plaintext_key = None  # noqa: F841
 
         if not success:
             return JsonResponse({'error': result}, status=400)
 
-        # Update last_used_at
         api_key_obj.last_used_at = timezone.now()
         api_key_obj.save(update_fields=['last_used_at'])
 
-        # Return raw AI text for user to review
-        return JsonResponse({'success': True, 'raw_text': result})
-
-    def ai_create_problem_apply(self, request):
-        """POST: Parse user-edited AI response text into structured data."""
-        if request.method != 'POST':
-            return JsonResponse({'error': 'Method not allowed'}, status=405)
-        if not request.user.has_perm('judge.add_problem'):
-            raise PermissionDenied()
-
-        from judge.views.ai_problem_creator import parse_ai_response
-
-        try:
-            body = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': _('Invalid request')}, status=400)
-
-        text = body.get('text', '').strip()
-        if not text:
-            return JsonResponse({'error': _('No text provided')}, status=400)
-
-        success, result = parse_ai_response(text)
-        if not success:
-            return JsonResponse({'error': result}, status=400)
-
-        return JsonResponse({'success': True, 'data': result})
+        return JsonResponse({'success': True, 'description': result})
