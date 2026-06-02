@@ -17,6 +17,7 @@ class GenerateTestcaseJobAdmin(admin.ModelAdmin):
     readonly_fields = (
         'id', 'id_secret', 'problem', 'user',
         'ai_provider', 'ai_model', 'num_cases',
+        'generator_language', 'solution_language',
         'status', 'error_stage', 'error_log',
         'result_testcases', 'result_zip_size',
         'created_at', 'completed_at',
@@ -30,7 +31,7 @@ class GenerateTestcaseJobAdmin(admin.ModelAdmin):
             'fields': ('id', 'id_secret', 'problem', 'user', 'created_at', 'completed_at'),
         }),
         (_('Configuration'), {
-            'fields': ('ai_provider', 'ai_model', 'num_cases'),
+            'fields': ('ai_provider', 'ai_model', 'num_cases', 'generator_language', 'solution_language'),
         }),
         (_('Status'), {
             'fields': ('status', 'error_stage', 'error_log', 'result_testcases', 'result_zip_size'),

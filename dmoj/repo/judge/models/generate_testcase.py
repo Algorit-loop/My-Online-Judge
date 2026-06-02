@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 from judge.models.problem import Problem
 from judge.models.profile import Profile
+from judge.models.runtime import Language
 
 __all__ = ['GenerateTestcaseJob']
 
@@ -36,9 +37,13 @@ class GenerateTestcaseJob(models.Model):
     ai_provider = models.CharField(max_length=20, blank=True, verbose_name=_('AI provider'))
     ai_model = models.CharField(max_length=100, blank=True, verbose_name=_('AI model'))
 
-    # Code
+    # Code + language
     generator_code = models.TextField(blank=True, default='', verbose_name=_('generator code'))
+    generator_language = models.ForeignKey(Language, null=True, blank=True, on_delete=models.SET_NULL,
+                                           related_name='+', verbose_name=_('generator language'))
     solution_code = models.TextField(blank=True, default='', verbose_name=_('solution code'))
+    solution_language = models.ForeignKey(Language, null=True, blank=True, on_delete=models.SET_NULL,
+                                          related_name='+', verbose_name=_('solution language'))
 
     num_cases = models.IntegerField(default=20, verbose_name=_('number of test cases'))
 

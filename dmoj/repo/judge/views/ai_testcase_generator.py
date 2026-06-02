@@ -19,23 +19,24 @@ _AI_TIMEOUT = 120
 
 GENERATOR_SYSTEM_PROMPT = """You are a competitive programming testcase generator writer.
 
-Return ONLY valid C++17 source code.
+Return ONLY valid source code in the specified language.
 Do not use Markdown.
 Do not explain anything.
 
 The generator must:
-- Generate at most {max_cases} testcase input files.
-- Each subtask must have at least one testcase.
-- Write files into ./inputs/
-- File names: 01.inp, 02.inp, 03.inp, ...
-- Never write output files.
-- Keep total estimated file size under 128MB.
-- Use deterministic randomness with fixed seed.
+- Read a single integer T from standard input (stdin). T is the test case number (1-based).
+- Write exactly ONE test case input to standard output (stdout).
+- Use deterministic randomness seeded by T so each T produces a different but reproducible test case.
 - Follow the problem input format exactly.
 - Respect all constraints from the statement.
-- Cover: corner cases, typical cases, stress/large cases, edge cases.
+- Cover: corner cases (T=1,2), typical cases (T=3..N-2), stress/large cases (T=N-1,N).
+- Keep each test case output under 1MB.
+- Do NOT read/write files. Use only stdin/stdout.
+"""
 
-The C++ program must create directory ./inputs if needed (use std::filesystem or mkdir).
+GENERATOR_SYSTEM_PROMPT_CPP = GENERATOR_SYSTEM_PROMPT + """
+Write the code in C++17. Use `#include <bits/stdc++.h>` if convenient.
+Use `mt19937` or `mt19937_64` seeded with T for randomness.
 """
 
 
@@ -139,7 +140,9 @@ def _serialize_job(job):
         'id_secret': str(job.id_secret),
         'status': job.status,
         'generator_code': job.generator_code,
+        'generator_language_id': job.generator_language_id,
         'solution_code': job.solution_code,
+        'solution_language_id': job.solution_language_id,
         'num_cases': job.num_cases,
         'ai_provider': job.ai_provider,
         'ai_model': job.ai_model,
@@ -181,7 +184,7 @@ def ai_generate_testcase_view(request, problem):
 
 @login_required
 def ai_generate_testcase_process(request, problem):
-    """POST — call AI to generate C++ generator code, then create a Draft job."""
+    """POST — call AI to generate generator code, then create a Draft job."""
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -210,13 +213,29 @@ def ai_generate_testcase_process(request, problem):
     if not plaintext_key:
         return JsonResponse({'error': _('Failed to decrypt API key')}, status=500)
 
-    max_cases = int(request.POST.get('num_cases', '20'))
-    max_cases = max(1, min(40, max_cases))
+    try:
+        max_cases = max(1, min(MAX_CASES_LIMIT, int(request.POST.get('num_cases', '20'))))
+    except (ValueError, TypeError):
+        max_cases = 20
 
-    system_prompt = GENERATOR_SYSTEM_PROMPT.replace('{max_cases}', str(max_cases))
+    # Determine generator language from request
+    gen_lang_id = request.POST.get('generator_language_id', '')
+    gen_language = None
+    if gen_lang_id:
+        try:
+            gen_language = Language.objects.get(id=int(gen_lang_id))
+        except (Language.DoesNotExist, ValueError, TypeError):
+            pass
+
+    # Pick the right system prompt based on language
+    if gen_language and 'cpp' in gen_language.key.lower():
+        system_prompt = GENERATOR_SYSTEM_PROMPT_CPP.replace('{max_cases}', str(max_cases))
+    else:
+        lang_name = gen_language.name if gen_language else 'C++17'
+        system_prompt = (GENERATOR_SYSTEM_PROMPT + '\nWrite the code in %s.' % lang_name)
 
     user_prompt = '## Problem Statement\n\n' + (problem_obj.description or '(no description)')
-    user_prompt += '\n\nGenerate a C++ generator that creates exactly %d input files.' % max_cases
+    user_prompt += '\n\nGenerate a generator that creates exactly %d test case inputs (T=1..%d).' % (max_cases, max_cases)
 
     success, result = _call_text_api(provider, model, plaintext_key, user_prompt, system_prompt)
     plaintext_key = None  # noqa: F841
@@ -229,6 +248,13 @@ def ai_generate_testcase_process(request, problem):
 
     # Save as Draft job (delete old drafts for this problem+user first)
     solution_code = request.POST.get('solution_code', '').strip()
+    sol_lang_id = request.POST.get('solution_language_id', '')
+    sol_language = None
+    if sol_lang_id:
+        try:
+            sol_language = Language.objects.get(id=int(sol_lang_id))
+        except (Language.DoesNotExist, ValueError, TypeError):
+            pass
 
     GenerateTestcaseJob.objects.filter(
         problem=problem_obj, user=request.user.profile, status='DR',
@@ -239,7 +265,9 @@ def ai_generate_testcase_process(request, problem):
         user=request.user.profile,
         status='DR',
         generator_code=result,
+        generator_language=gen_language,
         solution_code=solution_code,
+        solution_language=sol_language,
         num_cases=max_cases,
         ai_provider=provider,
         ai_model=model,
@@ -251,6 +279,9 @@ def ai_generate_testcase_process(request, problem):
         'job_id': job.id,
         'id_secret': str(job.id_secret),
     })
+
+
+MAX_CASES_LIMIT = 40
 
 
 @login_required
@@ -270,8 +301,9 @@ def ai_generate_testcase_apply(request, problem):
 
     generator_code = body.get('generator_code', '').strip()
     solution_code = body.get('solution_code', '').strip()
+
     try:
-        num_cases = max(1, min(40, int(body.get('num_cases', 20))))
+        num_cases = max(1, min(MAX_CASES_LIMIT, int(body.get('num_cases', 20))))
     except (ValueError, TypeError):
         num_cases = 20
 
@@ -280,12 +312,28 @@ def ai_generate_testcase_apply(request, problem):
     if not solution_code:
         return JsonResponse({'error': _('Solution code is required')}, status=400)
 
+    # Validate languages
+    gen_lang_id = body.get('generator_language_id')
+    sol_lang_id = body.get('solution_language_id')
+
+    try:
+        gen_language = Language.objects.get(id=int(gen_lang_id))
+    except (Language.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({'error': _('Invalid generator language')}, status=400)
+
+    try:
+        sol_language = Language.objects.get(id=int(sol_lang_id))
+    except (Language.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({'error': _('Invalid solution language')}, status=400)
+
     # Always create a new job (becomes the latest; old draft is superseded)
     job = GenerateTestcaseJob.objects.create(
         problem=problem_obj,
         user=request.user.profile,
         generator_code=generator_code,
+        generator_language=gen_language,
         solution_code=solution_code,
+        solution_language=sol_language,
         num_cases=num_cases,
         ai_provider=body.get('provider', ''),
         ai_model=body.get('model', ''),
@@ -313,7 +361,11 @@ def ai_generate_testcase_poll(request, problem):
         return JsonResponse({'error': 'Missing job_id'}, status=400)
 
     try:
-        job = GenerateTestcaseJob.objects.get(id=job_id, problem=problem_obj)
+        job = GenerateTestcaseJob.objects.get(
+            id=job_id,
+            problem=problem_obj,
+            user=request.user.profile,
+        )
     except GenerateTestcaseJob.DoesNotExist:
         return JsonResponse({'error': 'Job not found'}, status=404)
 
