@@ -12,6 +12,7 @@ from judge.admin.problem import ProblemAdmin
 from judge.admin.profile import ProfileAdmin, UserAdmin
 from judge.admin.ai_api_key import AIAPIKeyAdmin, AIAPIKeyTestLogAdmin
 from judge.admin.generate_testcase import GenerateTestcaseJobAdmin
+from judge.admin.gensol_submission import GenSolSubmissionAdmin
 from judge.admin.run_submission import RunSubmissionAdmin
 from judge.admin.runtime import JudgeAdmin, LanguageAdmin
 from judge.admin.submission import SubmissionAdmin
@@ -24,6 +25,7 @@ from judge.models import Badge, BlogPost, BlogPostTag, Comment, CommentLock, Con
     TagGroup, TagProblem, Ticket
 from judge.models.api_key import AIAPIKey, AIAPIKeyTestLog
 from judge.models.generate_testcase import GenerateTestcaseJob
+from judge.models.gensol_submission import GenSolSubmission
 
 admin.site.register(BlogPost, BlogPostAdmin)
 admin.site.register(BlogPostTag, BlogPostTagAdmin)
@@ -58,3 +60,4 @@ admin.site.register(User, UserAdmin)
 admin.site.register(AIAPIKey, AIAPIKeyAdmin)
 admin.site.register(AIAPIKeyTestLog, AIAPIKeyTestLogAdmin)
 admin.site.register(GenerateTestcaseJob, GenerateTestcaseJobAdmin)
+admin.site.register(GenSolSubmission, GenSolSubmissionAdmin)

@@ -13,6 +13,7 @@ from judge.models.profile import Badge, Organization, OrganizationMonthlyUsage, 
     Profile, WebAuthnCredential
 from judge.models.api_key import AIAPIKey, AIAPIKeyTestLog
 from judge.models.generate_testcase import GenerateTestcaseJob
+from judge.models.gensol_submission import GenSolSubmission
 from judge.models.run_submission import RunSubmission
 from judge.models.runtime import Judge, Language, RuntimeVersion
 from judge.models.submission import SUBMISSION_RESULT, Submission, SubmissionSource, SubmissionTestCase

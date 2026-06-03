@@ -33,7 +33,9 @@ class JudgeList(object):
         self.problem_ids = []
 
     @staticmethod
-    def _key(id, is_run=False):
+    def _key(id, is_run=False, is_gensol=False):
+        if is_gensol:
+            return ('gensol', id)
         return ('run', id) if is_run else id
 
     def _handle_free_judge(self, judge):
@@ -49,12 +51,17 @@ class JudgeList(object):
                 elif priority >= REJUDGE_PRIORITY and self.should_reserve_judge():
                     return
                 else:
-                    id, problem, language, source, judge_id, banned_judges, is_run, sample_input_files, custom_inputs = node.value
+                    values = node.value
+                    id, problem, language, source, judge_id, banned_judges, is_run, sample_input_files, custom_inputs = values[:9]
+                    gensol_type = values[9] if len(values) > 9 else None
                     if judge.name not in banned_judges and judge.can_judge(problem, language, judge_id):
-                        key = self._key(id, is_run)
+                        is_gensol = gensol_type is not None
+                        key = self._key(id, is_run, is_gensol)
                         self.submission_map[key] = judge
                         try:
-                            if is_run:
+                            if is_gensol:
+                                judge.gensol_submit(id, problem, language, source, gensol_type, custom_inputs)
+                            elif is_run:
                                 judge.run_submit(id, problem, language, source, sample_input_files, custom_inputs)
                             else:
                                 judge.submit(id, problem, language, source)
@@ -62,7 +69,8 @@ class JudgeList(object):
                             logger.exception('Failed to dispatch %d (%s, %s) to %s', id, problem, language, judge.name)
                             self.judges.remove(judge)
                             return
-                        logger.info('Dispatched queued %s %d: %s', 'run' if is_run else 'submission', id, judge.name)
+                        label = 'gensol' if is_gensol else ('run' if is_run else 'submission')
+                        logger.info('Dispatched queued %s %d: %s', label, id, judge.name)
                         self.queue.remove(node)
                         del self.node_map[key]
                         break
@@ -143,7 +151,7 @@ class JudgeList(object):
         with self.lock:
             sub = judge.get_current_submission()
             if sub is not None:
-                key = self._key(sub, judge._is_run)
+                key = self._key(sub, judge._is_run, judge._is_gensol)
                 try:
                     del self.submission_map[key]
                 except KeyError:
@@ -165,13 +173,14 @@ class JudgeList(object):
     def on_judge_free(self, judge, submission):
         logger.info('Judge available after grading %s: %s', submission, judge.name)
         with self.lock:
-            key = self._key(submission, judge._is_run)
+            key = self._key(submission, judge._is_run, judge._is_gensol)
             try:
                 del self.submission_map[key]
             except KeyError:
                 logger.warning('Submission %s not found in submission_map during free', submission)
             judge._working = False
             judge._is_run = False
+            judge._is_gensol = False
             self._handle_free_judge(judge)
 
     def abort(self, submission):
@@ -273,3 +282,40 @@ class JudgeList(object):
                     self.priority[priority],
                 )
                 logger.info('Queued run: %d', id)
+
+    def judge_gensol(self, id, problem, language, source, judge_id, priority,
+                     banned_judges=None, gensol_type='GEN', custom_inputs=None):
+        if banned_judges is None:
+            banned_judges = []
+        if custom_inputs is None:
+            custom_inputs = []
+        with self.lock:
+            key = self._key(id, is_gensol=True)
+            if key in self.submission_map or key in self.node_map:
+                return
+
+            candidates = [
+                judge for judge in self.current_tier_judges()
+                if judge.name not in banned_judges and
+                judge.can_judge(problem, language, judge_id)
+            ]
+            available = [judge for judge in candidates if not judge.working and not judge.is_disabled]
+            logger.info('Free judges for gensol: %d', len(available))
+
+            if available:
+                judge = min(available, key=lambda judge: (judge.load, random()))
+                logger.info('Dispatched gensol %d to: %s', id, judge.name)
+                self.submission_map[key] = judge
+                try:
+                    judge.gensol_submit(id, problem, language, source, gensol_type, custom_inputs)
+                except Exception:
+                    logger.exception('Failed to dispatch gensol %d (%s, %s) to %s', id, problem, language, judge.name)
+                    self.judges.discard(judge)
+                    return self.judge_gensol(id, problem, language, source, judge_id, priority,
+                                             banned_judges, gensol_type, custom_inputs)
+            else:
+                self.node_map[key] = self.queue.insert(
+                    (id, problem, language, source, judge_id, banned_judges, False, [], custom_inputs, gensol_type),
+                    self.priority[priority],
+                )
+                logger.info('Queued gensol: %d', id)

@@ -9,10 +9,10 @@ from django.db import transaction
 from django.utils import timezone
 
 from judge import event_poster as event
-from judge.judgeapi import judge_run_submission
+from judge.judgeapi import judge_gensol_submission
 from judge.models import ProblemData, ProblemTestCase, problem_data_storage
 from judge.models.generate_testcase import GenerateTestcaseJob
-from judge.models.run_submission import RunSubmission
+from judge.models.gensol_submission import GenSolSubmission
 from judge.utils.problem_data import ProblemDataCompiler
 
 logger = logging.getLogger('judge.tasks.generate_testcase')
@@ -53,23 +53,25 @@ def _fail(job, stage, message, log=''):
     })
 
 
-def _wait_for_run(run_sub, timeout=POLL_TIMEOUT):
-    """Poll a RunSubmission until it finishes. Returns the refreshed RunSubmission."""
+def _wait_for_gensol(gensol_sub, timeout=POLL_TIMEOUT):
+    """Poll a GenSolSubmission until it finishes. Returns the refreshed submission."""
     start = time.monotonic()
     while time.monotonic() - start < timeout:
         time.sleep(POLL_INTERVAL)
-        run_sub.refresh_from_db()
-        if run_sub.status not in RunSubmission.IN_PROGRESS_GRADING_STATUS:
-            return run_sub
-    return run_sub
+        gensol_sub.refresh_from_db()
+        if gensol_sub.status not in GenSolSubmission.IN_PROGRESS_GRADING_STATUS:
+            return gensol_sub
+    return gensol_sub
 
 
-def _dispatch_to_judge(problem, language, source, custom_inputs, user_profile):
-    """Create a RunSubmission and dispatch it to the judge via the bridge.
+def _dispatch_gensol(problem, language, source, custom_inputs, user_profile, job, gensol_type):
+    """Create a GenSolSubmission and dispatch it to the judge via the bridge.
 
-    Returns (run_sub, error_msg). On success error_msg is None.
+    Returns (gensol_sub, error_msg). On success error_msg is None.
     """
-    run_sub = RunSubmission.objects.create(
+    gensol_sub = GenSolSubmission.objects.create(
+        type=gensol_type,
+        job=job,
         user=user_profile,
         problem=problem,
         language=language,
@@ -77,46 +79,37 @@ def _dispatch_to_judge(problem, language, source, custom_inputs, user_profile):
         status='QU',
     )
 
-    success = judge_run_submission(
-        run_sub,
-        sample_input_files=[],
+    success = judge_gensol_submission(
+        gensol_sub,
         custom_inputs=custom_inputs,
     )
     if not success:
-        run_sub.delete()
+        gensol_sub.delete()
         return None, 'Failed to dispatch to judge (no judge available or bridge error)'
 
-    return run_sub, None
+    return gensol_sub, None
 
 
-def _check_run_result(run_sub, stage_label, num_custom_inputs):
-    """Check a completed RunSubmission for fatal errors (TLE/MLE/RTE/OLE).
+def _check_gensol_result(gensol_sub, stage_label, num_cases):
+    """Check a completed GenSolSubmission for fatal errors (TLE/MLE/RTE/OLE).
 
-    We only check the *custom input* cases (skip any sample cases the judge
-    included). The judge marks custom-input cases as WA because there is no
-    expected output, but that is fine — we only need the raw output.
+    We read outputs from files saved by the bridge handler.
 
     Returns (case_outputs, error_msg). On success error_msg is None.
     case_outputs is a list of output strings, one per custom input.
     """
-    if run_sub.status == 'CE':
-        return None, 'Compile error:\n%s' % (run_sub.error or '')
-    if run_sub.status == 'IE':
-        return None, 'Internal error:\n%s' % (run_sub.error or '')
-    if run_sub.status not in ('D',):
-        return None, 'Unexpected status: %s' % run_sub.status
+    if gensol_sub.status == 'CE':
+        return None, 'Compile error:\n%s' % (gensol_sub.error or '')
+    if gensol_sub.status == 'IE':
+        return None, 'Internal error:\n%s' % (gensol_sub.error or '')
+    if gensol_sub.status not in ('D',):
+        return None, 'Unexpected status: %s' % gensol_sub.status
 
-    all_results = run_sub.case_results or []
+    case_statuses = gensol_sub.case_statuses or []
 
-    # The judge may prepend sample test cases before our custom inputs.
-    # Custom inputs are always at the tail: last `num_custom_inputs` entries.
-    if len(all_results) < num_custom_inputs:
-        return None, '%s: expected %d results, got %d' % (
-            stage_label, num_custom_inputs, len(all_results))
-
-    custom_results = all_results[len(all_results) - num_custom_inputs:]
-
-    for i, case in enumerate(custom_results):
+    # With short-circuit, if any case failed, the result will be non-AC
+    # and we may have fewer results than expected
+    for i, case in enumerate(case_statuses):
         status = case.get('status', '')
         if status == 'TLE':
             return None, '%s: Time Limit Exceeded on case %d' % (stage_label, i + 1)
@@ -128,9 +121,23 @@ def _check_run_result(run_sub, stage_label, num_custom_inputs):
             return None, '%s: Runtime Error on case %d' % (stage_label, i + 1)
         elif status == 'IR':
             return None, '%s: Invalid Return on case %d' % (stage_label, i + 1)
-        # WA and AC are both fine — WA is expected for custom inputs with no expected output
+        elif status == 'SC':
+            return None, '%s: Short Circuited on case %d (previous case failed)' % (stage_label, i + 1)
 
-    return custom_results, None
+    if len(case_statuses) < num_cases:
+        return None, '%s: expected %d results, got %d (short-circuited?)' % (
+            stage_label, num_cases, len(case_statuses))
+
+    # Read outputs from files
+    outputs = []
+    for i in range(len(case_statuses)):
+        case_num = case_statuses[i].get('case', i + 1)
+        output = gensol_sub.read_case_output(case_num)
+        if output is None:
+            return None, '%s: output file missing for case %d' % (stage_label, i + 1)
+        outputs.append(output)
+
+    return outputs, None
 
 
 def _human_size(size_bytes):
@@ -165,16 +172,18 @@ def run_generate_testcase(self, job_id):
 
     try:
         # ── Step 1+2: Compile & Run Generator on Judge ──
-        # The generator reads a case number (1..N) from stdin and outputs one test input to stdout.
-        # We send N custom inputs: ["1", "2", ..., "N"]
+        # The generator has NO input (stdin is empty).
+        # It runs num_cases times, each time producing one test case on stdout.
+        # Each run gets an empty string as custom input.
         _update_status(job, 'CG', {
             'type': 'compile-generator',
             'message': 'Compiling generator on judge...',
         })
 
-        gen_inputs = [str(i) for i in range(1, num_cases + 1)]
+        gen_inputs = [''] * num_cases
 
-        gen_run, err = _dispatch_to_judge(problem, gen_language, job.generator_code, gen_inputs, user_profile)
+        gen_run, err = _dispatch_gensol(problem, gen_language, job.generator_code,
+                                        gen_inputs, user_profile, job, 'GEN')
         if err:
             _fail(job, 'compile-generator', err)
             return
@@ -184,10 +193,10 @@ def run_generate_testcase(self, job_id):
             'message': 'Running generator (%d cases)...' % num_cases,
         })
 
-        gen_run = _wait_for_run(gen_run)
+        gen_run = _wait_for_gensol(gen_run)
 
         # Check if still running (timeout)
-        if gen_run.status in RunSubmission.IN_PROGRESS_GRADING_STATUS:
+        if gen_run.status in GenSolSubmission.IN_PROGRESS_GRADING_STATUS:
             _fail(job, 'run-generator', 'Generator timed out waiting for judge (%ds)' % POLL_TIMEOUT)
             return
 
@@ -196,30 +205,32 @@ def run_generate_testcase(self, job_id):
             _fail(job, 'compile-generator', 'Generator compile error', gen_run.error or '')
             return
 
-        gen_results, err = _check_run_result(gen_run, 'Generator', num_cases)
+        gen_outputs, err = _check_gensol_result(gen_run, 'Generator', num_cases)
         if err:
             _fail(job, 'run-generator', err)
             return
 
-        if not gen_results:
+        if not gen_outputs:
             _fail(job, 'run-generator', 'Generator produced no output')
             return
 
         _post_event(job, {
             'type': 'run-generator',
-            'message': 'Generated %d input(s)' % len(gen_results),
+            'message': 'Generated %d input(s)' % len(gen_outputs),
             'progress': 100,
         })
 
         # Collect generator outputs as test case inputs
         test_inputs = []
-        for i, case in enumerate(gen_results):
-            output = case.get('output', '')
+        for i, output in enumerate(gen_outputs):
             if not output.strip():
                 _fail(job, 'run-generator',
                       'Generator produced empty output for case %d' % (i + 1))
                 return
             test_inputs.append(output)
+
+        # Clean up generator output files (no longer needed)
+        gen_run.cleanup_output_files()
 
         # ── Step 3+4: Compile & Run Solution on Judge ──
         _update_status(job, 'CS', {
@@ -227,7 +238,8 @@ def run_generate_testcase(self, job_id):
             'message': 'Compiling solution on judge...',
         })
 
-        sol_run, err = _dispatch_to_judge(problem, sol_language, job.solution_code, test_inputs, user_profile)
+        sol_run, err = _dispatch_gensol(problem, sol_language, job.solution_code,
+                                        test_inputs, user_profile, job, 'SOL')
         if err:
             _fail(job, 'compile-solution', err)
             return
@@ -239,9 +251,9 @@ def run_generate_testcase(self, job_id):
             'total': len(test_inputs),
         })
 
-        sol_run = _wait_for_run(sol_run)
+        sol_run = _wait_for_gensol(sol_run)
 
-        if sol_run.status in RunSubmission.IN_PROGRESS_GRADING_STATUS:
+        if sol_run.status in GenSolSubmission.IN_PROGRESS_GRADING_STATUS:
             _fail(job, 'run-solution', 'Solution timed out waiting for judge (%ds)' % POLL_TIMEOUT)
             return
 
@@ -249,15 +261,15 @@ def run_generate_testcase(self, job_id):
             _fail(job, 'compile-solution', 'Solution compile error', sol_run.error or '')
             return
 
-        sol_results, err = _check_run_result(sol_run, 'Solution', len(test_inputs))
+        sol_outputs, err = _check_gensol_result(sol_run, 'Solution', len(test_inputs))
         if err:
             _fail(job, 'run-solution', err)
             return
 
-        if not sol_results or len(sol_results) != len(test_inputs):
+        if not sol_outputs or len(sol_outputs) != len(test_inputs):
             _fail(job, 'run-solution',
                   'Solution produced %d outputs, expected %d' % (
-                      len(sol_results) if sol_results else 0, len(test_inputs)))
+                      len(sol_outputs) if sol_outputs else 0, len(test_inputs)))
             return
 
         _post_event(job, {
@@ -267,7 +279,10 @@ def run_generate_testcase(self, job_id):
             'total': len(test_inputs),
         })
 
-        test_outputs = [case.get('output', '') for case in sol_results]
+        test_outputs = sol_outputs
+
+        # Clean up solution output files (no longer needed)
+        sol_run.cleanup_output_files()
 
         # ── Step 5: Package into Themis-format zip ──
         _update_status(job, 'ZP', {'type': 'zipping', 'message': 'Creating testcase zip...'})

@@ -146,6 +146,40 @@ def judge_run_submission(run_submission, sample_input_files=None, custom_inputs=
         return True
 
 
+def judge_gensol_submission(gensol_submission, custom_inputs=None):
+    """Send a gensol-request to the bridge. Uses GenSolSubmission model (separate from Run flow)."""
+    from .models.gensol_submission import GenSolSubmission
+
+    if not GenSolSubmission.objects.filter(id=gensol_submission.id).exclude(status__in=('P', 'G')).update(
+        time=None, memory=None, points=None, result=None, case_points=0, case_total=0, error=None,
+        status='QU', case_statuses=[],
+    ):
+        return False
+
+    try:
+        response = judge_request({
+            'name': 'gensol-request',
+            'submission-id': gensol_submission.id,
+            'problem-id': gensol_submission.problem.code,
+            'language': gensol_submission.language.key,
+            'source': gensol_submission.source,
+            'judge-id': None,
+            'banned-judges': [],
+            'priority': DEFAULT_PRIORITY,
+            'type': gensol_submission.type,
+            'custom-inputs': custom_inputs or [],
+        })
+    except BaseException:
+        logger.exception('Failed to send gensol-request to judge')
+        GenSolSubmission.objects.filter(id=gensol_submission.id).update(status='IE', result='IE')
+        return False
+    else:
+        if response.get('name') != 'gensol-received' or response.get('submission-id') != gensol_submission.id:
+            GenSolSubmission.objects.filter(id=gensol_submission.id).update(status='IE', result='IE')
+            return False
+        return True
+
+
 def disconnect_judge(judge, force=False):
     judge_request({'name': 'disconnect-judge', 'judge-id': judge.name, 'force': force}, reply=False)
 

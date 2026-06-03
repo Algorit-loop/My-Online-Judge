@@ -24,19 +24,19 @@ Do not use Markdown.
 Do not explain anything.
 
 The generator must:
-- Read a single integer T from standard input (stdin). T is the test case number (1-based).
+- NOT read anything from standard input (stdin). The generator has NO input.
 - Write exactly ONE test case input to standard output (stdout).
-- Use deterministic randomness seeded by T so each T produces a different but reproducible test case.
+- Use randomness to produce different test cases on each run. Seed with a time-based or random source.
 - Follow the problem input format exactly.
 - Respect all constraints from the statement.
-- Cover: corner cases (T=1,2), typical cases (T=3..N-2), stress/large cases (T=N-1,N).
+- Cover a mix of: corner cases, typical cases, and stress/large cases.
 - Keep each test case output under 1MB.
-- Do NOT read/write files. Use only stdin/stdout.
+- Do NOT read/write files. Only write to stdout.
 """
 
 GENERATOR_SYSTEM_PROMPT_CPP = GENERATOR_SYSTEM_PROMPT + """
 Write the code in C++17. Use `#include <bits/stdc++.h>` if convenient.
-Use `mt19937` or `mt19937_64` seeded with T for randomness.
+Use `mt19937` or `mt19937_64` seeded with `chrono::steady_clock::now().time_since_epoch().count()` or `random_device{}()` for randomness.
 """
 
 
@@ -229,13 +229,13 @@ def ai_generate_testcase_process(request, problem):
 
     # Pick the right system prompt based on language
     if gen_language and 'cpp' in gen_language.key.lower():
-        system_prompt = GENERATOR_SYSTEM_PROMPT_CPP.replace('{max_cases}', str(max_cases))
+        system_prompt = GENERATOR_SYSTEM_PROMPT_CPP
     else:
         lang_name = gen_language.name if gen_language else 'C++17'
         system_prompt = (GENERATOR_SYSTEM_PROMPT + '\nWrite the code in %s.' % lang_name)
 
     user_prompt = '## Problem Statement\n\n' + (problem_obj.description or '(no description)')
-    user_prompt += '\n\nGenerate a generator that creates exactly %d test case inputs (T=1..%d).' % (max_cases, max_cases)
+    user_prompt += '\n\nGenerate a generator that outputs exactly ONE test case input per run. It will be executed %d times.' % max_cases
 
     success, result = _call_text_api(provider, model, plaintext_key, user_prompt, system_prompt)
     plaintext_key = None  # noqa: F841
