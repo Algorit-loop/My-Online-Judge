@@ -22,10 +22,6 @@ from judge.views.magazine import MagazinePage
 from judge.views.misc_config import MiscConfigEdit
 from judge.views.problem_data import ProblemDataView, ProblemSubmissionDiff, \
     problem_data_file, problem_init_view
-from judge.views.ai_testcase_generator import (
-    ai_generate_testcase_view, ai_generate_testcase_process,
-    ai_generate_testcase_apply, ai_generate_testcase_poll,
-)
 from judge.views.register import ActivationView, RegistrationView
 from judge.views.select2 import AssigneeSelect2View, CommentSelect2View, ContestSelect2View, \
     ContestUserSearchSelect2View, OrganizationSelect2View, OrganizationUserSearchSelect2View, \
@@ -164,10 +160,6 @@ urlpatterns = [
         path('/test_data', ProblemDataView.as_view(), name='problem_data'),
         path('/test_data/init', problem_init_view, name='problem_data_init'),
         path('/test_data/diff', ProblemSubmissionDiff.as_view(), name='problem_submission_diff'),
-        path('/test_data/ai_generate', ai_generate_testcase_view, name='problem_ai_generate_testcase'),
-        path('/test_data/ai_generate/process', ai_generate_testcase_process, name='problem_ai_generate_testcase_process'),
-        path('/test_data/ai_generate/apply', ai_generate_testcase_apply, name='problem_ai_generate_testcase_apply'),
-        path('/test_data/ai_generate/poll', ai_generate_testcase_poll, name='problem_ai_generate_testcase_poll'),
         path('/data/<path:path>', problem_data_file, name='problem_data_file'),
 
         path('/tickets/', ticket.ProblemTicketListView.as_view(), name='problem_ticket_list'),
