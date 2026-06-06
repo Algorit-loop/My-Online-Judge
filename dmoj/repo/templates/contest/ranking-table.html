@@ -71,6 +71,9 @@
     {% if has_rating %}
         <th class="rating-column">{{ _('Rating') }}</th>
     {% endif %}
+    {% if can_edit and contest.enable_focus_lock %}
+        <th class="violations-column">{{ _('Violations') }}</th>
+    {% endif %}
 {% endblock %}
 
 {% block row_extra %}
@@ -92,6 +95,9 @@
             {% endif %}
         </td>
     {% endif %}
+    {% if can_edit and contest.enable_focus_lock %}
+        <td class="violations-column">{{ user.participation.focus_violations }}</td>
+    {% endif %}
 {% endblock %}
 
 {% block point %}
@@ -105,6 +111,9 @@
             <td class="total-ac" id='{{- contest.get_label_for_problem(loop.index0) }}-total'>{{ total_ac.get(str(problem.id), 0) }}</td>
         {% endfor %}
         {% if has_rating %}
+            <td></td>
+        {% endif %}
+        {% if can_edit and contest.enable_focus_lock %}
             <td></td>
         {% endif %}
     </tr>

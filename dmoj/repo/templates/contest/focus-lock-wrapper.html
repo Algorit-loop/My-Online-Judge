@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ contest.name }}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        #contest-frame { width: 100%; height: 100%; border: none; }
+        #fs-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.55);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        #fs-overlay span {
+            color: #fff; font-size: 1.3em;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: rgba(0,0,0,0.6); padding: 16px 36px; border-radius: 10px;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="fs-overlay"><span>{{ click_fullscreen_text }}</span></div>
+    <iframe id="contest-frame" src="{{ contest_url }}"></iframe>
+
+    <script>
+    (function() {
+        var reportUrl = '{{ report_url }}';
+        var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        var overlay = document.getElementById('fs-overlay');
+        var frame = document.getElementById('contest-frame');
+        var reporting = false;
+        var started = false;
+        var GRACE_MS = 3000;
+        var loadTime = Date.now();
+
+        function reportViolation() {
+            if ((Date.now() - loadTime) < GRACE_MS) return;
+            if (reporting) return;
+            reporting = true;
+            fetch(reportUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin',
+            }).finally(function() { reporting = false; });
+        }
+
+        function goFullscreen() {
+            var el = document.documentElement;
+            var rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+            if (rfs) return rfs.call(el);
+            return Promise.reject();
+        }
+
+        function isFullscreen() {
+            return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+        }
+
+        // Block Ctrl+R, F5, F11 to prevent reload/fullscreen toggle
+        function blockKeys(e) {
+            // Ctrl+R or Ctrl+Shift+R
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R')) {
+                e.preventDefault();
+                return;
+            }
+            // F5
+            if (e.key === 'F5') {
+                e.preventDefault();
+                return;
+            }
+            // F11 — prevent browser fullscreen toggle
+            if (e.key === 'F11') {
+                e.preventDefault();
+                return;
+            }
+        }
+
+        // Attach key blocker to wrapper
+        document.addEventListener('keydown', blockKeys, true);
+
+        // Attach key blocker to iframe content on each navigation (same-origin)
+        frame.addEventListener('load', function() {
+            try {
+                frame.contentDocument.addEventListener('keydown', blockKeys, true);
+            } catch(e) { /* cross-origin, ignore */ }
+        });
+
+        // Click overlay -> enter fullscreen -> lock Escape -> hide overlay
+        overlay.addEventListener('click', function() {
+            goFullscreen().then(function() {
+                overlay.style.display = 'none';
+                started = true;
+                loadTime = Date.now();
+                // Lock Escape key so it can't exit fullscreen (Chrome/Edge)
+                if (navigator.keyboard && navigator.keyboard.lock) {
+                    navigator.keyboard.lock().catch(function() {});
+                }
+            }).catch(function() {
+                overlay.style.display = 'none';
+                started = true;
+            });
+        });
+
+        // Track fullscreen exit — silent, re-show overlay to re-enter
+        function onFullscreenChange() {
+            if (!started) return;
+            if (!isFullscreen()) {
+                reportViolation();
+                overlay.style.display = 'flex';
+            } else {
+                overlay.style.display = 'none';
+                // Re-lock Escape after re-entering fullscreen
+                if (navigator.keyboard && navigator.keyboard.lock) {
+                    navigator.keyboard.lock().catch(function() {});
+                }
+            }
+        }
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+        // Track tab/window switch — silent
+        document.addEventListener('visibilitychange', function() {
+            if (!started) return;
+            if (document.hidden) {
+                reportViolation();
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

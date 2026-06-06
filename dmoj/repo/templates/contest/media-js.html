@@ -7,8 +7,12 @@
 
         {% if not request.official_contest_mode %}
             $('.first-join').click(function () {
-                return confirm({{ _('Are you sure you want to join?')|htmltojs }} + '\n' +
-                    {{ _('Joining a contest starts your timer, after which it becomes unstoppable.')|htmltojs }});
+                var msg = {{ _('Are you sure you want to join?')|htmltojs }} + '\n' +
+                    {{ _('Joining a contest starts your timer, after which it becomes unstoppable.')|htmltojs }};
+                {% if contest is defined and contest.enable_focus_lock %}
+                    msg += '\n\n' + {{ _('WARNING: This contest has Focus Lock enabled. Your screen will enter fullscreen mode and the navigation bar will be hidden. Switching tabs or exiting fullscreen will be recorded as a violation. Excessive violations may result in disqualification.')|htmltojs }};
+                {% endif %}
+                return confirm(msg);
             });
         {% endif %}
 

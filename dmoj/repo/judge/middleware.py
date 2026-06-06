@@ -142,7 +142,71 @@ class ContestMiddleware(object):
         else:
             request.in_contest = False
             request.participation = None
-        return self.get_response(request)
+        request.focus_lock_active = (
+            request.in_contest
+            and request.participation.live
+            and request.participation.contest.enable_focus_lock
+        )
+
+        if request.focus_lock_active:
+            result = self._check_focus_lock(request)
+            if result is not None:
+                return result
+
+        response = self.get_response(request)
+
+        # Allow contest pages to load inside the focus-lock iframe wrapper
+        if request.focus_lock_active:
+            response['X-Frame-Options'] = 'SAMEORIGIN'
+        elif request.META.get('HTTP_SEC_FETCH_DEST') == 'iframe':
+            # User just left contest but page is still in iframe — allow loading so JS can break out
+            response['X-Frame-Options'] = 'SAMEORIGIN'
+
+        return response
+
+    @staticmethod
+    def _check_focus_lock(request):
+        path = request.path
+        contest_key = request.participation.contest.key
+        wrapper_path = reverse('contest_focus_lock', args=[contest_key])
+
+        # The wrapper page itself is always allowed
+        if path == wrapper_path:
+            return None
+
+        # Allow AJAX requests (submission polling, select2, etc.)
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+            return None
+
+        # Allow fetch API requests (violation reporting, etc.)
+        if request.META.get('HTTP_SEC_FETCH_MODE') == 'cors':
+            return None
+
+        # Whitelist: paths the contestant is allowed to access (loaded inside iframe)
+        allowed_prefixes = (
+            f'/contest/{contest_key}',   # all contest pages (detail, ranking, submissions, etc.)
+            '/problem/',                  # problem pages (needed to solve)
+            '/submission',                # submission status, source, etc.
+            '/submit/',                   # submitting solutions (if separate URL)
+            '/widgets/',                  # AJAX widgets (select2, rejudge, single_submission, etc.)
+            '/static/',                   # static files
+            '/media/',                    # media files
+            '/api/',                      # API endpoints
+            '/event/',                    # event/websocket endpoints
+            '/texoid/',                   # LaTeX rendering
+            '/mathoid/',                  # math rendering
+            '/i18n/',                     # language switching
+        )
+
+        if path == '/contest/report_focus_violation':
+            return None
+
+        for prefix in allowed_prefixes:
+            if path.startswith(prefix):
+                return None
+
+        # Not in the whitelist — redirect to wrapper
+        return HttpResponseRedirect(wrapper_path)
 
 
 class APIMiddleware(object):

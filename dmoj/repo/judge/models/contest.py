@@ -145,6 +145,11 @@ class Contest(models.Model):
                                                         'testcases. Commonly set during a contest, then unset '
                                                         'prior to rejudging user submissions when the contest ends.'),
                                             default=False)
+    enable_focus_lock = models.BooleanField(
+        verbose_name=_('enable focus lock'),
+        help_text=_('Hide navbar, request fullscreen, and track tab/fullscreen violations for live participants.'),
+        default=False,
+    )
     show_short_display = models.BooleanField(verbose_name=_('show short form settings display'),
                                              help_text=_('Whether to show a section containing contest settings '
                                                          'on the contest page or not.'),
@@ -643,6 +648,10 @@ class ContestParticipation(models.Model):
                                           help_text=_('Whether this participation is disqualified.'))
     tiebreaker = models.FloatField(verbose_name=_('tie-breaking field'), default=0.0)
     frozen_tiebreaker = models.FloatField(verbose_name=_('frozen tie-breaking field'), default=0.0)
+    focus_violations = models.PositiveIntegerField(
+        verbose_name=_('focus violations'), default=0,
+        help_text=_('Number of times the participant exited fullscreen or switched tabs.'),
+    )
     virtual = models.IntegerField(verbose_name=_('virtual participation id'), default=LIVE,
                                   help_text=_('0 means non-virtual, otherwise the n-th virtual participation.'))
     format_data = JSONField(verbose_name=_('contest format specific data'), null=True, blank=True)

@@ -136,8 +136,14 @@
                 y_pos = Math.max(Math.min(y_pos, window.innerHeight), 0);
 
                 if (selected !== null) {
-                    left_px = (x_pos - x_elem) + 'px';
-                    top_px = (y_pos - y_elem) + 'px';
+                    var left = x_pos - x_elem;
+                    var top = y_pos - y_elem;
+                    var w = selected.outerWidth();
+                    var h = selected.outerHeight();
+                    left = Math.max(0, Math.min(left, window.innerWidth - w));
+                    top = Math.max(0, Math.min(top, window.innerHeight - h));
+                    left_px = left + 'px';
+                    top_px = top + 'px';
 
                     localStorage.setItem("contest_timer_pos", left_px + ":" + top_px);
 
@@ -211,6 +217,11 @@
         <clipPath id="rating-clip"><circle cx="8" cy="8" r="7"/></clipPath>
     </defs>
 </svg>
+{% if request.focus_lock_active %}
+    <style>#navigation { display: none !important; }</style>
+{% else %}
+    <script>if (window.top !== window.self) { window.top.location.href = window.location.href; }</script>
+{% endif %}
 <nav id="navigation" class="unselectable">
     <div id="nav-container">
         <a id="navicon" href="javascript:void(0)"><i class="fa fa-bars"></i></a>
@@ -330,6 +341,11 @@
                 {{ _('virtual') }}
             {% endif %}
         </a>
+        {% if request.focus_lock_active %}
+            <a href="{{ url('contest_view', current_contest.key) }}" style="text-align: center; font-size: 0.7em; color: #4CAF50;">
+                {{ _('Back to contest') }}
+            </a>
+        {% endif %}
         {% if current_contest.can_see_own_scoreboard(request.user) %}
             <a href="{{ url('contest_ranking', current_contest.key) }}" style="text-align: center; font-size: 0.7em; color: #DCD427;">
                 {{ _('Go to Rankings') }}

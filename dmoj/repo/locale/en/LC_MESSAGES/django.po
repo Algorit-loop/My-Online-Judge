@@ -7278,3 +7278,28 @@ msgstr ""
 
 msgid "If your account was created with Google sign-in, you do not need to reset a password. Please continue by signing in with Google."
 msgstr "If your account was created with Google sign-in, you do not need to reset a password. Please continue by signing in with Google."
+
+msgid "enable focus lock"
+msgstr "enable focus lock"
+
+msgid "Hide navbar, request fullscreen, and track tab/fullscreen violations for live participants."
+msgstr ""
+
+msgid "focus violations"
+msgstr "focus violations"
+
+msgid "Number of times the participant exited fullscreen or switched tabs."
+msgstr ""
+
+msgid "Violations"
+msgstr "Violations"
+
+msgid "Back to contest"
+msgstr "Back to contest"
+
+msgid "WARNING: This contest has Focus Lock enabled. Your screen will enter fullscreen mode and the navigation bar will be hidden. Switching tabs or exiting fullscreen will be recorded as a violation. Excessive violations may result in disqualification."
+msgstr "WARNING: This contest has Focus Lock enabled. Your screen will enter fullscreen mode and the navigation bar will be hidden. Switching tabs or exiting fullscreen will be recorded as a violation. Excessive violations may result in disqualification."
+
+msgid "Click to enter fullscreen"
+msgstr "Click to enter fullscreen"
+

@@ -256,8 +256,12 @@ urlpatterns = [
         path('/ajax', contests.ContestTagDetailAjax.as_view(), name='contest_tag_ajax'),
     ])),
 
+    path('contest/report_focus_violation', contests.ContestReportFocusViolation.as_view(),
+         name='contest_report_focus_violation'),
+
     path('contest/<str:contest>', include([
         path('', contests.ContestDetail.as_view(), name='contest_view'),
+        path('/focus', contests.ContestFocusLockWrapper.as_view(), name='contest_focus_lock'),
         path('/all', contests.ContestAllProblems.as_view(), name='contest_all_problems'),
         path('/edit', contests.EditContest.as_view(), name='contest_edit'),
         path('/moss', contests.ContestMossView.as_view(), name='contest_moss'),

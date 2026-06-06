@@ -16,7 +16,8 @@ from django.db import IntegrityError, transaction
 from django.db.models import BooleanField, Case, Count, F, FloatField, IntegerField, Max, Min, Q, Sum, Value, When
 from django.db.models.expressions import CombinedExpression
 from django.db.models.query import Prefetch
-from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.http import (Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden,
+                         HttpResponseRedirect, JsonResponse)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import date as date_filter, floatformat
 from django.template.loader import get_template
@@ -26,7 +27,9 @@ from django.utils.functional import cached_property
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import make_aware
+from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _, gettext_lazy
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import FormView, ListView, TemplateView, View
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, UpdateView
@@ -630,6 +633,8 @@ class ContestJoin(LoginRequiredMixin, ContestMixin, SingleObjectMixin, View):
         profile.save()
         contest._updating_stats_only = True
         contest.update_user_count()
+        if contest.enable_focus_lock and participation.live:
+            return HttpResponseRedirect(reverse('contest_focus_lock', args=(contest.key,)))
         return HttpResponseRedirect(reverse('contest_view', args=(contest.key,)))
 
     def ask_for_access_code(self, form=None):
@@ -1492,3 +1497,35 @@ class ContestProblemMakePublic(LoginRequiredMixin, ContestMixin, SingleObjectMix
             rescore_problem.delay(problem.id, True)
 
         return HttpResponseRedirect(reverse('contest_view', args=(contest.key,)))
+
+
+class ContestReportFocusViolation(LoginRequiredMixin, View):
+    def post(self, request):
+        if not request.in_contest:
+            return HttpResponseBadRequest()
+
+        participation = request.participation
+        if not participation.live or not participation.contest.enable_focus_lock:
+            return HttpResponseBadRequest()
+
+        ContestParticipation.objects.filter(pk=participation.pk).update(
+            focus_violations=F('focus_violations') + 1,
+        )
+        return JsonResponse({'ok': True})
+
+
+class ContestFocusLockWrapper(LoginRequiredMixin, View):
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request, contest):
+        if not request.focus_lock_active or request.participation.contest.key != contest:
+            return HttpResponseRedirect(reverse('contest_view', args=[contest]))
+
+        contest_obj = request.participation.contest
+        return render(request, 'contest/focus-lock-wrapper.html', {
+            'contest': contest_obj,
+            'contest_url': reverse('contest_view', args=[contest]),
+            'report_url': reverse('contest_report_focus_violation'),
+            'click_fullscreen_text': _('Click to enter fullscreen'),
+        })
+
+

@@ -8008,3 +8008,36 @@ msgstr "Thời gian"
 #: templates/submission/list.html
 msgid "Memory"
 msgstr "Bộ nhớ"
+
+#: judge/models/contest.py
+msgid "enable focus lock"
+msgstr "bật khóa tập trung"
+
+#: judge/models/contest.py
+msgid "Hide navbar, request fullscreen, and track tab/fullscreen violations for live participants."
+msgstr "Ẩn thanh điều hướng, yêu cầu toàn màn hình, và theo dõi vi phạm chuyển tab/thoát toàn màn hình cho thí sinh."
+
+#: judge/models/contest.py
+msgid "focus violations"
+msgstr "số lần vi phạm"
+
+#: judge/models/contest.py
+msgid "Number of times the participant exited fullscreen or switched tabs."
+msgstr "Số lần thí sinh thoát toàn màn hình hoặc chuyển tab."
+
+#: templates/contest/ranking-table.html
+msgid "Violations"
+msgstr "Vi phạm"
+
+#: templates/base.html
+msgid "Back to contest"
+msgstr "Quay lại kỳ thi"
+
+#: templates/contest/media-js.html templates/contest/list.html
+msgid "WARNING: This contest has Focus Lock enabled. Your screen will enter fullscreen mode and the navigation bar will be hidden. Switching tabs or exiting fullscreen will be recorded as a violation. Excessive violations may result in disqualification."
+msgstr "CẢNH BÁO: Kỳ thi này có chế độ Khóa Tập Trung. Màn hình sẽ chuyển sang toàn màn hình và thanh điều hướng sẽ bị ẩn. Chuyển tab hoặc thoát toàn màn hình sẽ bị ghi nhận là vi phạm. Vi phạm quá nhiều có thể dẫn đến bị loại."
+
+#: judge/views/contests.py
+msgid "Click to enter fullscreen"
+msgstr "Nhấn để vào toàn màn hình"
+

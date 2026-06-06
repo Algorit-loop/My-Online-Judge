@@ -15,12 +15,16 @@
 
             {% if not request.official_contest_mode %}
                 $('.join-warning').click(function () {
-                    return confirm({{ _('Are you sure you want to join?')|htmltojs }} + '\n' +
+                    var msg = {{ _('Are you sure you want to join?')|htmltojs }} + '\n' +
                         {{ _('Joining a contest for the first time starts your timer, after which it becomes unstoppable.')|htmltojs }}
                         {% if request.in_contest %}
                             + '\n' + {{ _('Joining this contest will leave %(contest)s.', contest=request.participation.contest.name)|htmltojs }}
                         {% endif %}
-                    );
+                    ;
+                    if ($(this).data('focus-lock')) {
+                        msg += '\n\n' + {{ _('WARNING: This contest has Focus Lock enabled. Your screen will enter fullscreen mode and the navigation bar will be hidden. Switching tabs or exiting fullscreen will be recorded as a violation. Excessive violations may result in disqualification.')|htmltojs }};
+                    }
+                    return confirm(msg);
                 });
             {% endif %}
 
@@ -156,6 +160,7 @@
                 <form action="{{ url('contest_join', contest.key) }}" method="post">
                     {% csrf_token %}
                     <input type="submit" class="unselectable button full participate-button join-warning"
+                        {% if contest.enable_focus_lock %}data-focus-lock="1"{% endif %}
                         value="{{ _('Join') }}">
                 </form>
             {% endif %}
