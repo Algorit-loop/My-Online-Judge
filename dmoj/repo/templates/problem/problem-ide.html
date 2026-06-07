@@ -460,7 +460,9 @@
 
         // === localStorage Draft ===
         function dk(l) { return 'ide:' + UID + ':' + P + ':' + l; }
+        function langKey() { return 'ide:' + UID + ':' + P + ':lang'; }
         function save() { try { localStorage.setItem(dk(lid()), ed.getValue()); } catch(e) {} showS('saved'); }
+        function saveLang() { try { localStorage.setItem(langKey(), lid()); } catch(e) {} }
         function load(l) { try { return localStorage.getItem(dk(l)); } catch(e) { return null; } }
         function showS(s) {
             $('#sv-dot').attr('class', 'dot ' + s);
@@ -479,7 +481,16 @@
                 ed.setValue(t || '', -1); showS('saved'); save();
             }).fail(function() { ed.setValue('', -1); showS('saved'); });
         }
-        $L.on('change', function() { save(); setMode(); loadCode(lid()); });
+        // Restore saved language on page load
+        (function() {
+            try {
+                var sl = localStorage.getItem(langKey());
+                if (sl && $L.find('option[value="' + sl + '"]').length) {
+                    $L.val(sl);
+                }
+            } catch(e) {}
+        })();
+        $L.on('change', function() { save(); saveLang(); setMode(); loadCode(lid()); });
         setMode(); loadCode(lid());
         fitIDE();
 

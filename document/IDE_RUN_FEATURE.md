@@ -212,6 +212,34 @@ onRunEvent:
 
 `RunPollView` **không** được dùng để poll liên tục — nó chỉ được gọi **1 lần** khi wsevent báo terminal event (done). Đây là HTTP fallback để lấy dữ liệu chi tiết từ DB.
 
+### 9.1. Bug đã fix: Race condition mất event ở lần RUN thứ 2+
+
+**Triệu chứng:** RUN lần đầu OK, RUN lần 2+ (hoặc đổi ngôn ngữ rồi RUN) bị stuck "Running..." mặc dù DB có kết quả.
+
+**Root cause:** Khác với Submit (page reload → WebSocket mới), RUN dùng lại WebSocket trên cùng trang. Daemon `gotMessage()` advance `socket.lastMessage` cho MỌI message kể cả không match filter → khi `set-filter` đến sau 200ms, `messagesCatchUp()` không replay được event đã bị advance qua.
+
+Chi tiết đầy đủ xem **mục 5 trong SUBMIT_RUN_GENSOL_FLOW.md**.
+
+**Fix 1 — `websocket/daemon.js` line 139-144:**
+```javascript
+// Chỉ advance lastMessage khi message match filter (được gửi cho client)
+socket.gotMessage = (message) => {
+    if (message.channel in socket.filter) {
+        socket.send(JSON.stringify(message));
+        socket.lastMessage = message.id;
+    }
+};
+```
+
+**Fix 2 — `resources/event.js` `set_filters()`:**
+```javascript
+// Gửi set-filter ngay khi WebSocket đã sẵn sàng, chỉ delay khi chưa connect
+if (ws ready) { send immediately; }
+else { setTimeout(set_filters, 200); }
+```
+
+**Tác động hiệu suất:** Không thêm request. Daemon iterate thêm vài message cũ trong queue (max 50) khi `set-filter` — chi phí không đáng kể.
+
 ---
 
 ## 10. Template IDE
@@ -223,6 +251,7 @@ onRunEvent:
 - **Bottom panel:** Testcase tabs (Sample 1/2/..., nút +Add, ×Delete) + Result panel.
 - **Result panel:** grading progress → verdict + score (passed/total) → bảng per-testcase (status, time, memory, output, expected).
 - **Draft auto-save:** localStorage per user+problem+language, tự save sau 800ms idle.
+- **Language persistence:** Ngôn ngữ đã chọn được lưu vào localStorage (key `ide:<uid>:<problem>:lang`). Khi truy cập lại bài, IDE restore cả code lẫn ngôn ngữ đã lưu.
 - **Submit:** tạo hidden form POST sang `/problem/<code>/submit` — giống hệt flow cũ.
 
 ---
@@ -247,5 +276,7 @@ onRunEvent:
 | `dmoj/urls.py` | Modified | + `run_submit`, `run_poll`, `sample_testcases` URLs |
 | `templates/problem/data.html` | Modified | + cột `Sample?` |
 | `templates/problem/problem-ide.html` | **New** | Template IDE 2 cột |
+| `websocket/daemon.js` | Modified | Fix `gotMessage()`: chỉ advance `lastMessage` khi match filter |
+| `resources/event.js` | Modified | Fix `set_filters()`: gửi ngay khi WS ready thay vì luôn delay 200ms |
 | `judge_update/judge.py` | Modified | + `sample-testcase-only` logic, virtual TestCase in-memory |
 | `judge_update/packet.py` | Modified | (sync từ judge-server nếu có thay đổi) |

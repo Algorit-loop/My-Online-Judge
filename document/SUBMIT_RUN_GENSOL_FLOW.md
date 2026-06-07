@@ -421,9 +421,170 @@ Cờ phân biệt trên `JudgeHandler`: `_is_run`, `_is_gensol` (không dùng ca
 
 ---
 
-## 5. Phân tích nhánh & hướng đi
+## 5. So sánh chi tiết luồng event: SUBMIT vs RUN
 
-### 5.1. Tình trạng git
+Cả hai đều dùng wsevent daemon (WebSocket) để đẩy kết quả realtime về trình duyệt.
+Nhưng cơ chế subscribe khác nhau cơ bản, dẫn đến một race condition chỉ xảy ra ở RUN.
+
+### 5.1. Kiến trúc wsevent daemon (`websocket/daemon.js`)
+
+Daemon chạy 3 server:
+
+| Port | Vai trò |
+|------|---------|
+| `get_port` (15100) | WebSocket cho trình duyệt (nhận event) |
+| `post_port` (15101) | WebSocket cho Django bridge (gửi event) |
+| `http_port` (15102) | HTTP long-poll fallback |
+
+**Cơ chế lõi:**
+
+- `messagesPost(channel, message)`: tạo message `{id: ++messageId, channel, message}`, đẩy vào queue (max 50), broadcast tới tất cả `followers` qua `gotMessage()`.
+- `socket.gotMessage(message)`: kiểm tra `message.channel in socket.filter` → nếu match → gửi cho client.
+- `set-filter` command: client gửi danh sách channel cần theo dõi → daemon set `socket.filter` rồi gọi `messagesCatchUp()`.
+- `messagesCatchUp(socket)`: duyệt queue, replay tất cả message có `id > socket.lastMessage`.
+- `start-msg` command: client báo "tôi đã nhận đến message ID này" → daemon set `socket.lastMessage`.
+
+### 5.2. Luồng event SUBMIT (page reload — KHÔNG bị race condition)
+
+```
+ Server                              Browser                           Daemon
+   │                                    │                                │
+   │ 1. Tạo Submission, dispatch judge  │                                │
+   │ 2. HTTP redirect ──────────────────>│                                │
+   │                                    │ 3. Load trang /submission/{id}  │
+   │                                    │    EVENT_LAST_MSG = event.last()│
+   │                                    │    (= messageId hiện tại, vd 500)
+   │                                    │                                │
+   │                                    │ 4. new WSEventDispatcher(last_msg=500)
+   │                                    │ 5. event_dispatcher.on('sub_xxx')
+   │                                    │    → connected=false            │
+   │                                    │    → init_connection()          │
+   │                                    │    → WebSocket.connect ────────>│
+   │                                    │                                │ 6. socket tạo mới
+   │                                    │                                │    lastMessage=0
+   │                                    │                                │    CHƯA trong followers
+   │                                    │<── WebSocket.onopen ───────────│
+   │                                    │ 7. send start-msg(start=500) ─>│ 8. lastMessage=500
+   │                                    │ 9. send set-filter(['sub_xxx'])>│ 10. filter={'sub_xxx':true}
+   │                                    │    (sau 200ms delay)           │     followers.add(socket)
+   │                                    │                                │     messagesCatchUp(500)
+   │                                    │                                │     → replay msg >500 ✓
+```
+
+**Tại sao không miss event:** Giữa bước 1 (judge bắt đầu) và bước 10 (filter sẵn sàng), socket **CHƯA trong `followers`** → `messagesPost()` không gọi `gotMessage()` cho socket này → `lastMessage` không bị advance bởi event không match. Khi `messagesCatchUp` chạy ở bước 10, nó replay TẤT CẢ event có `id > 500` (bao gồm mọi event judge đã post).
+
+### 5.3. Luồng event RUN (single-page — BỊ race condition trước khi fix)
+
+```
+ Server                              Browser (cùng trang)              Daemon
+   │                                    │                                │
+   │                                    │ Socket ĐÃ trong followers      │
+   │                                    │ filter={'run_old':true}        │
+   │                                    │ lastMessage=500                │
+   │                                    │                                │
+   │ 1. off('run_old') ────────────────>│                                │
+   │                                    │ 2. set-filter([]) ────────────>│ 3. filter={}
+   │                                    │                                │
+   │                                    │ 4. Click RUN                   │
+   │                                    │ 5. AJAX POST /run ────────────>│
+   │ 6. Tạo RunSubmission               │                                │
+   │    dispatch judge                  │                                │
+   │ 7. AJAX response ─────────────────>│                                │
+   │                                    │                                │
+   │         ┌─── CỬA SỔ NGUY HIỂM ────┐                                │
+   │ 8. Judge xong (A+B rất nhanh)      │                                │
+   │    event.post('run_new',           │                                │
+   │      {type:'grading-end'})────────────────────────────────────────>│
+   │                                    │                                │ 9. messagesPost()
+   │                                    │                                │    → followers.forEach(gotMessage)
+   │                                    │                                │    → 'run_new' in {} → FALSE
+   │                                    │                                │    → KHÔNG gửi cho client
+   │                                    │                                │    → lastMessage = 501 ← BUG!
+   │         └──────────────────────────┘                                │
+   │                                    │ 10. on('run_new', callback)    │
+   │                                    │ 11. set-filter(['run_new'])──>│ 12. filter={'run_new':true}
+   │                                    │     (sau 200ms delay)          │     messagesCatchUp(501)
+   │                                    │                                │     → msg 501 có id=501
+   │                                    │                                │       501 > 501? → FALSE
+   │                                    │                                │     → KHÔNG replay ← BUG!
+   │                                    │                                │
+   │                                    │ ❌ Stuck "Running..." mãi mãi  │
+```
+
+**Root cause:** Ở bước 9, `gotMessage()` advance `lastMessage=501` dù message KHÔNG match filter. Ở bước 12, `messagesCatchUp` chỉ replay `id > 501` → message 501 bị bỏ qua vĩnh viễn.
+
+### 5.4. Bảng so sánh SUBMIT vs RUN
+
+| Tiêu chí | SUBMIT | RUN |
+|-----------|--------|-----|
+| **Trigger** | Form POST → page redirect | AJAX POST → cùng trang |
+| **WebSocket** | Tạo MỚI (fresh connect) | Tái dùng connection hiện có |
+| **`start-msg`** | Gửi với `EVENT_LAST_MSG` fresh | Không gửi lại |
+| **Socket trong `followers`** | CHƯA (đến khi `set-filter`) | ĐÃ trong `followers` |
+| **Event đến trước filter** | Không ảnh hưởng (socket chưa là follower) | `lastMessage` bị advance → mất event |
+| **`messagesCatchUp`** | Replay từ baseline fresh → bắt hết | Replay từ `lastMessage` đã bị advance → miss |
+| **Model lưu kết quả** | `Submission` + `SubmissionTestCase` (DB) | `RunSubmission.case_results` (JSON) |
+| **Channel** | `sub_<id_secret>` | `run_<id_secret>` |
+| **Hiển thị kết quả** | Re-render HTML (AJAX fetch testcases) | Parse JSON → render inline |
+| **Tốc độ phản hồi** | Bài nhanh cũng OK (page load chậm hơn judge) | Bài nhanh (A+B, C++) gây race condition |
+
+### 5.5. Fix đã áp dụng
+
+**Fix 1 — `websocket/daemon.js` (root cause):**
+
+Chỉ advance `lastMessage` khi message match filter:
+
+```javascript
+// TRƯỚC (bug):
+socket.gotMessage = (message) => {
+    if (message.channel in socket.filter) {
+        socket.send(JSON.stringify(message));
+    }
+    socket.lastMessage = message.id;  // advance LUÔN → mất event
+};
+
+// SAU (fix):
+socket.gotMessage = (message) => {
+    if (message.channel in socket.filter) {
+        socket.send(JSON.stringify(message));
+        socket.lastMessage = message.id;  // chỉ advance khi match
+    }
+};
+```
+
+Hiệu quả: `messagesCatchUp()` sẽ replay được event bị miss vì `lastMessage` không bị advance bởi event không match filter. **Giống cách Submit hoạt động** — event không ảnh hưởng `lastMessage` khi socket chưa sẵn sàng nhận channel đó.
+
+**Fix 2 — `resources/event.js` (tối ưu):**
+
+Gửi `set-filter` ngay lập tức khi WebSocket đã sẵn sàng, thay vì luôn chờ 200ms:
+
+```javascript
+// TRƯỚC: luôn delay 200ms
+filter_timeout = setTimeout(function () { ... }, 200);
+
+// SAU: gửi ngay nếu WS ready, chỉ delay khi WS chưa connect
+if (receiver.websocket && readyState === OPEN && readyForData) {
+    receiver.websocket.send(set-filter);  // ngay lập tức
+} else {
+    filter_timeout = setTimeout(set_filters, 200);  // chờ WS ready
+}
+```
+
+Hiệu quả: Thu hẹp cửa sổ race condition từ 200ms+ xuống gần 0. **Giống cách Submit gửi `start-msg` ngay trong `onopen`** — không chờ đợi không cần thiết.
+
+### 5.6. Tác động hiệu suất
+
+| Thay đổi | Tác động |
+|----------|----------|
+| daemon.js: `lastMessage` chỉ advance khi match | `messagesCatchUp` có thể iterate thêm vài message cũ trong queue (max 50) khi `set-filter` được gọi. Mỗi message chỉ cần 1 phép so sánh `in`. **Chi phí không đáng kể.** |
+| event.js: gửi `set-filter` ngay | Nếu nhiều `on()` gọi liên tiếp (page load), mỗi call gửi 1 `set-filter` thay vì batch. Tối đa ~5 messages nhỏ thay vì 1. **Chi phí không đáng kể.** |
+| **Không thêm request nào** | Không có polling, không có HTTP request mới. Chỉ thay đổi logic xử lý message. |
+
+---
+
+## 6. Phân tích nhánh & hướng đi
+
+### 6.1. Tình trạng git
 
 - Nhánh hiện tại: **`AI-feature-v1.1`** (đã push lên `origin`).
 - Lịch sử: `AI-feature-v1` (MVP Create Problem + Create Testcase) → `AI-feature-v1.1` (cập nhật Generate Testcase).
@@ -434,7 +595,7 @@ Cờ phân biệt trên `JudgeHandler`: `_is_run`, `_is_gensol` (không dùng ca
 
 → Đang phát triển: **chấm generator/solution trên judge sandbox thật để sinh testcase**, dùng Redis làm tín hiệu hoàn tất.
 
-### 5.2. Những điểm ĐÃ ỔN 👍
+### 6.2. Những điểm ĐÃ ỔN
 
 1. **Tách model rõ ràng.** `RunSubmission` và `GenSolSubmission` tách khỏi `Submission` → không làm bẩn dữ liệu nộp bài thật, không ảnh hưởng bảng xếp hạng.
 2. **Tái dùng giao thức judge.** GenSol/Run đi qua đúng pipeline cptbox sandbox → code AI sinh chạy trong môi trường cô lập, an toàn.
@@ -444,7 +605,7 @@ Cờ phân biệt trên `JudgeHandler`: `_is_run`, `_is_gensol` (không dùng ca
 6. **Bảo mật cơ bản tốt.** API key mã hoá Fernet, kiểm tra `is_editable_by`, chỉ dùng key `verified`, `_safe_json` chống XSS, plaintext key không lưu.
 7. **Có cơ chế signal ở mọi nhánh kết thúc** (CE/IE/AB/shutdown) → Celery không bị treo vô hạn nhờ timeout.
 
-### 5.3. RỦI RO / cần lưu ý ⚠️
+### 6.3. RỦI RO / cần lưu ý
 
 | Mức | Rủi ro | Vị trí |
 |-----|--------|--------|
@@ -458,7 +619,7 @@ Cờ phân biệt trên `JudgeHandler`: `_is_run`, `_is_gensol` (không dùng ca
 | 🟡 Thấp | **`_get_redis()` mặc định DB index 1** trùng broker Celery. Lẫn key `gensol_done:*` với dữ liệu Celery (ít rủi ro nhưng nên tách DB/namespace). | gensol_signal.py |
 | 🟡 Thấp | **Bước import chưa bật** → tính năng hiện chỉ sinh + xem, chưa thực sự ghi testcase vào problem. Cần hoàn thiện popup xác nhận. | task (comment) |
 
-### 5.4. GỢI Ý hướng đi (mức "đủ tốt", không cần hoàn hảo)
+### 6.4. GỢI Ý hướng đi
 
 Ưu tiên theo thứ tự:
 
@@ -475,7 +636,7 @@ Tóm lại: kiến trúc đang đi **đúng hướng** (tách model, tái dùng 
 
 ---
 
-## 6. Tham chiếu nhanh file
+## 7. Tham chiếu nhanh file
 
 | Vai trò | File |
 |---------|------|
@@ -492,3 +653,6 @@ Tóm lại: kiến trúc đang đi **đúng hướng** (tách model, tái dùng 
 | Model RunSubmission | judge/models/run_submission.py |
 | Model GenSolSubmission | [judge/models/gensol_submission.py](dmoj/repo/judge/models/gensol_submission.py) |
 | Model GenerateTestcaseJob | [judge/models/generate_testcase.py](dmoj/repo/judge/models/generate_testcase.py) |
+| wsevent daemon | [websocket/daemon.js](dmoj/repo/websocket/daemon.js) |
+| Client event dispatcher | [resources/event.js](dmoj/repo/resources/event.js) |
+| Template context (EVENT_LAST_MSG) | [judge/template_context.py](dmoj/repo/judge/template_context.py) |

@@ -139,8 +139,8 @@ wssReceiver.on("connection", (/** @type {WebSocketExtended} */ socket) => {
   socket.gotMessage = (message) => {
     if (message.channel in socket.filter) {
       socket.send(JSON.stringify(message));
+      socket.lastMessage = message.id;
     }
-    socket.lastMessage = message.id;
   };
 
   socket.on("message", (/** @type {WebSocketRawExtended}*/ request) => {

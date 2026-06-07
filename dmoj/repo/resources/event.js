@@ -88,19 +88,21 @@ function WSEventDispatcher(websocket_path, polling_base, last_msg) {
 
     var filter_timeout = null;
     function set_filters() {
+        clearTimeout(filter_timeout);
         if (window.WebSocket) {
-            filter_timeout = setTimeout(function () {
-                if (receiver.websocket &&
-                    receiver.websocket.readyState === WebSocket.OPEN &&
-                    receiver.websocket.readyForData === true) {
-                    receiver.websocket.send(JSON.stringify({
-                        command: 'set-filter',
-                        filter: receiver.channels,
-                    }));
-                } else {
-                    set_filters();
-                }
-            }, 200);
+            // If WebSocket is already open, send filter immediately (no delay).
+            // This mirrors how Submit works: start-msg is sent immediately on connect.
+            // The 200ms delay is only needed when waiting for WebSocket to become ready.
+            if (receiver.websocket &&
+                receiver.websocket.readyState === WebSocket.OPEN &&
+                receiver.websocket.readyForData === true) {
+                receiver.websocket.send(JSON.stringify({
+                    command: 'set-filter',
+                    filter: receiver.channels,
+                }));
+            } else {
+                filter_timeout = setTimeout(set_filters, 200);
+            }
         } else {
             if (receiver.polling_request) {
                 receiver.polling_request.abort();
