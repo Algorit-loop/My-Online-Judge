@@ -8041,3 +8041,7 @@ msgstr "CẢNH BÁO: Kỳ thi này có chế độ Khóa Tập Trung. Màn hình
 msgid "Click to enter fullscreen"
 msgstr "Nhấn để vào toàn màn hình"
 
+#: templates/problem/problem-ide.html
+msgid "This problem currently has no test cases."
+msgstr "Bài này hiện tại không có Testcase."
+

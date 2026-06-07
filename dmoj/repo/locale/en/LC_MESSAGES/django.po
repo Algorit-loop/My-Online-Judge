@@ -7303,3 +7303,6 @@ msgstr "WARNING: This contest has Focus Lock enabled. Your screen will enter ful
 msgid "Click to enter fullscreen"
 msgstr "Click to enter fullscreen"
 
+msgid "This problem currently has no test cases."
+msgstr "This problem currently has no test cases."
+

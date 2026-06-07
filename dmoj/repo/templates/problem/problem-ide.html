@@ -858,27 +858,34 @@
     <div class="ide-R">
         <div class="ide-top-frame">
             <div class="ide-bar">
-                {% if request.user.is_authenticated %}
-                <select id="ide-lang">
-                    {% if form %}
-                        {% for lang in form.fields.language.queryset %}
-                            <option value="{{ lang.id }}" data-ace="{{ lang.ace }}"
-                                    {% if default_lang and lang.id == default_lang.id %}selected{% endif %}>
-                                {{ lang.name }}
-                            </option>
-                        {% endfor %}
+                {% if has_testcases %}
+                    {% if request.user.is_authenticated %}
+                    <select id="ide-lang">
+                        {% if form %}
+                            {% for lang in form.fields.language.queryset %}
+                                <option value="{{ lang.id }}" data-ace="{{ lang.ace }}"
+                                        {% if default_lang and lang.id == default_lang.id %}selected{% endif %}>
+                                    {{ lang.name }}
+                                </option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
                     {% endif %}
-                </select>
-                {% endif %}
-                <button id="btn-run" class="btn-run" type="button">▶ Run</button>
-                <button id="btn-sub" class="btn-sub" type="button">Submit</button>
-                <span class="bar-sp"></span>
-                {% if request.user.is_authenticated %}
-                <span class="save-st"><span id="sv-dot" class="dot saved"></span><span id="sv-txt">Saved</span></span>
+                    <button id="btn-run" class="btn-run" type="button">▶ Run</button>
+                    <button id="btn-sub" class="btn-sub" type="button">Submit</button>
+                    <span class="bar-sp"></span>
+                    {% if request.user.is_authenticated %}
+                    <span class="save-st"><span id="sv-dot" class="dot saved"></span><span id="sv-txt">Saved</span></span>
+                    {% endif %}
                 {% endif %}
             </div>
             <div class="ide-editor" style="position:relative">
-                {% if request.user.is_authenticated %}
+                {% if not has_testcases %}
+                <div class="ide-login-overlay">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <p>{{ _('This problem currently has no test cases.') }}</p>
+                </div>
+                {% elif request.user.is_authenticated %}
                 <div id="ace-ed"></div>
                 {% else %}
                 <div class="ide-login-overlay">
