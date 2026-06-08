@@ -39,7 +39,7 @@ img {
 
 table.sortable thead {
     background-color: $color_primary10;
-    color: #666;
+    color: $color_sortable_header_text;
     font-weight: bold;
     cursor: default;
 }
@@ -84,8 +84,8 @@ th {
 .form-area {
     display: inline-block;
     background: $color_primary5;
-    padding: 5px 10px 10px;
-    border-radius: $widget_border_radius;
+    padding: 8px 14px 12px;
+    border-radius: 10px;
     border: 1px solid $color_primary25;
 }
 
@@ -107,11 +107,13 @@ body {
     min-height: 100%;
     margin: 0 auto;
     font-size: $base_font_size;
-    line-height: 1.231;
-    background: $color_primary5;
-    font-family: "Segoe UI", "Lucida Grande", Arial, sans-serif;
+    line-height: 1.5;
+    background: $color_primary10;
+    font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
     color: $color_primary100;
     height: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .unselectable {
@@ -131,25 +133,32 @@ b {
 }
 
 h2 {
-    font-weight: 400;
-    font-size: 2em;
+    font-weight: 700;
+    font-size: 1.35em;
     border-radius: $widget_border_radius;
     padding: 0;
-    margin: 0;
+    margin: 0 0 0.5em;
+    letter-spacing: -0.02em;
+    color: $color_primary100;
 }
 
 h3 {
-    font-weight: 400;
-    font-size: 1.4em;
+    font-weight: 600;
+    font-size: 1.1em;
     border-radius: $widget_border_radius;
     padding: 0;
-    margin: 0;
+    margin: 0 0 0.3em;
+    letter-spacing: -0.01em;
 }
 
 h4 {
-    font-size: 1.1em;
+    font-weight: 600;
+    font-size: 0.95em;
     padding: 0;
     margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: $color_primary50;
 }
 
 hr {
@@ -157,10 +166,11 @@ hr {
 }
 
 #content {
-    margin: 52px auto auto;
+    margin: 56px auto auto;
+    padding-top: 20px;
 
-    // Header
-    width: 90%;
+    width: 92%;
+    max-width: 1280px;
     height: 100%;
     min-height: 25em;
     display: block;
@@ -173,8 +183,10 @@ hr {
 footer {
     text-align: center;
     height: 40px;
-    border-top: 1px solid $color_primary25;
-    background: $color_primary10;
+    border-top: none;
+    background: transparent;
+    font-size: 0.8em;
+    color: $color_primary33;
 }
 
 html {
@@ -226,10 +238,11 @@ noscript #noscript {
 }
 
 .toggle {
-    font-weight: bold;
+    font-weight: 600;
+    cursor: pointer;
 
     .fa {
-        transition: transform 0.4s;
+        transition: transform 0.12s ease;
     }
 
     &.open .fa {
@@ -277,10 +290,10 @@ noscript #noscript {
     min-height: 100%;
     position: relative;
     margin: 0 auto;
-    border-right: 1px solid $color_primary25;
-    border-left: 1px solid $color_primary25;
+    border-right: none;
+    border-left: none;
     background: $color_pageBg;
-    max-width: 100em;
+    max-width: 100%;
 }
 
 // border-bottom: 1px solid rgb(204, 204, 204)
@@ -288,7 +301,12 @@ noscript #noscript {
 // border-bottom-right-radius: 4px
 
 #content-body {
-    padding-bottom: 4em;
+    padding: 24px 28px 4em;
+    background: $color_primary0;
+    border: 1px solid $color_primary25;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 // Offset the footer
@@ -320,6 +338,12 @@ math {
 @media (max-width: 760px) {
     #content {
         width: auto;
-        padding: 0 5px;
+        padding: 0 8px;
+        margin-top: 48px;
+    }
+
+    #content-body {
+        padding: 12px 14px 3em;
+        border-radius: 6px;
     }
 }

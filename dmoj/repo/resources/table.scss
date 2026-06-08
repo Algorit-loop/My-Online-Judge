@@ -9,57 +9,60 @@
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    margin-bottom: 0.5em;
-    background: rgba($color_primary100, 0.01);
-    backdrop-filter: blur(3px);
+    margin-bottom: 0.75em;
+    background: $color_primary0;
+    border: 1px solid $color_primary25;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
-    &.striped tr:nth-child(2n) {
-        background: rgba($color_primary100, 0.03);
+    &.striped tbody tr:nth-child(2n) {
+        background: $color_primary5;
     }
 
     th {
-        height: 2em;
-        color: $color_primary0;
-        background-color: $color_primary75;
-        border-color: $color_primary50;
-        border-width: 0 1px 1px 0;
-        border-style: solid;
-        padding: 4px 10px;
+        height: auto;
+        color: $color_primary50;
+        background: $color_primary5;
+        border: none;
+        border-bottom: 1px solid $color_primary25;
+        padding: 10px 14px;
         vertical-align: middle;
         text-align: center;
         white-space: nowrap;
         font-weight: 600;
-        font-size: 1.1em;
+        font-size: 0.72em;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    // No cell borders — clean modern look
+    th + th {
+        border-left: none;
     }
 
     td {
-        border-color: $color_primary25;
-        border-width: 0 1px 1px 0;
-        border-style: solid;
-        padding: 7px 5px;
+        border: none;
+        border-bottom: 1px solid $color_primary10;
+        padding: 10px 12px;
         vertical-align: middle;
         text-align: center;
+        font-size: 0.9em;
     }
 
-    // Border fixes
-    th:first-child, td:first-child {
-        border-left-width: 1px;
+    td + td {
+        border-left: none;
     }
 
-    tr:first-child th, tr:first-child td {
-        border-top-width: 1px;
+    tbody tr:last-child td {
+        border-bottom: none;
     }
 
-    // Rounded corners for <th>
-    tr:first-child th:first-child {
-        border-top-left-radius: $table_header_rounding;
-    }
+    tbody tr {
+        transition: background 0.1s;
 
-    tr:first-child th:last-child {
-        border-top-right-radius: $table_header_rounding;
-    }
-
-    tbody tr:last-child th:first-child {
-        border-bottom-left-radius: $table_header_rounding;
+        &:hover {
+            background: rgba($highlight_blue, 0.05);
+        }
     }
 }

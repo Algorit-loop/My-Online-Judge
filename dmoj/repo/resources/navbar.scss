@@ -5,15 +5,20 @@
     top: 0;
     right: 0;
     position: absolute;
-    color: #5c5954;
-    padding-right: 10px;
+    color: $color_navbar_user_links;
+    padding-right: 12px;
     display: inline-flex;
     min-height: 100%;
     align-items: center;
     white-space: nowrap;
 
     a {
-        color: #FFF;
+        color: rgba(255, 255, 255, 0.8);
+        transition: color 0.1s;
+
+        &:hover {
+            color: #fff;
+        }
     }
 
     li {
@@ -21,36 +26,41 @@
     }
 
     & > ul {
-        display: block;
+        display: flex;
+        align-items: center;
         margin: 0;
 
         & > li {
             & > a {
-                display: block;
+                display: flex;
+                align-items: center;
                 padding: 0;
                 height: 100%;
 
                 & > span {
                     font-size: 13px;
-                    padding: 10px 10px;
-                    display: block;
+                    padding: 8px 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
                     white-space: nowrap;
 
                     & > img {
                         vertical-align: middle;
-                        border-radius: $widget_border_radius;
-                        margin-right: 6px;
+                        border-radius: 50%;
+                        margin-right: 0;
                     }
 
                     & > span {
                         vertical-align: middle;
-                        color: #eee;
+                        color: rgba(255, 255, 255, 0.5);
                     }
                 }
             }
 
             & > ul {
-                left: 0;
+                left: auto;
+                right: 0;
             }
         }
     }
@@ -62,17 +72,17 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 56px;
-    background: #231f20;
+    height: 48px;
+    background: $color_navbar_bg;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 #nav-shadow {
-    height: 3px;
-    background: linear-gradient(rgba(0, 0, 0, 0.5), transparent);
+    height: 0;
 }
 
 #nav-container {
-    background: #231f20;
+    background: $color_navbar_bg;
 
     // opacity: 0.77
     // filter: alpha(opacity=77)
@@ -87,19 +97,26 @@ nav {
     z-index: 500;
 
     ul {
-        margin: 0 0 0 -5px;
-        padding: 0 0 0 1%;
-        display: block;
+        margin: 0;
+        padding: 0 0 0 8px;
+        display: flex;
+        align-items: center;
+        height: 48px;
 
         li {
-            display: inline-block;
-            color: #FFF;
-            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            color: $color_navbar_text;
+            text-transform: none;
             position: relative;
-            font-family: 'Source Sans Pro', sans-serif;
+            font-family: Inter, 'Segoe UI', -apple-system, sans-serif;
+            height: 100%;
+
             &.home-nav-element a {
                 padding: 0;
                 height: 44px;
+                display: inline-flex;
+                align-items: center;
 
                 &:hover {
                     border-bottom: none;
@@ -111,27 +128,33 @@ nav {
             a, button {
                 text-decoration: none;
                 vertical-align: middle;
-                color: #FFF;
-                padding: 14px 7px;
-                height: 20px;
-                display: inline-table;
+                color: rgba(255, 255, 255, 0.7);
+                padding: 0 10px;
+                height: 100%;
+                display: inline-flex;
+                align-items: center;
+                font-size: 13px;
+                font-weight: 500;
+                letter-spacing: 0;
+                transition: color 0.1s, background 0.1s;
+                border-bottom: 2px solid transparent;
 
                 &:link {
-                    color: #FFF;
+                    color: rgba(255, 255, 255, 0.7);
                 }
 
                 &:hover {
-                    color: #FFF;
-                    background: rgba(255, 255, 255, 0.25);
+                    color: #fff;
+                    background: rgba(255, 255, 255, 0.06);
                     margin: 0;
                 }
 
                 &.active {
-                    color: #FFF;
-
-                    border: 5px solid transparent;
-                    border-bottom: 5px solid $highlight_blue;
-                    padding: 9px 2px;
+                    color: #fff;
+                    border: none;
+                    border-bottom: 2px solid $highlight_blue;
+                    padding: 0 10px;
+                    background: transparent;
                 }
 
                 .nav-expand {
@@ -140,32 +163,47 @@ nav {
             }
 
             ul {
-                padding: 0;
+                padding: 4px;
                 position: absolute;
-                left: 5px;
+                left: 0;
+                top: 100%;
                 display: none;
-                color: #fff;
-                background: #231f20;
+                color: $color_navbar_text;
+                background: $color_navbar_bg;
                 margin: 0 !important;
-                box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 10px;
+                min-width: 160px;
 
                 li {
                     a.active {
                         border: none;
-                        border-left: 5px solid $highlight_blue;
+                        background: rgba(255, 255, 255, 0.08);
+                        border-radius: 4px;
                     }
                 }
 
                 li {
                     display: block;
+                    height: auto;
 
                     a, button {
-                        padding: 8px 20px 8px 8px !important;
-                        font-size: 0.8em;
-                        line-height: 18px;
+                        padding: 6px 10px !important;
+                        font-size: 13px;
+                        line-height: 1.4;
                         display: block;
-                        border-left: 4px solid $highlight_blue;
+                        border-left: none;
+                        border-bottom: none;
                         white-space: nowrap;
+                        border-radius: 4px;
+                        height: auto;
+                        color: rgba(255, 255, 255, 0.7);
+
+                        &:hover {
+                            background: rgba(255, 255, 255, 0.08);
+                            color: #fff;
+                        }
                     }
                 }
             }
@@ -195,11 +233,12 @@ nav {
     .nav-divider {
         width: 1px;
         vertical-align: middle;
-        padding-left: 3px;
-        display: inline-block;
-        height: 32px;
-        margin-right: 1px;
-        border-right: 3px solid rgba(255, 255, 255, 0.15);
+        padding-left: 0;
+        display: inline-flex;
+        align-items: center;
+        height: 20px;
+        margin: 0 4px;
+        border-right: 1px solid rgba(255, 255, 255, 0.12);
     }
 }
 
@@ -217,14 +256,14 @@ nav {
         display: block;
         line-height: 26px;
         font-size: 2em;
-        color: #FFF;
+        color: $color_navbar_text;
         padding: 0 0.25em;
         margin: 4px 0.25em;
         white-space: nowrap;
         float: left;
 
         &.hover {
-            color: #4db7fe;
+            color: $color_navbar_mobile_hover;
             text-shadow: 0 0 5px $highlight_blue;
             transition-duration: 0.25s;
         }
@@ -236,7 +275,7 @@ nav {
         margin: 0;
         position: fixed;
         top: 36px;
-        background: #231f20;
+        background: $color_navbar_bg;
         bottom: 0;
         width: 8em;
         left: 0;

@@ -58,23 +58,27 @@ span.organization {
 
 .users-table, .organization-table {
     tr {
-        transition: background-color linear .2s;
+        transition: background 0.08s;
 
         &:hover {
-            background: rgba($color_primary100, 0.05);
+            background: rgba($highlight_blue, 0.04);
         }
 
         &.highlight {
-            background: rgba($color_link200, 0.2) !important;
+            background: rgba($highlight_blue, 0.1) !important;
         }
     }
 
     th a {
-        color: $color_primary0;
+        color: $color_primary50;
 
         &:link,
         &:visited {
-            color: $color_primary0;
+            color: $color_primary50;
+        }
+
+        &:hover {
+            color: $color_primary75;
         }
     }
 }
@@ -124,24 +128,25 @@ span.organization {
 
 .user-info-page {
     display: flex;
+    gap: 20px;
 }
 
 .user-sidebar {
-    width: 150px;
-    padding-left: 15px;
+    width: 160px;
+    padding-left: 0;
 }
 
 img.user-gravatar {
     display: block;
-    border-radius: 6px;
-    background-color: white;
+    border-radius: $widget_border_radius;
+    background-color: $color_primary0;
 }
 
 /* ---------- avatar thumbnail in user list table ---------- */
 .user-list-avatar {
     border-radius: 50%;
     vertical-align: middle;
-    border: 2px solid #d8d8d8;
+    border: 2px solid $color_user_avatar_border;
     object-fit: cover;
     flex-shrink: 0;
 }
@@ -177,9 +182,9 @@ img.user-gravatar {
     display: block;
 }
 
-.podium-item.rank-1 .podium-avatar { border: 4px solid #FFD700; box-shadow: 0 0 14px rgba(255, 215, 0, 0.55); }
-.podium-item.rank-2 .podium-avatar { border: 4px solid #C0C0C0; box-shadow: 0 0 10px rgba(192, 192, 192, 0.45); }
-.podium-item.rank-3 .podium-avatar { border: 4px solid #CD7F32; box-shadow: 0 0 10px rgba(205, 127, 50, 0.45); }
+.podium-item.rank-1 .podium-avatar { border: 4px solid $color_podium_gold; box-shadow: 0 0 14px $color_podium_gold_shadow; }
+.podium-item.rank-2 .podium-avatar { border: 4px solid $color_podium_silver; box-shadow: 0 0 10px $color_podium_silver_shadow; }
+.podium-item.rank-3 .podium-avatar { border: 4px solid $color_podium_bronze; box-shadow: 0 0 10px $color_podium_bronze_shadow; }
 
 .podium-rank-badge {
     position: absolute;
@@ -197,9 +202,9 @@ img.user-gravatar {
     border: 2px solid #fff;
 }
 
-.podium-item.rank-1 .podium-rank-badge { background: #FFD700; color: #7a5000; }
-.podium-item.rank-2 .podium-rank-badge { background: #C0C0C0; color: #4a4a4a; }
-.podium-item.rank-3 .podium-rank-badge { background: #CD7F32; color: #fff; }
+.podium-item.rank-1 .podium-rank-badge { background: $color_podium_gold; color: $color_podium_gold_text; }
+.podium-item.rank-2 .podium-rank-badge { background: $color_podium_silver; color: $color_podium_silver_text; }
+.podium-item.rank-3 .podium-rank-badge { background: $color_podium_bronze; color: $color_podium_bronze_text_badge; }
 
 .podium-name {
     font-size: 1.05em;
@@ -229,7 +234,7 @@ img.user-gravatar {
 
 .podium-block {
     width: 100%;
-    border-radius: 8px 8px 0 0;
+    border-radius: $widget_border_radius $widget_border_radius 0 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -238,9 +243,9 @@ img.user-gravatar {
     padding: 8px 0;
 }
 
-.podium-item.rank-1 .podium-block { height: 100px; background: linear-gradient(135deg, #FFD700, #FFA500); }
-.podium-item.rank-2 .podium-block { height: 74px;  background: linear-gradient(135deg, #C0C0C0, #909090); }
-.podium-item.rank-3 .podium-block { height: 54px;  background: linear-gradient(135deg, #CD7F32, #A0522D); }
+.podium-item.rank-1 .podium-block { height: 100px; background: linear-gradient(135deg, $color_podium_gold, $color_podium_gold_end); }
+.podium-item.rank-2 .podium-block { height: 74px;  background: linear-gradient(135deg, $color_podium_silver, $color_podium_silver_end); }
+.podium-item.rank-3 .podium-block { height: 54px;  background: linear-gradient(135deg, $color_podium_bronze, $color_podium_bronze_end); }
 
 /* podium layout: thead-only table (hide tbody) / tbody-only table (hide thead) */
 .users-table-head-only .users-table tbody { display: none; }
@@ -383,7 +388,7 @@ img.user-gravatar {
 
     #submission-activity-display {
         border: 1px solid $color_primary25;
-        border-radius: $table_header_rounding;
+        border-radius: 6px;
 
         .info-bar {
             display: flex;

@@ -35,19 +35,21 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35em;
-    padding: 6px 14px;
-    border: 1px solid #2196F3;
-    border-radius: 4px;
-    background: #2196F3;
-    color: #fff;
+    padding: 5px 14px;
+    border: 1.5px solid $color_primary25;
+    border-radius: 16px;
+    background: $color_primary0;
+    color: $color_primary75;
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 0.85em;
+    font-weight: 500;
     white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s;
+    transition: all 0.12s ease;
 
     &:hover, &.active {
-        background: #1976D2;
-        border-color: #1565C0;
+        background: $color_primary5;
+        border-color: $highlight_blue;
+        color: $highlight_blue;
     }
 
     .fa {
@@ -67,14 +69,14 @@
     top: calc(100% + 4px);
     right: 0;
     z-index: 1000;
-    min-width: 280px;
+    min-width: 260px;
     max-height: 480px;
     overflow-y: auto;
-    background: #fff;
+    background: $color_dropdown_bg;
     border: 1px solid $color_primary25;
-    border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    padding: 1em;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    padding: 0.75em;
 
     &.open {
         display: block;
@@ -108,16 +110,18 @@
 .submissions-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.92em;
+    font-size: 0.88em;
 
     thead th {
         text-align: left;
-        padding: 10px 12px;
-        border-bottom: 2px solid $color_primary25;
+        padding: 8px 12px;
+        border-bottom: 1px solid $color_primary25;
         font-weight: 600;
         white-space: nowrap;
-        color: $color_primary75;
-        font-size: 1.05em;
+        color: $color_primary50;
+        font-size: 0.8em;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
 
         sup {
             font-size: 0.7em;
@@ -177,7 +181,7 @@
         text-align: right;
         min-width: 90px;
         font-weight: 500;
-        color: #FF1493;
+        color: $color_exec_time;
         
     }
 
@@ -203,11 +207,11 @@
 .result-bar {
     position: relative;
     width: 100%;
-    height: 22px;
-    background: #111;
-    border-radius: 8px;
+    height: 20px;
+    background: $color_result_bar_bg;
+    border-radius: $widget_border_radius;
     overflow: hidden;
-    border: 1px solid #111;
+    border: 1px solid $color_result_bar_bg;
 }
 
 .result-bar-fill {
@@ -215,8 +219,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: width 0.3s ease;
-    border-radius: 7px;
+    transition: width 0.15s ease;
+    border-radius: 1px;
 }
 
 .result-text {
@@ -233,31 +237,31 @@
 }
 
 .result-bar-AC {
-    background: linear-gradient(90deg, #2ecc71, #27ae60);
+    background: linear-gradient(90deg, $color_verdict_ac, $color_verdict_ac_dark);
 }
 
 .result-bar-_AC {
-    background: linear-gradient(90deg, #6a9e2f, #5a8a25);
+    background: linear-gradient(90deg, $color_verdict_partial_ac, $color_verdict_partial_ac_dark);
 }
 
 .result-bar-WA {
-    background: linear-gradient(90deg, #e74c3c, #c0392b);
+    background: linear-gradient(90deg, $color_verdict_wa, $color_verdict_wa_dark);
 }
 
 .result-bar-TLE, .result-bar-MLE {
-    background: linear-gradient(90deg, #888, #666);
+    background: linear-gradient(90deg, $color_verdict_tle, $color_verdict_tle_dark);
 }
 
 .result-bar-OLE, .result-bar-IR, .result-bar-RTE, .result-bar-OTH {
-    background: linear-gradient(90deg, #f39c12, #e67e22);
+    background: linear-gradient(90deg, $color_verdict_rte, $color_verdict_rte_dark);
 }
 
 .result-bar-error {
-    background: linear-gradient(90deg, #999, #777);
+    background: linear-gradient(90deg, $color_verdict_ce, $color_verdict_ce_dark);
 }
 
 .result-bar-grading {
-    background: #6C6DFF;
+    background: $color_verdict_grading;
     width: 100%;
     animation: grading-pulse 1.0s ease-in-out infinite;
 
@@ -272,11 +276,11 @@
 }
 
 .result-bar-CE, .result-bar-IE, .result-bar-AB {
-    background: linear-gradient(90deg, #999, #777);
+    background: linear-gradient(90deg, $color_verdict_ce, $color_verdict_ce_dark);
 }
 
 .result-bar-QU, .result-bar-G {
-    background: linear-gradient(90deg, #777, #555);
+    background: linear-gradient(90deg, $color_verdict_pending, $color_verdict_pending_dark);
 }
 
 @keyframes grading-pulse {
@@ -464,7 +468,7 @@ label[for="language"], label[for="status"], label[for="organization"] {
         padding-left: 1em;
         padding-bottom: 3px;
         padding-top: 3px;
-        border: 1px solid #2980b9;
+        border: 1px solid $color_case_info_border;
         border-left-width: .5em;
         border-radius: 4px;
         color: $color_primary75;
@@ -499,32 +503,32 @@ label[for="language"], label[for="status"], label[for="organization"] {
 }
 
 .case-AC {
-    color: green;
+    color: $color_case_ac;
     font-weight: bold;
 }
 
 .case-_AC {
-    color: #BBCC00;
+    color: $color_case_partial_ac;
     font-weight: bold;
 }
 
 .case-WA {
-    color: red;
+    color: $color_case_wa;
     font-weight: bold;
 }
 
 .case-TLE, .case-SC {
-    color: gray;
+    color: $color_case_tle;
     font-weight: bold;
 }
 
 .case-MLE, .case-OLE, .case-RTE, .case-IR {
-    color: orange;
+    color: $color_case_rte;
     font-weight: bold;
 }
 
 .case-CE, .case-IE, .case-AB {
-    color: #888;
+    color: $color_case_ce;
     font-weight: bold;
 }
 
@@ -536,7 +540,7 @@ label[for="language"], label[for="status"], label[for="organization"] {
 // .case-QU, .case-P, .case-G is .case-None in BKDNOJ
 
 .case-None {
-    color: #6C6DFF;
+    color: $color_verdict_grading;
     font-weight: bold;
 }
 
@@ -590,12 +594,12 @@ label[for="language"], label[for="status"], label[for="organization"] {
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 1em;
-    margin-bottom: 1.5em;
-    padding: 1em;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    gap: 0.75em;
+    margin-bottom: 1em;
+    padding: 0.75em;
+    background: $color_primary5;
+    border-radius: $widget_border_radius;
+    border: 1px solid $color_primary10;
 }
 
 .action-group {
@@ -613,15 +617,15 @@ label[for="language"], label[for="status"], label[for="organization"] {
     display: inline-flex;
     align-items: center;
     gap: 0.4em;
-    padding: 0.6em 1.2em;
-    background: #fff;
-    border: 2px solid $color_primary25;
-    border-radius: 6px;
+    padding: 0.5em 1em;
+    background: $color_submission_card_bg;
+    border: 1px solid $color_primary25;
+    border-radius: $widget_border_radius;
     color: $color_primary75;
-    font-weight: 600;
-    font-size: 0.9em;
+    font-weight: 500;
+    font-size: 0.85em;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all 0.1s ease;
     cursor: pointer;
 
     i {
@@ -629,20 +633,18 @@ label[for="language"], label[for="status"], label[for="organization"] {
     }
 
     &:hover {
-        background: $color_primary100;
-        color: #fff;
-        border-color: $color_primary100;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background: $color_primary10;
+        color: $color_primary100;
+        border-color: $color_primary25;
     }
 
     &.action-btn-warning {
-        border-color: #f39c12;
-        color: #f39c12;
+        border-color: $color_errornote_border;
+        color: $color_errornote_border;
 
         &:hover {
-            background: #f39c12;
-            color: #fff;
+            background: $color_errornote_border;
+            color: $color_navbar_text;
         }
     }
 }
@@ -653,11 +655,11 @@ label[for="language"], label[for="status"], label[for="organization"] {
 }
 
 .submission-results-card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    padding: 2em;
-    margin-bottom: 1.5em;
+    background: $color_submission_card_bg;
+    border-radius: $widget_border_radius;
+    border: 1px solid $color_primary10;
+    padding: 1.5em;
+    margin-bottom: 1em;
 }
 
 /* Status Messages */
@@ -680,15 +682,15 @@ label[for="language"], label[for="status"], label[for="organization"] {
     }
 
     &.status-waiting {
-        background: #fff3cd;
-        border: 2px solid #ffc107;
-        color: #856404;
+        background: $color_status_waiting_bg;
+        border: 2px solid $color_status_waiting_border;
+        color: $color_status_waiting_text;
     }
 
     &.status-processing {
-        background: #e7f3ff;
-        border: 2px solid #2196F3;
-        color: #0c5aa6;
+        background: $color_status_processing_bg;
+        border: 2px solid $color_status_processing_border;
+        color: $color_status_processing_text;
     }
 }
 
@@ -719,28 +721,28 @@ label[for="language"], label[for="status"], label[for="organization"] {
 
 .compilation-error-section {
     h3 {
-        background: #f8d7da;
-        color: #721c24;
+        background: $color_compilation_error_bg;
+        color: $color_compilation_error_text;
     }
 
     pre {
-        background: #f8d7da;
-        color: #721c24;
-        border: 2px solid #f5c6cb;
+        background: $color_compilation_error_bg;
+        color: $color_compilation_error_text;
+        border: 2px solid $color_compilation_error_border;
         border-top: none;
     }
 }
 
 .compilation-warning-section {
     h3 {
-        background: #fff3cd;
-        color: #856404;
+        background: $color_compilation_warning_bg;
+        color: $color_compilation_warning_text;
     }
 
     pre {
-        background: #fff3cd;
-        color: #856404;
-        border: 2px solid #ffc107;
+        background: $color_compilation_warning_bg;
+        color: $color_compilation_warning_text;
+        border: 2px solid $color_compilation_warning_border;
         border-top: none;
     }
 }
@@ -771,12 +773,12 @@ label[for="language"], label[for="status"], label[for="organization"] {
 }
 
 .batch-header {
-    background: #a92546;
-    color: #fff;
-    padding: 1em 1.2em;
-    border-radius: 8px;
-    margin: 1em 0 0.5em 0;
-    font-size: 1em;
+    background: $color_batch_header_bg;
+    color: $color_navbar_text;
+    padding: 0.6em 1em;
+    border-radius: $widget_border_radius;
+    margin: 0.75em 0 0.5em 0;
+    font-size: 0.9em;
 
     b {
         font-weight: 700;
@@ -792,29 +794,28 @@ label[for="language"], label[for="status"], label[for="organization"] {
 }
 
 .test-case-card {
-    background: #fff;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1em;
-    transition: all 0.2s ease;
-    
+    background: $color_submission_card_bg;
+    border: 1px solid $color_primary25;
+    border-radius: $widget_border_radius;
+    padding: 0.75em;
+    transition: border-color 0.1s ease;
+
     &:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        border-color: $color_primary33;
     }
 
     &.case-AC {
-        border-color: #2ecc71;
+        border-color: $color_verdict_ac;
         background: linear-gradient(135deg, #fff 0%, #f0fff4 100%);
     }
 
     &.case-_AC {
-        border-color: #BBCC00;
+        border-color: $color_case_partial_ac;
         background: linear-gradient(135deg, #fff 0%, #fffef0 100%);
     }
 
     &.case-WA {
-        border-color: #e74c3c;
+        border-color: $color_verdict_wa;
         background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
     }
 
@@ -824,7 +825,7 @@ label[for="language"], label[for="status"], label[for="organization"] {
     }
 
     &.case-MLE, &.case-OLE, &.case-RTE, &.case-IR {
-        border-color: #f39c12;
+        border-color: $color_verdict_rte;
         background: linear-gradient(135deg, #fff 0%, #fff8f0 100%);
     }
 
@@ -834,7 +835,7 @@ label[for="language"], label[for="status"], label[for="organization"] {
     }
 
     &.case-None {
-        border-color: #6C6DFF;
+        border-color: $color_verdict_grading;
         background: linear-gradient(135deg, #fff 0%, #f3f3ff 100%);
     }
 }
@@ -919,13 +920,14 @@ label[for="language"], label[for="status"], label[for="organization"] {
 .case-modal-content {
     position: relative;
     z-index: 2;
-    background: #fff;
-    border-radius: 12px;
+    background: $color_submission_card_bg;
+    border-radius: $widget_border_radius;
     max-width: 800px;
     width: 100%;
     max-height: 90vh;
     overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    border: 1px solid $color_primary25;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
 }
@@ -1023,11 +1025,11 @@ label[for="language"], label[for="status"], label[for="organization"] {
 
 /* Submission Summary */
 .submission-summary {
-    background: #ffe6bb;
-    border-radius: 10px;
-    padding: 1.5em;
-    margin: 2em 0 1em 0;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    background: $color_submission_summary_bg;
+    border-radius: $widget_border_radius;
+    padding: 1em;
+    margin: 1em 0;
+    border: 1px solid $color_primary25;
 }
 
 .summary-item {
@@ -1058,7 +1060,7 @@ label[for="language"], label[for="status"], label[for="organization"] {
 
         .score-points {
             font-weight: 700;
-            color: #27ae60;
+            color: $color_score_points;
         }
     }
 }
@@ -1085,7 +1087,7 @@ label[for="language"], label[for="status"], label[for="organization"] {
     }
 
     .score-contest {
-        color: #f39c12;
+        color: $color_score_contest;
         font-size: 0.9em;
         margin-left: 0.5em;
     }
@@ -1094,10 +1096,10 @@ label[for="language"], label[for="status"], label[for="organization"] {
 .pretest-warning {
     margin-top: 1em;
     padding: 0.8em 1em;
-    background: rgba(255, 193, 7, 0.2);
-    border-left: 4px solid #ffc107;
+    background: $color_pretest_warning_bg;
+    border-left: 4px solid $color_pretest_warning_border;
     border-radius: 4px;
-    color: #856404;
+    color: $color_pretest_warning_text;
     display: flex;
     align-items: center;
     gap: 0.5em;
@@ -1139,8 +1141,8 @@ label[for="language"], label[for="status"], label[for="organization"] {
     align-items: center;
     gap: 0.5em;
     padding: 0.8em 2em;
-    background: #e74c3c;
-    color: #fff;
+    background: $color_verdict_wa;
+    color: $color_navbar_text;
     border: none;
     border-radius: 6px;
     font-size: 1em;
@@ -1149,7 +1151,7 @@ label[for="language"], label[for="status"], label[for="organization"] {
     transition: all 0.2s;
 
     &:hover {
-        background: #c0392b;
+        background: $color_verdict_wa_dark;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
     }

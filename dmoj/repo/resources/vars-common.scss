@@ -1,9 +1,72 @@
-$highlight_blue: #1ba94c;
-$announcement_red: #ae0000;
+$highlight_blue: #2563eb;
+$announcement_red: #dc2626;
 
-$base_font_size: 15px;
-$widget_border_radius: 4px;
+$base_font_size: 14px;
+$widget_border_radius: 8px;
 
-$table_header_rounding: 6px;
+$table_header_rounding: 8px;
 
 $monospace-fonts: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console", "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Liberation Mono", "Nimbus Mono L", Monaco, "Courier New", Courier, monospace;
+
+// ── Navbar (same in every theme) ──
+$color_navbar_bg: #0f172a;
+$color_navbar_text: #f8fafc;
+$color_navbar_text_muted: #cbd5e1;
+$color_navbar_user_links: #94a3b8;
+$color_navbar_hover_bg: rgba(255, 255, 255, 0.1);
+$color_navbar_dropdown_shadow: rgba(0, 0, 0, 0.25);
+$color_navbar_shadow: rgba(0, 0, 0, 0.15);
+$color_navbar_divider: rgba(255, 255, 255, 0.1);
+$color_navbar_mobile_hover: #60a5fa;
+
+// ── Social brand colors ──
+$color_social_twitter: #55ACEE;
+$color_social_facebook: #133783;
+
+// ── Verdict / status colors (semantic, same in both themes) ──
+$color_verdict_ac: #2ecc71;
+$color_verdict_ac_dark: #27ae60;
+$color_verdict_partial_ac: #6a9e2f;
+$color_verdict_partial_ac_dark: #5a8a25;
+$color_verdict_wa: #e74c3c;
+$color_verdict_wa_dark: #c0392b;
+$color_verdict_tle: #888;
+$color_verdict_tle_dark: #666;
+$color_verdict_rte: #f39c12;
+$color_verdict_rte_dark: #e67e22;
+$color_verdict_ce: #999;
+$color_verdict_ce_dark: #777;
+$color_verdict_pending: #777;
+$color_verdict_pending_dark: #555;
+$color_verdict_grading: #6C6DFF;
+
+// ── Case verdict text colors ──
+$color_case_ac: green;
+$color_case_partial_ac: #BBCC00;
+$color_case_wa: red;
+$color_case_tle: gray;
+$color_case_rte: orange;
+$color_case_ce: #888;
+
+// ── Problem status colors ──
+$color_problem_solved: #44AD41;
+$color_problem_unsolved: #DE2121;
+$color_problem_attempted: orange;
+$color_problem_no_submissions: red;
+
+// ── PDF icon ──
+$color_pdf_icon: #d40e13;
+
+// ── Podium colors ──
+$color_podium_gold: #FFD700;
+$color_podium_gold_end: #FFA500;
+$color_podium_gold_shadow: rgba(255, 215, 0, 0.55);
+$color_podium_gold_text: #7a5000;
+$color_podium_silver: #C0C0C0;
+$color_podium_silver_end: #909090;
+$color_podium_silver_shadow: rgba(192, 192, 192, 0.45);
+$color_podium_silver_text: #4a4a4a;
+$color_podium_bronze: #CD7F32;
+$color_podium_bronze_end: #A0522D;
+$color_podium_bronze_shadow: rgba(205, 127, 50, 0.45);
+$color_podium_bronze_text_badge: #fff;

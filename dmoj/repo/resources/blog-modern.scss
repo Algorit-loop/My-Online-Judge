@@ -2,20 +2,20 @@
 
 .magazine-layout {
     display: flex;
-    min-height: calc(100vh - 56px);
+    min-height: calc(100vh - 48px);
     background: $color_blog_bg;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
     position: relative;
 }
 
 .magazine-sidebar {
-    width: 260px;
+    width: 240px;
     background: $color_blog_sidebar_bg;
     border-right: 1px solid $color_blog_border;
     position: fixed;
-    top: 56px;
+    top: 48px;
     left: 0;
-    height: calc(100vh - 56px);
+    height: calc(100vh - 48px);
     overflow-y: auto;
     overflow-x: hidden;
     flex-shrink: 0;
@@ -190,7 +190,7 @@
     background: $color_blog_bg;
     border-bottom: 1px solid $color_blog_border;
     position: sticky;
-    top: 56px;
+    top: 48px;
     z-index: 90;
     flex-wrap: wrap;
 

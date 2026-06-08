@@ -1,28 +1,39 @@
 @use "vars" as *;
 
 #contest-calendar {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 3px;
     width: 100%;
 
     th {
-        border: 1px solid $color_primary25;
+        border: none;
         background: $color_primary5;
+        border-radius: 6px;
+        padding: 6px 8px;
+        font-size: 0.8em;
+        font-weight: 600;
+        color: $color_primary50;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
     }
 
     td {
         height: 110px;
         width: 170px;
         vertical-align: top;
-        border: 1px solid $color_primary25;
-        transition-duration: 0.2s;
+        border: 1px solid $color_primary10;
+        border-radius: 8px;
+        transition: all 0.12s ease;
 
         .num {
             text-align: right;
-            font-weight: bold;
+            font-weight: 700;
             display: block;
-            border-bottom: 1px dashed $color_primary25;
-            padding-right: 0.2em;
-            margin-bottom: 0.4em;
+            border-bottom: none;
+            padding: 4px 6px 2px;
+            margin-bottom: 0.3em;
+            font-size: 0.9em;
+            color: $color_primary50;
         }
 
         ul {
@@ -48,36 +59,45 @@
         }
 
         &:hover {
-            background: rgba($color_link100, 0.2);
+            background: rgba($highlight_blue, 0.06);
+            border-color: rgba($highlight_blue, 0.3);
         }
     }
 
     .noday {
-        background: $color_primary10;
+        background: $color_primary5;
+        border-color: transparent;
     }
 
     .today {
-        background: rgba($color_link200, 0.2);
+        background: rgba($highlight_blue, 0.08);
+        border-color: $highlight_blue;
     }
 }
 
 #banner {
-    border-bottom: 1px solid $color_primary25;
-    padding-bottom: 1em;
+    border-bottom: none;
+    padding: 16px 20px;
+    margin-bottom: 16px;
     color: $color_primary75;
     font-size: $base_font_size;
+    background: $color_primary5;
+    border-radius: 10px;
+    border: 1px solid $color_primary10;
 
     a.date {
         display: block;
         text-decoration: none;
         text-align: center;
         line-height: 1.3;
-        font-size: 2.3em;
+        font-size: 2em;
         padding-bottom: 0.15em;
-        color: $color_link50;
+        color: $color_primary100;
+        font-weight: 700;
+        letter-spacing: -0.02em;
 
         &:hover {
-            color: $color_link100;
+            color: $highlight_blue;
         }
 
         &:active {
@@ -88,6 +108,8 @@
     #time {
         text-align: center;
         display: block;
+        font-size: 0.9em;
+        color: $color_primary50;
     }
 
     div#details ul {
@@ -117,13 +139,15 @@
     }
 
     tbody tr {
-        height: 4em;
+        height: auto;
+        min-height: 3.5em;
     }
 
     .time-left {
         text-align: left;
         color: $color_primary50;
-        padding-top: 0.5em;
+        padding-top: 0.3em;
+        font-size: 0.85em;
     }
 
     .contest-time-col {
@@ -132,8 +156,9 @@
 
         .time-left {
             text-align: center;
-            color: $color_primary100;
-            padding-top: 0.5em;
+            color: $color_primary75;
+            padding-top: 0.3em;
+            font-size: 0.85em;
         }
     }
 
@@ -151,7 +176,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 0.5em;
+        gap: 0.75em;
     }
 
     .contest-block {
@@ -162,50 +187,66 @@
 
     .contest-ranking-btn {
         white-space: nowrap;
-        padding: 0.3em 0.7em;
-        border: 1px solid #ccc;
-        border-radius: 0.3em;
-        font-size: 13px;
-        color: #555;
-        background: #f7f7f7;
+        padding: 5px 14px;
+        border: 1.5px solid $color_primary25;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 500;
+        color: $color_primary75;
+        background: $color_primary0;
         text-decoration: none;
         flex-shrink: 0;
+        transition: all 0.12s ease;
 
         &:hover {
-            background: #e8e8e8;
-            color: #333;
+            background: $color_primary5;
+            border-color: $highlight_blue;
+            color: $highlight_blue;
             text-decoration: none;
         }
     }
 
     a.contest-sort-link {
-        color: $color_primary0;
+        color: $color_primary50;
+
+        &:hover {
+            color: $color_primary75;
+        }
     }
 }
 
 .contest-tag {
-    box-shadow: inset 0 -0.1em 0 rgba(0, 0, 0, 0.12);
-    padding: 0.15em 0.3em;
-    border-radius: 0.15em;
-    font-weight: 600;
-    margin-right: 0.45em;
+    box-shadow: none;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 0.78em;
+    margin-right: 0.3em;
     position: relative;
     white-space: nowrap;
     display: inline-block;
 }
 
 .contest-list-title {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 600;
+    color: $color_primary100;
+
+    a {
+        color: $color_primary100;
+
+        &:hover {
+            color: $color_link75;
+        }
+    }
 }
 
 form.contest-join-pseudotab {
     display: inline;
-    padding: 6px 8px !important;
+    padding: 6px 12px !important;
     line-height: 1.7em;
     margin-left: 0.5em;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    border-radius: 16px !important;
 
     input {
         display: inline;
@@ -213,6 +254,7 @@ form.contest-join-pseudotab {
         padding: 0;
         background: none;
         font-weight: 600;
+        color: white !important;
     }
 }
 
@@ -232,11 +274,18 @@ form.contest-join-pseudotab {
 }
 
 #ranking-table {
-    font-size: 14px;
+    font-size: 13px;
+    border: 1px solid $color_primary25;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    background: $color_primary0;
 
     .user-name {
-        min-width: 20em;
+        min-width: 16em;
         position: relative;
+        text-align: left;
+        padding-left: 12px;
     }
 
     .userinfo a, .user-name a, .user-name form {
@@ -248,7 +297,24 @@ form.contest-join-pseudotab {
     }
 
     td {
-        height: 2.5em;
+        height: auto;
+        padding: 6px 8px;
+        border-bottom: 1px solid $color_primary10;
+        border-right: none;
+        border-left: none;
+    }
+
+    th {
+        background: $color_primary5;
+        border-bottom: 1px solid $color_primary25;
+        border-right: none;
+        border-left: none;
+        padding: 8px 8px;
+        font-weight: 500;
+        font-size: 0.75em;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: $color_primary50;
     }
 
     td:not(.user-name, .personal-info) a:hover {
@@ -259,17 +325,18 @@ form.contest-join-pseudotab {
         display: block;
     }
 
-    /* Make problem table headers green on hover */
     th a:hover {
-        color: #0F0;
+        color: $color_ranking_th_hover;
     }
 
     th a, th a:link, th a:visited {
-        color: $color_primary0;
+        color: $color_primary50;
     }
 
     .rank {
-        min-width: 2.4em
+        min-width: 2.4em;
+        font-weight: 600;
+        color: $color_primary50;
     }
 
     .points {
@@ -281,8 +348,9 @@ form.contest-join-pseudotab {
     }
 
     .point-denominator {
-        border-top: 1px solid $color_primary50;
+        border-top: 1px solid $color_primary25;
         font-size: 0.7em;
+        color: $color_primary50;
     }
 
     .start-time {
@@ -294,17 +362,30 @@ form.contest-join-pseudotab {
     }
 
     .virtual-participation {
-        color: grey;
-        float: right
+        color: $color_primary33;
+        float: right;
     }
 
     .user-points, .user-points a {
         color: $color_primary100;
-        font-size: 15px;
+        font-size: 14px;
+        font-weight: 600;
     }
 
     td:not(.user-points) > a {
         white-space: nowrap;
+    }
+
+    tbody tr {
+        transition: background 0.08s;
+
+        &:hover {
+            background: rgba($highlight_blue, 0.04);
+        }
+
+        &:last-child td {
+            border-bottom: none;
+        }
     }
 }
 

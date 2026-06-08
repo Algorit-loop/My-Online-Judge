@@ -10,11 +10,11 @@
 }
 
 .tweet-this i {
-    color: #55ACEE;
+    color: $color_social_twitter;
 }
 
 .facebook-this i {
-    color: #133783;
+    color: $color_social_facebook;
 }
 
 .social {
@@ -22,44 +22,48 @@
     float: right;
 }
 
-// Bootstrap-y buttons
+// Rounded buttons
 .button, button, input[type=submit] {
     color: white !important;
     text-decoration: none !important;
     cursor: pointer;
     vertical-align: middle;
     white-space: nowrap;
-    font-weight: 400;
-    line-height: 1.4;
-    background: rgb(51, 122, 183) none repeat scroll 0 (0% / auto) padding-box border-box;
-    background: -webkit-linear-gradient(top, #337ab7 0, #265a88 100%) repeat-x;
-    background: linear-gradient(to bottom, #337ab7 0, #265a88 100%) repeat-x;
-    border-radius: $widget_border_radius;
-    padding: 6px 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    background: $color_btn_primary;
+    border-radius: 20px;
+    padding: 7px 18px;
     display: block;
-    border: 0;
+    border: none;
     text-align: center;
-
-    // 4k hack
+    transition: all 0.12s ease;
     font-size: $base_font_size;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
 
     &:hover {
-        background: #265a88;
+        background: $color_btn_primary_dark;
+        box-shadow: 0 3px 8px rgba(37, 99, 235, 0.35);
+        transform: translateY(-1px);
     }
 
     &:active {
-        border-color: #245580;
-        background: #265a88;
+        background: $color_btn_primary_active_border;
+        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+        transform: translateY(0);
     }
 
     &.full {
-        padding: 6px 0;
+        padding: 7px 0;
     }
 
     &.disabled {
-        background: linear-gradient(to bottom, darkgray 0, gray 100%) repeat-x !important;
-        border-color: grey !important;
+        background: $color_primary25 !important;
+        color: $color_primary50 !important;
         cursor: not-allowed;
+        opacity: 1;
+        box-shadow: none;
+        transform: none;
     }
 }
 
@@ -71,44 +75,41 @@
 
 input {
     &[type=text], &[type=password], &[type=email], &[type=number], &[type=url] {
-        padding: 4px 8px;
-        color: $color_primary75;
+        padding: 7px 12px;
+        color: $color_primary100;
         background: $color_primary0 none;
-        border: 1px solid $color_primary25;
-        border-radius: $widget_border_radius;
-        box-shadow: 0 1px 1px rgba($color_primary100, 0.075) inset;
-        transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+        border: 1.5px solid $color_primary25;
+        border-radius: 8px;
+        box-shadow: none;
+        transition: border-color 0.12s ease, box-shadow 0.12s ease;
         box-sizing: border-box;
-
-        // Need this explicitly because UA stylesheet for Chrome on 4k makes
-        // everything look bad otherwise (forces it to 9.3px)
         font-size: $base_font_size;
 
         &:hover {
-            border-color: rgba(82, 168, 236, 0.8);
-            box-shadow: inset 0 1px 1px rgba($color_primary100, 0.075), 0 0 4px rgba(82, 168, 236, 0.6);
+            border-color: $color_primary33;
         }
 
         &:focus {
-            border-color: rgba(82, 168, 236, 0.8);
-            box-shadow: inset 0 1px 1px rgba($color_primary100, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+            border-color: $highlight_blue;
+            box-shadow: 0 0 0 3px rgba($highlight_blue, 0.15);
             outline: 0;
         }
     }
 
     &[type=number] {
-        padding: 2px 0 2px 5px;
+        padding: 4px 0 4px 8px;
     }
 
     &[type=checkbox] {
         appearance: none;
         vertical-align: middle;
-        border: 1px solid $color_primary50;
+        border: 1.5px solid $color_primary33;
         background: $color_primary0;
-        border-radius: 2px;
-        width: 0.95em;
-        height: 0.95em;
+        border-radius: 4px;
+        width: 1em;
+        height: 1em;
         cursor: pointer;
+        transition: all 0.1s ease;
 
         &:checked {
             appearance: auto;
@@ -118,41 +119,52 @@ input {
 }
 
 textarea {
-    padding: 4px 8px;
-    color: $color_primary75;
+    padding: 7px 12px;
+    color: $color_primary100;
     background: $color_primary0 none;
-    border: 1px solid $color_primary25;
-    border-radius: $widget_border_radius;
-    box-shadow: 0 1px 1px rgba($color_primary100, 0.075) inset;
-    transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+    border: 1.5px solid $color_primary25;
+    border-radius: 8px;
+    box-shadow: none;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
     box-sizing: border-box;
 }
 
 textarea:hover {
-    border-color: rgba(82, 168, 236, 0.8);
-    box-shadow: inset 0 1px 1px rgba($color_primary100, 0.075), 0 0 4px rgba(82, 168, 236, 0.6);
+    border-color: $color_primary33;
 }
 
 textarea:focus {
-    border-color: rgba(82, 168, 236, 0.8);
-    box-shadow: inset 0 1px 1px rgba($color_primary100, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+    border-color: $highlight_blue;
+    box-shadow: 0 0 0 3px rgba($highlight_blue, 0.15);
     outline: 0;
 }
 
-// Bootstrap-y copy button
+// Copy button
 .btn-clipboard {
-    top: 0;
-    right: 0;
+    top: 4px;
+    right: 4px;
     display: block;
-    font-size: 12px;
-    font-weight: bold;
+    font-size: 11px;
+    font-weight: 500;
     color: $color_primary50;
     cursor: pointer;
-    background-color: $color_pageBg;
+    background-color: $color_primary0;
     border: 1px solid $color_primary25;
-    border-radius: 0 $widget_border_radius;
+    border-radius: 4px;
     position: absolute;
-    padding: 5px 8px;
+    padding: 3px 8px;
+    transition: all 0.1s ease;
+    opacity: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+
+    &:hover {
+        background: $color_primary5;
+        color: $color_primary75;
+    }
+}
+
+.copy-clipboard:hover .btn-clipboard {
+    opacity: 1;
 }
 
 .copy-clipboard {
@@ -160,46 +172,47 @@ textarea:focus {
     margin-top: 1.5em;
 }
 
-// Bootstrap-y tabs
+// Linear-style tabs
 .ul_tab_a_active {
     color: $color_primary100;
-    // Cover up the bottom border of active tabs with this color
-    background: $color_pageBg;
+    background: transparent;
     cursor: default;
-    border: 1px solid $color_primary25;
-    border-bottom-color: $color_pageBg;
+    border: none;
+    border-bottom: 2px solid $highlight_blue;
     border-image: none;
 }
 
 .tabs {
     border-bottom: 1px solid $color_primary25;
-    margin: 0 0 8px;
+    margin: 0 0 12px;
     width: 100%;
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
+    gap: 0;
 
     .tab {
         .tab-icon {
             padding-right: 0.3em;
-            color: $color_primary50;
+            color: $color_primary33;
+            font-size: 0.85em;
 
             &.fa-plus {
-                color: green !important;
+                color: $highlight_blue !important;
             }
         }
 
         a, span {
-            border-top-width: 3px !important;
+            border-top-width: 0 !important;
         }
 
         &.active {
             a, span {
-                border-top-color: $highlight_blue !important;
+                border-top-color: transparent !important;
             }
 
             .tab-icon {
-                color: $color_primary100;
+                color: $highlight_blue;
             }
         }
     }
@@ -216,6 +229,7 @@ textarea:focus {
         display: flex;
         overflow-x: auto;
         overflow-y: hidden;
+        gap: 0;
 
         > li {
             position: relative;
@@ -234,30 +248,42 @@ textarea:focus {
             }
 
             > a, > span {
-                margin-right: 2px;
+                margin-right: 0;
                 line-height: 1.42857;
-                border: 1px solid transparent;
-                border-radius: $widget_border_radius $widget_border_radius 0 0;
+                border: none;
+                border-bottom: 2px solid transparent;
+                border-radius: 0;
                 position: relative;
                 display: block;
-                padding: 10px 15px;
-                color: $color_primary66;
+                padding: 8px 14px;
+                color: $color_primary50;
                 text-decoration: none;
                 white-space: nowrap;
+                font-size: 0.85em;
+                font-weight: 500;
+                transition: color 0.1s, border-color 0.1s;
+
+                &:hover {
+                    color: $color_primary100;
+                    background: transparent;
+                    border: none;
+                    border-bottom: 2px solid $color_primary25;
+                }
             }
         }
     }
 }
 
-// Bootstrap-y pagination
+// Linear-style pagination
 ul.pagination a:hover {
-    background: rgba($color_primary100, 0.55);
+    background: $color_primary10;
 }
 
 ul.pagination {
-    display: inline-block;
+    display: inline-flex;
     padding-left: 0;
     margin: 0;
+    gap: 2px;
 
     > {
         li {
@@ -266,15 +292,13 @@ ul.pagination {
             &:first-child > {
                 a, span {
                     margin-left: 0;
-                    border-top-left-radius: $widget_border_radius;
-                    border-bottom-left-radius: $widget_border_radius;
+                    border-radius: $widget_border_radius;
                 }
             }
 
             &:last-child > {
                 a, span {
-                    border-top-right-radius: $widget_border_radius;
-                    border-bottom-right-radius: $widget_border_radius;
+                    border-radius: $widget_border_radius;
                 }
             }
 
@@ -282,29 +306,32 @@ ul.pagination {
                 a, span {
                     position: relative;
                     float: left;
-                    padding: 4px 12px;
+                    padding: 4px 10px;
                     line-height: 1.42857;
                     text-decoration: none;
-                    color: $color_primary0;
-                    background-color: $color_primary75;
-                    border: 1px solid $color_primary50;
-                    margin-left: -1px;
+                    color: $color_primary75;
+                    background-color: transparent;
+                    border: 1px solid $color_primary25;
+                    border-radius: $widget_border_radius;
+                    font-size: 0.85em;
+                    font-weight: 500;
                 }
             }
         }
 
         .disabled-page > {
             a, span {
-                color: $color_primary50;
+                color: $color_primary33;
+                border-color: $color_primary10;
             }
         }
 
         .active-page > {
             a, span {
                 z-index: 2;
-                color: #FFF;
+                color: #fff;
                 background-color: $highlight_blue;
-                border-color: transparent;
+                border-color: $highlight_blue;
                 cursor: default;
             }
         }
@@ -323,10 +350,11 @@ ul.pagination {
 }
 
 .alert {
-    padding: 15px;
-    margin-bottom: 20px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
     border: 1px solid transparent;
-    border-radius: $widget_border_radius;
+    border-radius: 10px;
+    font-size: 0.9em;
 }
 
 .alert-info {
@@ -394,11 +422,11 @@ a.close {
     font-size: 12px;
     font-weight: 700;
     line-height: 1;
-    color: #fff;
+    color: $color_navbar_text;
     text-align: center;
     white-space: nowrap;
     vertical-align: middle;
-    background-color: #e84848;
+    background-color: $color_badge_bg;
     border-radius: 10px;
     box-sizing: border-box;
 }
@@ -411,27 +439,30 @@ a.close {
 }
 
 .sidebox h3 {
-    margin: 0 -5px;
-    background: $color_primary75;
-    border-radius: $widget_border_radius $widget_border_radius 0 0;
-    color: $color_primary0;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    padding-left: 7px;
-    font-size: 1.3em;
+    margin: 0;
+    background: transparent;
+    border-radius: 0;
+    color: $color_primary50;
+    padding: 10px 12px 8px;
+    font-size: 0.7em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid $color_primary10;
 }
 
 .sidebox h3 .fa {
-    color: $color_primary0;
+    color: $color_primary33;
     float: right;
-    margin: 0.2em 0.4em 0 0;
+    margin: 0.1em 0 0 0;
 }
 
 .sidebox-content {
-    border: 1px solid $color_primary25;
+    border: none;
     border-top: none;
-    margin: 0 -5px;
-    padding: 1px 0.5em 3px;
+    margin: 0;
+    padding: 8px 12px 10px;
+    font-size: 0.9em;
 
     &.sidebox-table {
         border: none;
@@ -439,15 +470,21 @@ a.close {
 
         .table {
             margin: 0 !important;
+            border: none;
+            border-radius: 0;
         }
     }
 }
 
 .sidebox {
-    border-top-left-radius: $widget_border_radius;
-    border-top-right-radius: $widget_border_radius;
-    padding: 0 5px !important;
-    padding-bottom: 1.5em !important;
+    border-radius: 10px;
+    border: 1px solid $color_primary25;
+    padding: 0 !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 12px;
+    overflow: hidden;
+    background: $color_primary0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .ws-closed {
@@ -475,39 +512,46 @@ a.close {
     padding: 0;
 
     li {
-        padding: 1em 1.5em;
-        margin-bottom: 1em;
+        padding: 10px 14px;
+        margin-bottom: 8px;
         border: 1px solid transparent;
-        border-radius: 5px;
+        border-radius: 10px;
+        font-size: 0.9em;
+        border-left-width: 3px;
 
         &.debug {
             color: $color_primary75;
-            background-color: $color_primary10;
+            background-color: $color_primary5;
             border-color: $color_primary25;
+            border-left-color: $color_primary50;
         }
 
         &.info {
             color: $color_info100;
             background-color: $color_info25;
             border-color: $color_info50;
+            border-left-color: $color_info100;
         }
 
         &.success {
             color: $color_success100;
             background-color: $color_success25;
             border-color: $color_success50;
+            border-left-color: $color_success100;
         }
 
         &.warning {
             color: $color_warning100;
             background-color: $color_warning25;
             border-color: $color_warning50;
+            border-left-color: $color_warning100;
         }
 
         &.error {
             color: $color_danger100;
             background-color: $color_danger25;
             border-color: $color_danger50;
+            border-left-color: $color_danger100;
         }
     }
 }
@@ -515,6 +559,17 @@ a.close {
 details {
     border: 1px solid $color_primary25;
     background: $color_primary5;
-    padding: 5px 10px;
-    border-radius: 4px;
+    padding: 8px 14px;
+    border-radius: 10px;
+
+    summary {
+        cursor: pointer;
+        font-weight: 500;
+        color: $color_primary75;
+        user-select: none;
+
+        &:hover {
+            color: $color_primary100;
+        }
+    }
 }

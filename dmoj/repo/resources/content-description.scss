@@ -16,10 +16,12 @@
     #common-content {
         display: flex;
         flex-direction: row-reverse;
+        gap: 20px;
     }
 
     #content-left {
-        flex: 5;
+        flex: 1;
+        min-width: 0;
         width: 100%;
 
         &.split-common-content {
@@ -32,16 +34,16 @@
     }
 
     #content-right {
-        flex: 1;
-        max-width: 12.5em;
-        padding-left: 1.5em;
-        padding-top: 1em;
+        flex: 0 0 220px;
+        max-width: 220px;
+        padding-left: 0;
+        padding-top: 0;
 
         .info-float {
             float: none;
             padding: 0;
             position: sticky;
-            top: 70px;
+            top: 64px;
             width: 100%;
         }
     }
