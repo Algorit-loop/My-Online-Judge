@@ -21,6 +21,139 @@
         .copy-clipboard {
             margin-top: 0 !important;
         }
+
+        {% if is_own_submission %}
+        /* AI Review Modal */
+        .air-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .air-overlay.active { display: flex; }
+        .air-modal {
+            background: #fff;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 720px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .air-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .air-header h3 { margin: 0; font-size: 1.1em; }
+        .air-close {
+            background: none; border: none; font-size: 1.4em;
+            cursor: pointer; color: #666; padding: 0 4px;
+        }
+        .air-close:hover { color: #000; }
+        .air-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .air-form-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .air-form-row select {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.9em;
+            min-width: 160px;
+        }
+        .air-btn {
+            padding: 8px 20px;
+            background: #417690;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .air-btn:hover { background: #205067; }
+        .air-btn:disabled { background: #999; cursor: not-allowed; }
+        .air-btn-secondary {
+            padding: 6px 14px;
+            background: #eee;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .air-btn-secondary:hover { background: #ddd; }
+        .air-spinner {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+        .air-spinner.active { display: block; }
+        .air-spinner i { font-size: 1.5em; margin-bottom: 10px; display: block; }
+        .air-error {
+            display: none;
+            padding: 10px 14px;
+            background: #fdd;
+            border: 1px solid #c00;
+            border-radius: 4px;
+            color: #900;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+        .air-error.active { display: block; }
+        .air-result {
+            display: none;
+        }
+        .air-result.active { display: block; }
+        .air-result-meta {
+            font-size: 0.82em;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .air-result-text {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 14px;
+            font-family: 'Courier New', Consolas, monospace;
+            font-size: 0.85em;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 55vh;
+            overflow-y: auto;
+            margin: 0;
+        }
+        .air-disclaimer {
+            font-size: 0.78em;
+            color: #999;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        .air-no-key {
+            display: none;
+            padding: 16px;
+            text-align: center;
+            color: #666;
+        }
+        .air-no-key.active { display: block; }
+        .air-no-key a { color: #417690; }
+        {% endif %}
     </style>
 {% endblock %}
 
@@ -58,7 +191,258 @@
             });
         </script>
     {% endcompress %}
-    {% block content_js_media %}{% endblock %}
+    {% block content_js_media %}
+        {% if is_own_submission %}
+        <script type="text/javascript">
+        $(function() {
+            'use strict';
+
+            var MODELS = {{ provider_models_json|safe }};
+            var REVIEW_URL = '{{ url("submission_ai_review", submission.id) }}';
+            var KEYS_URL = '{{ url("api_key_list") }}';
+            var SUBMISSION_ID = {{ submission.id }};
+
+            var overlay = document.getElementById('air-overlay');
+            var providerSel = document.getElementById('air-provider');
+            var modelSel = document.getElementById('air-model');
+            var langSel = document.getElementById('air-lang');
+            var analyzeBtn = document.getElementById('air-analyze');
+            var againBtn = document.getElementById('air-again');
+            var formSection = document.getElementById('air-form');
+            var spinnerSection = document.getElementById('air-spinner');
+            var errorSection = document.getElementById('air-error');
+            var resultSection = document.getElementById('air-result');
+            var resultText = document.getElementById('air-result-text');
+            var resultMeta = document.getElementById('air-result-meta');
+            var noKeySection = document.getElementById('air-no-key');
+
+            var verifiedProviders = {};
+            var keysLoaded = false;
+            var cachedReview = null;
+            var isLoading = false;
+
+            function getCsrf() {
+                var m = document.cookie.match(/csrftoken=([^;]+)/);
+                return m ? m[1] : '';
+            }
+
+            function hideAll() {
+                formSection.style.display = 'none';
+                spinnerSection.className = 'air-spinner';
+                errorSection.className = 'air-error';
+                resultSection.className = 'air-result';
+                noKeySection.className = 'air-no-key';
+            }
+
+            function showError(msg) {
+                errorSection.textContent = msg;
+                errorSection.className = 'air-error active';
+            }
+
+            function showResult(data) {
+                resultText.textContent = data.review_text;
+                var meta = data.provider + ' / ' + data.model;
+                if (data.created_at) {
+                    meta += ' — ' + new Date(data.created_at).toLocaleString();
+                }
+                resultMeta.textContent = meta;
+                resultSection.className = 'air-result active';
+            }
+
+            function loadKeys(callback) {
+                if (keysLoaded) { callback(); return; }
+                $.getJSON(KEYS_URL, function(resp) {
+                    var keys = resp.keys || [];
+                    verifiedProviders = {};
+                    keys.forEach(function(k) {
+                        if (k.status === 'verified') {
+                            verifiedProviders[k.provider] = k;
+                        }
+                    });
+                    keysLoaded = true;
+                    callback();
+                }).fail(function() {
+                    callback();
+                });
+            }
+
+            function populateProviders() {
+                providerSel.innerHTML = '';
+                var providers = Object.keys(verifiedProviders);
+                if (providers.length === 0) {
+                    hideAll();
+                    noKeySection.className = 'air-no-key active';
+                    return false;
+                }
+                var providerNames = {
+                    'openai': 'OpenAI', 'gemini': 'Google Gemini',
+                    'claude': 'Anthropic Claude', 'deepseek': 'DeepSeek'
+                };
+                providers.forEach(function(p) {
+                    var opt = document.createElement('option');
+                    opt.value = p;
+                    opt.textContent = providerNames[p] || p;
+                    providerSel.appendChild(opt);
+                });
+                updateModels();
+                return true;
+            }
+
+            function updateModels() {
+                modelSel.innerHTML = '';
+                var models = MODELS[providerSel.value] || [];
+                models.forEach(function(m) {
+                    var opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    modelSel.appendChild(opt);
+                });
+                // Select default model if available
+                var vk = verifiedProviders[providerSel.value];
+                if (vk && vk.default_model) {
+                    modelSel.value = vk.default_model;
+                }
+            }
+
+            providerSel.addEventListener('change', updateModels);
+
+            function loadCachedReview(callback) {
+                $.getJSON(REVIEW_URL, function(data) {
+                    if (data.exists) {
+                        cachedReview = data;
+                    }
+                    callback();
+                }).fail(function() {
+                    callback();
+                });
+            }
+
+            function openModal() {
+                overlay.className = 'air-overlay active';
+                document.body.style.overflow = 'hidden';
+
+                if (cachedReview) {
+                    hideAll();
+                    showResult(cachedReview);
+                    againBtn.style.display = '';
+                    return;
+                }
+
+                loadKeys(function() {
+                    loadCachedReview(function() {
+                        if (cachedReview) {
+                            hideAll();
+                            showResult(cachedReview);
+                            againBtn.style.display = '';
+                        } else {
+                            hideAll();
+                            if (populateProviders()) {
+                                formSection.style.display = '';
+                                againBtn.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            }
+
+            function closeModal() {
+                overlay.className = 'air-overlay';
+                document.body.style.overflow = '';
+            }
+
+            // Close on ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+
+            // Close on backdrop click
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) closeModal();
+            });
+
+            // Expose open function globally
+            window.openAIReviewModal = openModal;
+            document.getElementById('air-close-btn').addEventListener('click', closeModal);
+
+            // Analyze again button
+            againBtn.addEventListener('click', function() {
+                hideAll();
+                loadKeys(function() {
+                    if (populateProviders()) {
+                        formSection.style.display = '';
+                        againBtn.style.display = 'none';
+                    }
+                });
+            });
+
+            // Analyze button
+            analyzeBtn.addEventListener('click', function() {
+                if (isLoading) return;
+                isLoading = true;
+
+                var provider = providerSel.value;
+                var model = modelSel.value;
+                var lang = langSel.value;
+
+                if (!provider || !model) {
+                    showError('Please select a provider and model.');
+                    isLoading = false;
+                    return;
+                }
+
+                formSection.style.display = 'none';
+                errorSection.className = 'air-error';
+                resultSection.className = 'air-result';
+                spinnerSection.className = 'air-spinner active';
+                analyzeBtn.disabled = true;
+
+                $.ajax({
+                    url: REVIEW_URL,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({provider: provider, model: model, output_language: lang}),
+                    headers: {'X-CSRFToken': getCsrf()},
+                    timeout: 150000
+                }).done(function(data) {
+                    spinnerSection.className = 'air-spinner';
+                    if (data.success) {
+                        cachedReview = {
+                            exists: true,
+                            review_text: data.review_text,
+                            provider: data.provider,
+                            model: data.model,
+                            output_language: data.output_language,
+                            created_at: data.created_at
+                        };
+                        showResult(cachedReview);
+                        againBtn.style.display = '';
+                    } else {
+                        showError(data.error || 'Unknown error');
+                        formSection.style.display = '';
+                    }
+                }).fail(function(xhr) {
+                    spinnerSection.className = 'air-spinner';
+                    var msg = 'Request failed';
+                    try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
+                    if (xhr.status === 0) msg = 'Request timed out or connection lost';
+                    showError(msg);
+                    formSection.style.display = '';
+                }).always(function() {
+                    isLoading = false;
+                    analyzeBtn.disabled = false;
+                });
+            });
+
+            // Auto-open modal if ?ai_review=1
+            if (window.location.search.indexOf('ai_review=1') !== -1) {
+                openModal();
+            }
+        });
+        </script>
+        {% endif %}
+    {% endblock %}
 {% endblock %}
 
 {% block body %}
@@ -67,6 +451,11 @@
     <div><a href="{{ url('submission_source_raw', submission.id) }}">{{ _('View raw source') }}</a></div>
     {% if (request.user == submission.user.user or perms.judge.resubmit_other) and not submission.language.file_only %}
         <div><a href="{{ url('problem_submit', submission.problem.code, submission.id) }}">{{ _('Resubmit') }}</a></div>
+    {% endif %}
+    {% if is_own_submission %}
+        <div><a href="#" id="ai-review-btn" onclick="openAIReviewModal(); return false;">
+            <i class="fa fa-magic"></i> {{ _('Review with AI') }}
+        </a></div>
     {% endif %}
     {% set can_edit = submission.problem.is_editable_by(request.user) %}
     {% if perms.judge.rejudge_submission and can_edit and not submission.is_locked %}
@@ -97,4 +486,57 @@
             </tr>
         </table>
     </div>
+
+    {% if is_own_submission %}
+    <div id="air-overlay" class="air-overlay">
+        <div class="air-modal">
+            <div class="air-header">
+                <h3><i class="fa fa-magic"></i> {{ _('AI Code Review') }}</h3>
+                <button type="button" class="air-close" id="air-close-btn">&times;</button>
+            </div>
+            <div class="air-body">
+                <div id="air-error" class="air-error"></div>
+
+                <div id="air-no-key" class="air-no-key">
+                    <p><i class="fa fa-key"></i> {{ _('No verified API key found.') }}</p>
+                    <p><a href="{{ url('api_key_page') }}">{{ _('Add an API key in Settings > AI API Keys') }}</a></p>
+                </div>
+
+                <div id="air-form">
+                    <div class="air-form-row">
+                        <select id="air-provider"></select>
+                        <select id="air-model"></select>
+                        <select id="air-lang">
+                            <option value="Vietnamese">Ti&#7871;ng Vi&#7879;t</option>
+                            <option value="English">English</option>
+                        </select>
+                    </div>
+                    <div class="air-form-row">
+                        <button type="button" class="air-btn" id="air-analyze">
+                            <i class="fa fa-play"></i> {{ _('Analyze') }}
+                        </button>
+                    </div>
+                </div>
+
+                <div id="air-spinner" class="air-spinner">
+                    <i class="fa fa-spinner fa-spin"></i>
+                    <p>{{ _('Analyzing... This may take up to 2 minutes.') }}</p>
+                </div>
+
+                <div id="air-result" class="air-result">
+                    <div id="air-result-meta" class="air-result-meta"></div>
+                    <pre id="air-result-text" class="air-result-text"></pre>
+                    <div style="margin-top: 10px;">
+                        <button type="button" class="air-btn-secondary" id="air-again">
+                            <i class="fa fa-refresh"></i> {{ _('Analyze again') }}
+                        </button>
+                    </div>
+                    <div class="air-disclaimer">
+                        {{ _('AI-generated analysis, may contain errors. Verify independently.') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 {% endblock %}

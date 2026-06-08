@@ -132,7 +132,7 @@ def _build_claude_payload(file_data_b64, mime_type, model, system_prompt):
         }
     return {
         'model': model,
-        'max_tokens': 4096,
+        'max_tokens': 16384,
         'messages': [{'role': 'user', 'content': [file_block, {'type': 'text', 'text': system_prompt}]}],
     }
 
@@ -163,6 +163,11 @@ def _extract_text_from_response(provider, data):
         content = data.get('content', [])
         if content:
             return content[0].get('text', '')
+        return ''
+    elif provider == 'deepseek':
+        choices = data.get('choices', [])
+        if choices:
+            return choices[0].get('message', {}).get('content', '')
         return ''
     return ''
 
