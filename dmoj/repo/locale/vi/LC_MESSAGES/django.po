@@ -6705,8 +6705,8 @@ msgid "You can only submit file for this language."
 msgstr "Ngôn ngữ này chỉ chấp nhận nộp bằng file."
 
 #: templates/problem/submit.html:315
-msgid "No judge is available for this problem."
-msgstr "Bài tập này hiện tại không chấm."
+msgid "This problem currently has no test cases or is not being graded."
+msgstr "Bài tập này hiện tại không có Testcase hoặc không chấm."
 
 #: templates/problem/submit.html:319
 msgid "Submit!"
@@ -8041,7 +8041,4 @@ msgstr "CẢNH BÁO: Kỳ thi này có chế độ Khóa Tập Trung. Màn hình
 msgid "Click to enter fullscreen"
 msgstr "Nhấn để vào toàn màn hình"
 
-#: templates/problem/problem-ide.html
-msgid "This problem currently has no test cases."
-msgstr "Bài này hiện tại không có Testcase."
 

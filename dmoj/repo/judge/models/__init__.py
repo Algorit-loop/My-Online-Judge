@@ -12,6 +12,7 @@ from judge.models.problem_data import CHECKERS, ProblemData, ProblemTestCase, pr
 from judge.models.profile import Badge, Organization, OrganizationMonthlyUsage, OrganizationRequest, \
     Profile, WebAuthnCredential
 from judge.models.ai_code_review import AICodeReview
+from judge.models.ai_prompt import AIPromptTemplate
 from judge.models.api_key import AIAPIKey, AIAPIKeyTestLog
 from judge.models.run_submission import RunSubmission
 from judge.models.runtime import Judge, Language, RuntimeVersion

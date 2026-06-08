@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from judge.models.ai_code_review import AICodeReview
+from judge.models.ai_prompt import AIPromptTemplate
 from judge.models.api_key import (
     AIAPIKey,
     AI_PROVIDER_CONFIGS, AI_PROVIDER_MODELS,
@@ -17,7 +18,7 @@ from judge.views.api_key import _parse_http_error
 
 _AI_REVIEW_TIMEOUT = 120
 
-_REVIEW_SYSTEM_PROMPT = """You are an expert competitive programming analyst.
+_DEFAULT_REVIEW_PROMPT = """You are an expert competitive programming analyst.
 Analyze the following code submission.
 
 Problem: "{problem_name}"
@@ -39,7 +40,8 @@ Output language: {output_language}"""
 
 def _get_review_prompt(submission, output_language='Vietnamese'):
     result_display = submission.get_result_display() or submission.get_status_display()
-    return _REVIEW_SYSTEM_PROMPT.format(
+    template = AIPromptTemplate.get_prompt('ai_code_review', _DEFAULT_REVIEW_PROMPT)
+    return template.format(
         problem_name=submission.problem.name,
         language_name=submission.language.name,
         result=result_display,

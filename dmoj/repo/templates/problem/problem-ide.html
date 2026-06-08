@@ -869,7 +869,7 @@
     <div class="ide-R">
         <div class="ide-top-frame">
             <div class="ide-bar">
-                {% if has_testcases %}
+                {% if not no_judges %}
                     {% if request.user.is_authenticated %}
                     <select id="ide-lang">
                         {% if form %}
@@ -891,10 +891,10 @@
                 {% endif %}
             </div>
             <div class="ide-editor" style="position:relative">
-                {% if not has_testcases %}
+                {% if no_judges %}
                 <div class="ide-login-overlay">
                     <i class="fa fa-exclamation-triangle"></i>
-                    <p>{{ _('This problem currently has no test cases.') }}</p>
+                    <p>{{ _('This problem currently has no test cases or is not being graded.') }}</p>
                 </div>
                 {% elif request.user.is_authenticated %}
                 <div id="ace-ed"></div>

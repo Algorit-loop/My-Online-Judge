@@ -69,7 +69,7 @@
     <hr>
 
     {% if no_judges %}
-        <span style="color: red">{{ _('No judge is available for this problem.') }}</span>
+        <span style="color: red">{{ _('This problem currently has no test cases or is not being graded.') }}</span>
     {% else %}
         <div class="submit-bar">
             {{ form.judge }}

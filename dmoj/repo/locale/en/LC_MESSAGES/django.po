@@ -6091,7 +6091,7 @@ msgid "You can only submit file for this language."
 msgstr ""
 
 #: templates/problem/submit.html:431
-msgid "No judge is available for this problem."
+msgid "This problem currently has no test cases or is not being graded."
 msgstr ""
 
 #: templates/problem/submit.html:435

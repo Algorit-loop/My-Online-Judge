@@ -6,11 +6,12 @@ import urllib.request
 from django.conf import settings
 from django.utils.translation import gettext as _
 
+from judge.models.ai_prompt import AIPromptTemplate
 from judge.models.api_key import AI_PROVIDER_CONFIGS, VISION_PROVIDERS
 
 _AI_CREATE_TIMEOUT = 120
 
-SYSTEM_PROMPT = """You are an expert at reading competitive programming problem statements from images or PDFs.
+_DEFAULT_SYSTEM_PROMPT = """You are an expert at reading competitive programming problem statements from images or PDFs.
 
 Extract the problem content and return it as clean Markdown suitable for an Online Judge website.
 
@@ -61,7 +62,8 @@ Formatting rules:
 
 
 def get_system_prompt(output_language='English'):
-    return SYSTEM_PROMPT.replace('{output_language}', output_language)
+    template = AIPromptTemplate.get_prompt('ai_problem_creator', _DEFAULT_SYSTEM_PROMPT)
+    return template.replace('{output_language}', output_language)
 
 
 def validate_file(uploaded_file):
