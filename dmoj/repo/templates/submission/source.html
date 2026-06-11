@@ -446,29 +446,35 @@
 {% endblock %}
 
 {% block body %}
-    <br>
-    <div><a href="{{ url('submission_status', submission.id) }}">{{ _('View status') }}</a></div>
-    <div><a href="{{ url('submission_source_raw', submission.id) }}">{{ _('View raw source') }}</a></div>
-    {% if (request.user == submission.user.user or perms.judge.resubmit_other) and not submission.language.file_only %}
-        <div><a href="{{ url('problem_submit', submission.problem.code, submission.id) }}">{{ _('Resubmit') }}</a></div>
-    {% endif %}
-    {% if is_own_submission %}
-        <div><a href="#" id="ai-review-btn" onclick="openAIReviewModal(); return false;">
-            <i class="fa fa-magic"></i> {{ _('Review with AI') }}
-        </a></div>
-    {% endif %}
-    {% set can_edit = submission.problem.is_editable_by(request.user) %}
-    {% if perms.judge.rejudge_submission and can_edit and not submission.is_locked %}
-        <div>
-            <form action="{{ url('submission_rejudge') }}" method="post">
+    <div class="source-action-bar">
+        <a href="{{ url('submission_status', submission.id) }}" class="source-action-btn">
+            <i class="fa fa-bar-chart"></i> {{ _('View status') }}
+        </a>
+        <a href="{{ url('submission_source_raw', submission.id) }}" class="source-action-btn">
+            <i class="fa fa-file-text-o"></i> {{ _('View raw source') }}
+        </a>
+        {% if (request.user == submission.user.user or perms.judge.resubmit_other) and not submission.language.file_only %}
+            <a href="{{ url('problem_submit', submission.problem.code, submission.id) }}" class="source-action-btn">
+                <i class="fa fa-repeat"></i> {{ _('Resubmit') }}
+            </a>
+        {% endif %}
+        {% if is_own_submission %}
+            <a href="#" id="ai-review-btn" class="source-action-btn" onclick="openAIReviewModal(); return false;">
+                <i class="fa fa-magic"></i> {{ _('Review with AI') }}
+            </a>
+        {% endif %}
+        {% set can_edit = submission.problem.is_editable_by(request.user) %}
+        {% if perms.judge.rejudge_submission and can_edit and not submission.is_locked %}
+            <form action="{{ url('submission_rejudge') }}" method="post" class="inline-form">
                 {% csrf_token %}
-                <a href="#" onclick="parentNode.submit()">{{ _('Rejudge') }}</a>
+                <a href="#" onclick="parentNode.submit()" class="source-action-btn source-action-btn-warning">
+                    <i class="fa fa-refresh"></i> {{ _('Rejudge') }}
+                </a>
                 <input type="hidden" name="id" value="{{ submission.id }}">
                 <input type="hidden" name="path" value="{{ url('submission_status', submission.id) }}">
             </form>
-        </div>
-    {% endif %}
-    <br>
+        {% endif %}
+    </div>
     <hr>
     <div class="source-wrap">
         <table>

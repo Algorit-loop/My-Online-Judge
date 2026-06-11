@@ -1,7 +1,16 @@
-{% with pdf_url=problem.absolute_pdf_url %}
+{% with pdf_url=problem.pdf_url %}
 {% if pdf_url %}
-    <p>{{ _("In case the statement didn't load correctly, you can download the statement here: ") }}<a href="{{ pdf_url }}">{{ _("Statement") }}</a></p>
-    <object id="pdfContainer" data="{{ pdf_url }}" type="application/pdf" height="1000" style="width: 100%;" ></object>
+    <div class="pdf-statement-container">
+        <p>{{ _("In case the statement didn't load correctly, you can download the statement here: ") }}<a href="{{ pdf_url }}" target="_blank" rel="noopener">{{ _("Statement") }}</a></p>
+        <div class="pdf-loading" id="pdfLoading">
+            <i class="fa fa-spinner fa-spin"></i> {{ _("Loading PDF...") }}
+        </div>
+        <object id="pdfContainer" data="{{ pdf_url }}" type="application/pdf" height="1000" style="width: 100%;"
+                onload="document.getElementById('pdfLoading') && (document.getElementById('pdfLoading').style.display='none')"
+                onerror="document.getElementById('pdfLoading') && (document.getElementById('pdfLoading').style.display='none')">
+            <p>{{ _("Your browser does not support embedded PDF viewing.") }} <a href="{{ pdf_url }}" target="_blank" rel="noopener">{{ _("Download the PDF") }}</a></p>
+        </object>
+    </div>
 {% endif %}
 {% endwith %}
 

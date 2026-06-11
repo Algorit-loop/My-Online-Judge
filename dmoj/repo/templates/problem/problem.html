@@ -237,59 +237,76 @@
     {% endif %}
 
     <hr style="padding-bottom: 0.3em">
-    {% if request.in_contest and contest_problem %}
-        {% set contest = contest_problem.contest %}
-        <div><a href="{{ url('contest_user_submissions', contest.key, request.user.username, problem.code) }}">{{ _('My submissions') }}</a></div>
-        {% if contest.can_see_full_submission_list(request.user) %}
-            <div><a href="{{ url('chronological_submissions', problem.code) }}">{{ _('All submissions') }}</a></div>
-            <div><a href="{{ url('contest_ranked_submissions', contest.key, problem.code) }}">{{ _('Best submissions') }}</a></div>
-        {% endif %}
-    {% else %}
-        {% if request.user.is_authenticated and has_submissions %}
-            <div>
-                <a href="{{ url('user_submissions', problem.code, request.user.username) }}">{{ _('My submissions') }}</a>
-            </div>
-        {% endif %}
-        <div><a href="{{ url('chronological_submissions', problem.code) }}">{{ _('All submissions') }}</a></div>
-        <div><a href="{{ url('ranked_submissions', problem.code) }}">{{ _('Best submissions') }}</a></div>
-    {% endif %}
-    {% if (editorial and editorial.is_accessible_by(request.user)) and not request.in_contest %}
-        <hr>
-        <div><a href="{{ url('problem_editorial', problem.code) }}">{{ _('Read editorial') }}</a></div>
-    {% endif %}
-    {% if can_edit_problem %}
-        <hr>
-        <div>
-            <a href="{{ url('problem_ticket_list', problem.code) }}">{{ _('Manage tickets') }}
-                {% if num_open_tickets %}<span class="badge">{{ num_open_tickets }}</span>{% endif %}
+    <div class="problem-admin-actions">
+        {% if request.in_contest and contest_problem %}
+            {% set contest = contest_problem.contest %}
+            <a href="{{ url('contest_user_submissions', contest.key, request.user.username, problem.code) }}" class="problem-admin-btn">
+                <i class="fa fa-user"></i> {{ _('My submissions') }}
             </a>
-        </div>
-        <div><a href="{{ url('problem_edit', problem.code) }}">{{ _('Edit problem') }}</a></div>
-        {% if not problem.is_manually_managed %}
-            <div><a href="{{ url('problem_data', problem.code) }}">{{ _('Edit test data') }}</a></div>
-        {% endif %}
-    {% elif request.user.is_authenticated and has_tickets %}
-        <hr>
-        <div>
-            <a href="{{ url('problem_ticket_list', problem.code) }}">{{ _('My tickets') }}
-                {% if num_open_tickets %}<span class="badge">{{ num_open_tickets }}</span>{% endif %}
+            {% if contest.can_see_full_submission_list(request.user) %}
+                <a href="{{ url('chronological_submissions', problem.code) }}" class="problem-admin-btn">
+                    <i class="fa fa-list"></i> {{ _('All submissions') }}
+                </a>
+                <a href="{{ url('contest_ranked_submissions', contest.key, problem.code) }}" class="problem-admin-btn">
+                    <i class="fa fa-trophy"></i> {{ _('Best submissions') }}
+                </a>
+            {% endif %}
+        {% else %}
+            {% if request.user.is_authenticated and has_submissions %}
+                <a href="{{ url('user_submissions', problem.code, request.user.username) }}" class="problem-admin-btn">
+                    <i class="fa fa-user"></i> {{ _('My submissions') }}
+                </a>
+            {% endif %}
+            <a href="{{ url('chronological_submissions', problem.code) }}" class="problem-admin-btn">
+                <i class="fa fa-list"></i> {{ _('All submissions') }}
             </a>
-        </div>
-    {% endif %}
-
-    {% if perms.judge.edit_type_group_all_problem %}
-        <div><a href="{{ url('problem_edit_type_group', problem.code) }}">{{ _('Edit type group') }}</a></div>
-    {% endif %}
-
-    {% if problem.is_subs_manageable_by(request.user) %}
-        <div>
-            <a href="{{ url('problem_manage_submissions', problem.code) }}">{{ _('Manage submissions') }}</a>
-        </div>
-    {% endif %}
-
-    {% if perms.judge.clone_problem and can_edit_problem %}
-        <div>
-            <a href="{{ url('problem_clone', problem.code) }}">{{ _('Clone problem') }}</a>
+            <a href="{{ url('ranked_submissions', problem.code) }}" class="problem-admin-btn">
+                <i class="fa fa-trophy"></i> {{ _('Best submissions') }}
+            </a>
+        {% endif %}
+        {% if (editorial and editorial.is_accessible_by(request.user)) and not request.in_contest %}
+            <a href="{{ url('problem_editorial', problem.code) }}" class="problem-admin-btn">
+                <i class="fa fa-book"></i> {{ _('Read editorial') }}
+            </a>
+        {% endif %}
+    </div>
+    {% if can_edit_problem or (request.user.is_authenticated and has_tickets) or perms.judge.edit_type_group_all_problem or problem.is_subs_manageable_by(request.user) %}
+        <hr>
+        <div class="problem-admin-actions">
+            {% if can_edit_problem %}
+                <a href="{{ url('problem_ticket_list', problem.code) }}" class="problem-admin-btn">
+                    <i class="fa fa-flag"></i> {{ _('Manage tickets') }}
+                    {% if num_open_tickets %}<span class="badge">{{ num_open_tickets }}</span>{% endif %}
+                </a>
+                <a href="{{ url('problem_edit', problem.code) }}" class="problem-admin-btn">
+                    <i class="fa fa-pencil-square-o"></i> {{ _('Edit problem') }}
+                </a>
+                {% if not problem.is_manually_managed %}
+                    <a href="{{ url('problem_data', problem.code) }}" class="problem-admin-btn">
+                        <i class="fa fa-database"></i> {{ _('Edit test data') }}
+                    </a>
+                {% endif %}
+            {% elif request.user.is_authenticated and has_tickets %}
+                <a href="{{ url('problem_ticket_list', problem.code) }}" class="problem-admin-btn">
+                    <i class="fa fa-flag"></i> {{ _('My tickets') }}
+                    {% if num_open_tickets %}<span class="badge">{{ num_open_tickets }}</span>{% endif %}
+                </a>
+            {% endif %}
+            {% if perms.judge.edit_type_group_all_problem %}
+                <a href="{{ url('problem_edit_type_group', problem.code) }}" class="problem-admin-btn">
+                    <i class="fa fa-object-group"></i> {{ _('Edit type group') }}
+                </a>
+            {% endif %}
+            {% if problem.is_subs_manageable_by(request.user) %}
+                <a href="{{ url('problem_manage_submissions', problem.code) }}" class="problem-admin-btn">
+                    <i class="fa fa-cogs"></i> {{ _('Manage submissions') }}
+                </a>
+            {% endif %}
+            {% if perms.judge.clone_problem and can_edit_problem %}
+                <a href="{{ url('problem_clone', problem.code) }}" class="problem-admin-btn">
+                    <i class="fa fa-clone"></i> {{ _('Clone problem') }}
+                </a>
+            {% endif %}
         </div>
     {% endif %}
 

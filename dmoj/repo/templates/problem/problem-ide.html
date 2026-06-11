@@ -53,23 +53,23 @@
 
         /* === Left Panel === */
         .ide-L {
-            width: 45%; min-width: 280px; display: flex; flex-direction: column;
+            width: 45%; min-width: 280px; overflow-y: auto; overflow-x: hidden;
         }
         .ide-L-head {
-            padding: 12px 16px 10px; border-bottom: 1px solid var(--bd); flex-shrink: 0;
+            padding: 12px 16px 10px; border-bottom: 1px solid var(--bd);
         }
         .ide-L-body {
-            flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 20px 24px;
+            padding: 16px 20px 24px;
         }
         /* Thin scrollbar */
-        .ide-L-body::-webkit-scrollbar, .bot-content::-webkit-scrollbar { width: 5px; }
-        .ide-L-body::-webkit-scrollbar-thumb, .bot-content::-webkit-scrollbar-thumb {
+        .ide-L::-webkit-scrollbar, .bot-content::-webkit-scrollbar { width: 5px; }
+        .ide-L::-webkit-scrollbar-thumb, .bot-content::-webkit-scrollbar-thumb {
             background: #ccc; border-radius: 3px;
         }
 
         /* Title row */
         .ide-ttl { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .ide-ttl h3 { margin: 0; font-size: 1.15em; font-weight: 700; color: var(--text); }
+        .ide-ttl h3 { margin: 0; font-size: 1.5em; font-weight: 700; color: var(--text); }
         .ide-ttl .fa { font-size: 1.1em; }
         .ide-pts {
             display: inline-block; padding: 1px 8px; border-radius: 10px;
@@ -78,30 +78,44 @@
         }
 
         /* Info grid */
-        .ide-info { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text2); }
+        .ide-info { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.85em; color: var(--text2); }
         .ide-info .ii { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
         .ide-info .ii i { color: #aaa; width: 14px; text-align: center; }
         .ide-info .ii b { font-weight: 600; color: var(--text); }
         .ide-ll { font-size: 11px; color: #aaa; padding-left: 2px; margin-top: 2px; }
         .ide-ll span { margin-right: 8px; }
-        .ide-au { font-size: 12px; color: var(--text2); margin-top: 3px; }
+        .ide-au { font-size: 0.85em; color: var(--text2); margin-top: 3px; }
         .ide-au i { color: #bbb; margin-right: 2px; }
 
         /* Toggles */
-        .ide-L-head .toggle {
+        .ide-L-head .ide-toggle {
             font-size: 12px; color: var(--text2); cursor: pointer;
             padding: 2px 0; user-select: none;
         }
-        .ide-L-head .toggle:hover { color: var(--text); }
+        .ide-L-head .ide-toggle:hover { color: var(--text); }
         .ide-L-head .toggled { font-size: 11px; padding: 1px 0 1px 18px; color: #999; }
 
-        /* Links row */
-        .ide-lnk {
-            display: flex; flex-wrap: wrap; gap: 0 10px; font-size: 12px;
-            margin-top: 6px; padding-top: 6px; border-top: 1px solid #f0f0f0;
+        /* Action buttons */
+        .ide-admin-actions {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+            padding-top: 6px; border-top: 1px solid #f0f0f0;
         }
-        .ide-lnk a { color: var(--accent); text-decoration: none; }
-        .ide-lnk a:hover { text-decoration: underline; }
+        .ide-admin-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+            padding: 4px 10px; font-size: 12px; font-weight: 500;
+            background: #f0f5ff; color: #4a6fa5; border: 1px solid #d0dff0;
+            border-radius: 6px; text-decoration: none;
+            transition: all 0.15s ease; white-space: nowrap;
+        }
+        .ide-admin-btn:hover {
+            background: #dce8f8; border-color: #b0c8e8; color: #2d5a8e;
+            transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+        .ide-admin-btn i { font-size: 12px; }
+        .ide-admin-btn .badge {
+            background: #e74c3c; color: #fff; padding: 0 5px;
+            border-radius: 8px; font-size: 10px; margin-left: 2px;
+        }
 
         /* === Right Panel === */
         .ide-R {
@@ -368,7 +382,7 @@
         });
 
         // === Shared: Toggles ===
-        $(document).on('click', '.ide-L-head .toggle', function() {
+        $(document).on('click', '.ide-L-head .ide-toggle', function() {
             $(this).toggleClass('open closed');
             $(this).next('.toggled').slideToggle(150);
         });
@@ -559,12 +573,10 @@
                 if (tc.feedback)
                     h += '<div class="rd-row"><div class="rd-lbl">Feedback</div><div class="rd-val">' + esc(tc.feedback) + '</div></div>';
             } else {
-                var isRuntimeErr = s !== 'AC' && s !== 'WA' && s !== 'SC';
-                if (isRuntimeErr) {
-                    h += '<div class="rd-meta">';
-                    h += '<span class="rs-st case-' + s + '" style="font-size:13px">' + (ST[s]||s) + '</span>';
-                    h += '<span>' + ft(tc.time) + '</span><span>' + fm(tc.memory) + '</span></div>';
-                }
+                var isNormal = s === 'AC' || s === 'WA' || s === 'SC';
+                h += '<div class="rd-meta">';
+                if (!isNormal) h += '<span class="rs-st case-' + s + '" style="font-size:13px">' + (ST[s]||s) + '</span>';
+                h += '<span>' + ft(tc.time) + '</span><span>' + fm(tc.memory) + '</span></div>';
                 if (x < tcs.length && tcs[x])
                     h += '<div class="rd-row"><div class="rd-lbl">Input</div><div class="rd-val">' + esc(tcs[x].i) + '</div></div>';
                 h += '<div class="rd-row"><div class="rd-lbl">Output</div><div class="rd-val">' + esc(truncOut(tc)) + '</div></div>';
@@ -761,14 +773,14 @@
 
             {# Toggles #}
             {% if not contest_problem or not contest_problem.contest.hide_problem_tags %}
-                <div class="toggle closed unselectable" style="margin-top:4px">
+                <div class="ide-toggle closed unselectable" style="margin-top:4px">
                     <i class="fa fa-chevron-right fa-fw"></i>
                     {% trans trimmed count=problem.types_list|length %}Problem type{% pluralize count %}Problem types{% endtrans %}
                 </div>
                 <div style="display:none" class="toggled">{{ problem.types_list|join(", ") }}</div>
             {% endif %}
             {% if show_languages %}
-                <div class="toggle closed unselectable">
+                <div class="ide-toggle closed unselectable">
                     <i class="fa fa-chevron-right fa-fw"></i>{{ _('Allowed languages') }}
                 </div>
                 <div style="display:none" class="toggled">
@@ -800,43 +812,76 @@
             {% endif %}
 
             {# Links #}
-            <div class="ide-lnk">
+            <div class="ide-admin-actions">
                 {% if request.in_contest and contest_problem %}
                     {% set contest = contest_problem.contest %}
-                    <a href="{{ url('contest_user_submissions', contest.key, request.user.username, problem.code) }}">{{ _('My submissions') }}</a>
+                    <a href="{{ url('contest_user_submissions', contest.key, request.user.username, problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-user"></i> {{ _('My submissions') }}
+                    </a>
                     {% if contest.can_see_full_submission_list(request.user) %}
-                        <a href="{{ url('chronological_submissions', problem.code) }}">{{ _('All submissions') }}</a>
-                        <a href="{{ url('contest_ranked_submissions', contest.key, problem.code) }}">{{ _('Best submissions') }}</a>
+                        <a href="{{ url('chronological_submissions', problem.code) }}" class="ide-admin-btn">
+                            <i class="fa fa-list"></i> {{ _('All submissions') }}
+                        </a>
+                        <a href="{{ url('contest_ranked_submissions', contest.key, problem.code) }}" class="ide-admin-btn">
+                            <i class="fa fa-trophy"></i> {{ _('Best submissions') }}
+                        </a>
                     {% endif %}
                 {% else %}
                     {% if request.user.is_authenticated and has_submissions %}
-                        <a href="{{ url('user_submissions', problem.code, request.user.username) }}">{{ _('My submissions') }}</a>
+                        <a href="{{ url('user_submissions', problem.code, request.user.username) }}" class="ide-admin-btn">
+                            <i class="fa fa-user"></i> {{ _('My submissions') }}
+                        </a>
                     {% endif %}
-                    <a href="{{ url('chronological_submissions', problem.code) }}">{{ _('All submissions') }}</a>
-                    <a href="{{ url('ranked_submissions', problem.code) }}">{{ _('Best submissions') }}</a>
+                    <a href="{{ url('chronological_submissions', problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-list"></i> {{ _('All submissions') }}
+                    </a>
+                    <a href="{{ url('ranked_submissions', problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-trophy"></i> {{ _('Best submissions') }}
+                    </a>
                 {% endif %}
                 {% if (editorial and editorial.is_accessible_by(request.user)) and not request.in_contest %}
-                    <a href="{{ url('problem_editorial', problem.code) }}">{{ _('Read editorial') }}</a>
-                {% endif %}
-                {% if can_edit_problem %}
-                    <a href="{{ url('problem_ticket_list', problem.code) }}">{{ _('Manage tickets') }}{% if num_open_tickets %} <span class="badge">{{ num_open_tickets }}</span>{% endif %}</a>
-                    <a href="{{ url('problem_edit', problem.code) }}">{{ _('Edit problem') }}</a>
-                    {% if not problem.is_manually_managed %}
-                        <a href="{{ url('problem_data', problem.code) }}">{{ _('Edit test data') }}</a>
-                    {% endif %}
-                {% elif request.user.is_authenticated and has_tickets %}
-                    <a href="{{ url('problem_ticket_list', problem.code) }}">{{ _('My tickets') }}{% if num_open_tickets %} <span class="badge">{{ num_open_tickets }}</span>{% endif %}</a>
-                {% endif %}
-                {% if perms.judge.edit_type_group_all_problem %}
-                    <a href="{{ url('problem_edit_type_group', problem.code) }}">{{ _('Edit type group') }}</a>
-                {% endif %}
-                {% if problem.is_subs_manageable_by(request.user) %}
-                    <a href="{{ url('problem_manage_submissions', problem.code) }}">{{ _('Manage submissions') }}</a>
-                {% endif %}
-                {% if perms.judge.clone_problem and can_edit_problem %}
-                    <a href="{{ url('problem_clone', problem.code) }}">{{ _('Clone problem') }}</a>
+                    <a href="{{ url('problem_editorial', problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-book"></i> {{ _('Read editorial') }}
+                    </a>
                 {% endif %}
             </div>
+            {# Admin action buttons #}
+            {% if can_edit_problem or (request.user.is_authenticated and has_tickets) or perms.judge.edit_type_group_all_problem or problem.is_subs_manageable_by(request.user) or (perms.judge.clone_problem and can_edit_problem) %}
+            <div class="ide-admin-actions">
+                {% if can_edit_problem %}
+                    <a href="{{ url('problem_ticket_list', problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-flag"></i> {{ _('Manage tickets') }}{% if num_open_tickets %} <span class="badge">{{ num_open_tickets }}</span>{% endif %}
+                    </a>
+                    <a href="{{ url('problem_edit', problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-pencil-square-o"></i> {{ _('Edit problem') }}
+                    </a>
+                    {% if not problem.is_manually_managed %}
+                        <a href="{{ url('problem_data', problem.code) }}" class="ide-admin-btn">
+                            <i class="fa fa-database"></i> {{ _('Edit test data') }}
+                        </a>
+                    {% endif %}
+                {% elif request.user.is_authenticated and has_tickets %}
+                    <a href="{{ url('problem_ticket_list', problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-flag"></i> {{ _('My tickets') }}{% if num_open_tickets %} <span class="badge">{{ num_open_tickets }}</span>{% endif %}
+                    </a>
+                {% endif %}
+                {% if perms.judge.edit_type_group_all_problem %}
+                    <a href="{{ url('problem_edit_type_group', problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-object-group"></i> {{ _('Edit type group') }}
+                    </a>
+                {% endif %}
+                {% if problem.is_subs_manageable_by(request.user) %}
+                    <a href="{{ url('problem_manage_submissions', problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-cogs"></i> {{ _('Manage submissions') }}
+                    </a>
+                {% endif %}
+                {% if perms.judge.clone_problem and can_edit_problem %}
+                    <a href="{{ url('problem_clone', problem.code) }}" class="ide-admin-btn">
+                        <i class="fa fa-clone"></i> {{ _('Clone problem') }}
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
         <div class="ide-L-body">
             {% if problem.is_suggesting %}
