@@ -31,7 +31,6 @@ from judge.forms import LanguageLimitFormSet, ProblemCloneForm, ProblemEditForm,
     ProblemImportPolygonForm, ProblemImportPolygonStatementFormSet, ProblemSubmitForm, ProposeProblemSolutionFormSet
 from judge.models import ContestSubmission, Judge, Language, Problem, ProblemGroup, \
     ProblemTranslation, ProblemType, RuntimeVersion, Solution, Submission, SubmissionSource
-from judge.models.problem_data import ProblemTestCase
 from judge.tasks import on_new_problem
 from judge.template_context import misc_config
 from judge.utils.codeforces_polygon import ImportPolygonError, PolygonImporter
@@ -453,12 +452,6 @@ class ProblemDetail(ProblemMixin, SolvedProblemMixin, ProblemSubmitMixin, Commen
         context['IDE_MAX_CUSTOM_TESTCASES'] = getattr(settings, 'DMOJ_IDE_MAX_CUSTOM_TESTCASES', 5)
         context['IDE_MAX_CUSTOM_INPUT_LENGTH'] = getattr(settings, 'DMOJ_IDE_MAX_CUSTOM_INPUT_LENGTH', 65536)
         context['IDE_MAX_SOURCE_LENGTH'] = getattr(settings, 'DMOJ_IDE_MAX_SOURCE_LENGTH', 65536)
-
-        # Check if problem has any testcases (for IDE "no testcase" message)
-        if self.object.enable_new_ide:
-            context['has_testcases'] = ProblemTestCase.objects.filter(
-                dataset=self.object, type='C',
-            ).exists()
 
         if user.is_authenticated:
             submit_context = self.get_submit_context()

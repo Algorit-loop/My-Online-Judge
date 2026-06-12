@@ -113,6 +113,11 @@
                         <i class="fa fa-repeat"></i> {{ _('Resubmit') }}
                     </a>
                 {% endif %}
+                {% if request.user == submission.user.user and not submission.language.file_only %}
+                    <a href="{{ url('submission_source', submission.id) }}?ai_review=1" class="action-btn">
+                        <i class="fa fa-magic"></i> {{ _('AI Review') }}
+                    </a>
+                {% endif %}
             </div>
             
             {% set can_edit = submission.problem.is_editable_by(request.user) %}

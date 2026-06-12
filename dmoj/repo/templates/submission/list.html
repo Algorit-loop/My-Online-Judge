@@ -295,7 +295,8 @@
             }
             setupDropdown('btn-filter', 'dropdown-filter');
             setupDropdown('btn-stats', 'dropdown-stats');
-            $(document).on('click', function () {
+            $(document).on('click', function (e) {
+                if ($(e.target).closest('.select2-container, .select2-dropdown').length) return;
                 $('.dropdown-box').removeClass('open');
                 $('.toolbar-btn').removeClass('active');
             });

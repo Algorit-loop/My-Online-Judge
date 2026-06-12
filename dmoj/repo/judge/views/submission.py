@@ -125,6 +125,12 @@ class SubmissionSource(SubmissionDetailBase):
         submission = self.object
         context['raw_source'] = submission.source.source.rstrip('\n')
         context['highlighted_source'] = highlight_code(submission.source.source, submission.language.pygments)
+        context['is_own_submission'] = (self.request.user.is_authenticated and
+                                         submission.user_id == self.request.profile.id)
+        if context['is_own_submission']:
+            from judge.models.api_key import AI_PROVIDER_MODELS, AI_PROVIDER_CHOICES
+            context['provider_models_json'] = json.dumps(AI_PROVIDER_MODELS)
+            context['ai_providers'] = AI_PROVIDER_CHOICES
         return context
 
     def get(self, request, *args, **kwargs):

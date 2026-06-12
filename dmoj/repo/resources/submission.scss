@@ -36,18 +36,28 @@
     align-items: center;
     gap: 0.35em;
     padding: 6px 14px;
-    border: 1px solid #2196F3;
-    border-radius: 4px;
-    background: #2196F3;
-    color: #fff;
+    border: 2px solid $color_primary25;
+    border-radius: 6px;
+    background: #fff;
+    color: $color_primary75 !important;
     cursor: pointer;
     font-size: 0.9em;
+    font-weight: 600;
     white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s;
+    transition: all 0.2s ease;
 
-    &:hover, &.active {
-        background: #1976D2;
-        border-color: #1565C0;
+    &:hover {
+        background: $color_link75;
+        color: #fff !important;
+        border-color: $color_link75;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    &.active {
+        background: $color_link75;
+        color: #fff !important;
+        border-color: $color_link75;
     }
 
     .fa {
@@ -590,12 +600,8 @@ label[for="language"], label[for="status"], label[for="organization"] {
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 1em;
-    margin-bottom: 1.5em;
-    padding: 1em;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    gap: 0.5em;
+    padding: 1em 0;
 }
 
 .action-group {
@@ -645,11 +651,60 @@ label[for="language"], label[for="status"], label[for="organization"] {
             color: #fff;
         }
     }
+
 }
 
 .inline-form {
-    display: inline-block;
+    display: inline-flex;
     margin: 0;
+}
+
+/* Source page action bar */
+.source-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    align-items: center;
+    padding: 1em 0;
+}
+
+.source-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.6em 1.2em;
+    background: #fff;
+    border: 2px solid $color_primary25;
+    border-radius: 6px;
+    color: $color_primary75;
+    font-weight: 600;
+    font-size: 0.9em;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    i {
+        font-size: 1em;
+    }
+
+    &:hover {
+        background: $color_primary100;
+        color: #fff;
+        border-color: $color_primary100;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    &.source-action-btn-warning {
+        border-color: #f39c12;
+        color: #f39c12;
+
+        &:hover {
+            background: #f39c12;
+            color: #fff;
+        }
+    }
+
 }
 
 .submission-results-card {

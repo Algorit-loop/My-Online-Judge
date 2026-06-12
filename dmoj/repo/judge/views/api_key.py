@@ -9,10 +9,13 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
+from judge.models.ai_prompt import AIPromptTemplate
 from judge.models.api_key import (
     AIAPIKey, AIAPIKeyTestLog,
     AI_PROVIDER_CHOICES, AI_PROVIDER_MODELS, AI_PROVIDER_DEFAULT_MODELS, AI_PROVIDER_CONFIGS,
 )
+
+_DEFAULT_API_TEST_PROMPT = 'Reply exactly: OK'
 from judge.views.user import UserPage
 
 
@@ -236,6 +239,10 @@ def api_key_all_logs(request):
 _API_TEST_TIMEOUT = 90
 
 
+def _get_test_prompt():
+    return AIPromptTemplate.get_prompt('api_key_test', _DEFAULT_API_TEST_PROMPT)
+
+
 def _test_openai(api_key, model):
     """OpenAI Responses API: POST /v1/responses with {model, input}."""
     config = AI_PROVIDER_CONFIGS['openai']
@@ -246,7 +253,7 @@ def _test_openai(api_key, model):
     }
     payload = json.dumps({
         'model': model,
-        'input': 'Reply exactly: OK',
+        'input': _get_test_prompt(),
         'max_output_tokens': 5,
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
@@ -271,7 +278,7 @@ def _test_gemini(api_key, model):
         config['auth_header']: config['auth_format'].format(key=api_key),
     }
     payload = json.dumps({
-        'contents': [{'parts': [{'text': 'Reply exactly: OK'}]}],
+        'contents': [{'parts': [{'text': _get_test_prompt()}]}],
         'generationConfig': {'maxOutputTokens': 5},
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
@@ -299,7 +306,7 @@ def _test_claude(api_key, model):
     payload = json.dumps({
         'model': model,
         'max_tokens': 5,
-        'messages': [{'role': 'user', 'content': 'Reply exactly: OK'}],
+        'messages': [{'role': 'user', 'content': _get_test_prompt()}],
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
     try:
@@ -324,7 +331,7 @@ def _test_deepseek(api_key, model):
     }
     payload = json.dumps({
         'model': model,
-        'messages': [{'role': 'user', 'content': 'Reply exactly: OK'}],
+        'messages': [{'role': 'user', 'content': _get_test_prompt()}],
         'max_tokens': 5,
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)

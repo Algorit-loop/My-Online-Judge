@@ -89,6 +89,7 @@ register_patterns = [
     path('api/token/remove/', user.remove_api_token, name='remove_api_token'),
 ]
 
+from judge.views import ai_code_review as ai_code_review_views
 from judge.views import api_key as api_key_views
 
 register_patterns += [
@@ -202,6 +203,8 @@ urlpatterns = [
     path('src/<int:submission>/raw', submission.SubmissionSourceRaw.as_view(), name='submission_source_raw'),
     path('src/<int:submission>/download', submission.SubmissionSourceDownload.as_view(),
          name='submission_source_download'),
+    path('src/<int:submission>/ai-review/', ai_code_review_views.ai_code_review_dispatch,
+         name='submission_ai_review'),
 
     path('submission/<int:submission>', include([
         path('', submission.SubmissionStatus.as_view(), name='submission_status'),
