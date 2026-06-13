@@ -731,6 +731,11 @@ EVENT_DAEMON_AMQP_EXCHANGE = 'dmoj-events'
 EVENT_DAEMON_SUBMISSION_KEY = '6Sdmkx^%pk@GsifDfXcwX*Y7LRF%RGT8vmFpSxFBT$fwS7trc8raWfN#CSfQuKApx&$B#Gh2L7p%W!Ww'
 EVENT_DAEMON_CONTEST_KEY = '&w7hB-.9WnY2Jj^Qm+|?o6a<!}_2Wiw+?(_Yccqq{uR;:kWQP+3R<r(ICc|4^dDeEuJE{*D;Gg@K(4K>'
 EVENT_DAEMON_RUN_KEY = 'R#kP9$mQ!xZ5vLw@7nG3cYdE2hJ8tU6bA4fS0iO1pW&rKqXeM'
+EVENT_DAEMON_GENSOL_KEY = 'G#nS0l$kP3y!xZ7vLw@9nH4cYdF5hJ2tU8bA6fQ1iO0pW&rKqM'
+
+GENSOL_WORKING_DIR = '/generate_testcase/'
+GENSOL_MAX_ZIP_SIZE = 64 * 1024 * 1024
+GENSOL_OUTPUT_LIMIT = 12 * 1024 * 1024
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/

@@ -230,6 +230,7 @@ class ProblemDataView(TitleMixin, ProblemManagerMixin):
         else:
             context['testcase_limit'] = settings.ALOJ_TESTCASE_HARD_LIMIT
             context['testcase_soft_limit'] = settings.ALOJ_TESTCASE_SOFT_LIMIT
+
         return context
 
     def check_valid(self, data_form, cases_formset):

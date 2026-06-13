@@ -17,6 +17,7 @@ class DjangoHandler(ZlibPacketHandler):
         self.handlers = {
             'submission-request': self.on_submission,
             'run-request': self.on_run_request,
+            'gensol-request': self.on_gensol_request,
             'terminate-submission': self.on_termination,
             'disconnect-judge': self.on_disconnect_request,
             'disable-judge': self.on_disable_judge,
@@ -64,6 +65,21 @@ class DjangoHandler(ZlibPacketHandler):
         self.judges.judge_run(id, problem, language, source, judge_id, priority,
                              banned_judges, sample_input_files, custom_inputs)
         return {'name': 'run-received', 'submission-id': id}
+
+    def on_gensol_request(self, data):
+        id = data['submission-id']
+        problem = data['problem-id']
+        language = data['language']
+        source = data['source']
+        judge_id = data.get('judge-id')
+        priority = data['priority']
+        banned_judges = data.get('banned-judges', [])
+        gensol_step = data['gensol-step']
+        if not self.judges.check_priority(priority):
+            return {'name': 'bad-request'}
+        self.judges.judge_gensol(id, problem, language, source, judge_id, priority,
+                                 banned_judges, gensol_step)
+        return {'name': 'gensol-received', 'submission-id': id}
 
     def on_termination(self, data):
         return {'name': 'submission-received', 'judge-aborted': self.judges.abort(data['submission-id'])}
