@@ -28,17 +28,23 @@ The system will run your program N times (once per testcase).
 Each time, the program receives a SINGLE INTEGER T via stdin (1-based testcase index: 1, 2, 3, ..., N).
 Your program must output EXACTLY ONE valid test input to stdout, then exit.
 
+=== SUBTASK-BASED GENERATION ===
+If the problem defines subtasks with different constraints:
+- Distribute testcase indices T across subtasks in increasing difficulty order.
+  For example, with 4 subtasks and N~20: T=1-3 for subtask 1, T=4-8 for subtask 2, T=9-14 for subtask 3, T=15+ for subtask 4.
+- For each subtask, generate inputs at or near the MAXIMUM allowed constraints of that subtask.
+- If a subtask has special properties (e.g., "all elements are equal", "tree is a chain"), the generated input MUST satisfy those properties.
+- Use T as seed for randomization within each subtask's constraint range.
+
+If the problem has NO subtasks, generate all testcases at the maximum overall constraints with random variation.
+
 === CRITICAL RULES ===
 1. Read exactly one integer T from stdin. This is the testcase index, NOT the number of testcases.
 2. Use T as the random seed so each testcase is different but reproducible.
 3. Output EXACTLY ONE test input following the problem's Input format. Do NOT output multiple testcases.
 4. Do NOT output any extra text, labels, comments, or blank lines beyond what the Input format requires.
-5. These are STANDARD testcases (for judging), NOT sample testcases. Generate challenging, full-constraint inputs:
-   - Use the MAXIMUM allowed values of constraints for most testcases (large N, large values, etc.).
-   - T=1: a small edge case (minimum constraints).
-   - T=2: another edge case (e.g., all same values, or boundary values).
-   - T>=3: random inputs at or near MAXIMUM constraints. Push limits.
-6. ALL generated values MUST satisfy EVERY constraint in the problem (value ranges, array sizes, graph properties, etc.).
+5. ALL generated values MUST satisfy EVERY constraint for the target subtask (value ranges, array sizes, graph properties, etc.).
+6. Push constraints to the MAXIMUM allowed values for each subtask. These are for judging, not samples.
 
 === CODE REQUIREMENTS ===
 - C++17. Use #include <bits/stdc++.h>.
