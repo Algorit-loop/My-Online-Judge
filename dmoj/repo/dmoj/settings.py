@@ -209,6 +209,7 @@ DISCORD_WEBHOOK = {
 SITE_FULL_URL = None  # ie 'https://oj.vnoi.info', please remove the last / if needed
 
 ACE_URL = '/static/vnoj/ace/1.4.14'
+CODEMIRROR6_URL = '/static/vnoj/codemirror6'
 SELECT2_JS_URL = '/static/vnoj/select2/4.0.3/js/select2.min.js'
 SELECT2_CSS_URL = '/static/vnoj/select2/4.0.3/css/select2.min.css'
 

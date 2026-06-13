@@ -159,7 +159,14 @@
             background: #fff; border-radius: 10px; border: 1px solid var(--bd);
         }
         .ide-editor { flex: 1; position: relative; min-height: 120px; }
-        .ide-editor .ace_editor { position: absolute; inset: 0; border-radius: 0 0 10px 10px; }
+        .ide-editor .cm-editor {
+            position: absolute; inset: 0; border-radius: 0 0 10px 10px;
+            font-size: 14px;
+        }
+        .ide-editor .cm-editor .cm-scroller { overflow: auto; }
+        .ide-editor .cm-editor .cm-content { font-family: var(--mono); }
+        .ide-editor .cm-editor .cm-gutters { font-family: var(--mono); border-right: 1px solid var(--bd); }
+        .ide-editor .cm-editor.cm-focused { outline: none; }
 
         /* === Bottom Panel === */
         .ide-bot {
@@ -321,7 +328,8 @@
         </script>
     {% endcompress %}
     {% if request.user.is_authenticated %}
-    <script src="{{ ACE_URL }}/ace.js" type="text/javascript"></script>
+    <script src="{{ CODEMIRROR6_URL }}/codemirror-ide.min.js" type="text/javascript"></script>
+    <script src="{{ CODEMIRROR6_URL }}/cm6-completions.js" type="text/javascript"></script>
     {% endif %}
     <script type="text/javascript">
     $(function() {
@@ -458,18 +466,132 @@
             SUBM = '{{ url("problem_submit", problem.code) }}',
             TK = '{{ csrf_token }}';
 
-        // === ACE Editor ===
-        var ed = ace.edit('ace-ed');
-        window._ed = ed;
-        ed.setTheme('ace/theme/{{ request.profile.resolved_ace_theme }}');
-        ed.getSession().setUseWrapMode(true);
-        ed.setShowPrintMargin(false);
-        ed.setFontSize(14);
+        // === CodeMirror 6 Editor ===
+        var CM = window.CM6;
+        var langCompartment = new CM.Compartment();
+        var themeCompartment = new CM.Compartment();
+
+        // Theme: classify ace_theme as light/dark
+        var ACE_THEME = '{{ request.profile.resolved_ace_theme }}';
+        var DARK_THEMES = [
+            'ambiance','chaos','clouds_midnight','cobalt','idle_fingers',
+            'kr_theme','merbivore','merbivore_soft','mono_industrial','monokai',
+            'pastel_on_dark','solarized_dark','terminal','tomorrow_night',
+            'tomorrow_night_blue','tomorrow_night_bright','tomorrow_night_eighties',
+            'twilight','vibrant_ink'
+        ];
+        var isDark = DARK_THEMES.indexOf(ACE_THEME) !== -1;
+        if (!ACE_THEME || ACE_THEME === 'None') {
+            isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        // Mapping data-ace → CM6 language
+        var CM_LANGS = {
+            'c_cpp': function() { return CM.cpp(); },
+            'python': function() { return CM.python(); },
+            'java': function() { return CM.java(); },
+            'javascript': function() { return CM.javascript(); },
+            'rust': function() { return CM.rust(); },
+            'php': function() { return CM.php(); },
+            'text': function() { return []; },
+            'plain_text': function() { return []; },
+            'pascal': function() { return CM.StreamLanguage.define(CM.legacyModes.pascal); },
+            'ruby': function() { return CM.StreamLanguage.define(CM.legacyModes.ruby); },
+            'perl': function() { return CM.StreamLanguage.define(CM.legacyModes.perl); },
+            'csharp': function() { return CM.StreamLanguage.define(CM.legacyModes.csharp); },
+            'haskell': function() { return CM.StreamLanguage.define(CM.legacyModes.haskell); },
+            'golang': function() { return CM.StreamLanguage.define(CM.legacyModes.go); },
+            'kotlin': function() { return CM.StreamLanguage.define(CM.legacyModes.kotlin); },
+            'scala': function() { return CM.StreamLanguage.define(CM.legacyModes.scala); },
+            'swift': function() { return CM.StreamLanguage.define(CM.legacyModes.swift); },
+            'lua': function() { return CM.StreamLanguage.define(CM.legacyModes.lua); },
+            'd': function() { return CM.StreamLanguage.define(CM.legacyModes.d); },
+            'dart': function() { return CM.StreamLanguage.define(CM.legacyModes.dart); },
+            'coffee': function() { return CM.StreamLanguage.define(CM.legacyModes.coffeeScript); },
+            'fortran': function() { return CM.StreamLanguage.define(CM.legacyModes.fortran); },
+            'scheme': function() { return CM.StreamLanguage.define(CM.legacyModes.scheme); },
+            'groovy': function() { return CM.StreamLanguage.define(CM.legacyModes.groovy); },
+            'ocaml': function() { return CM.StreamLanguage.define(CM.legacyModes.oCaml); },
+            'fsharp': function() { return CM.StreamLanguage.define(CM.legacyModes.fSharp); },
+            'vbscript': function() { return CM.StreamLanguage.define(CM.legacyModes.vb); },
+            'assembly_x86': function() { return CM.StreamLanguage.define(CM.legacyModes.gas); },
+            'objectivec': function() { return CM.StreamLanguage.define(CM.legacyModes.objectiveC); },
+            'tcl': function() { return CM.StreamLanguage.define(CM.legacyModes.tcl); },
+            'cobol': function() { return CM.StreamLanguage.define(CM.legacyModes.cobol); },
+            'lisp': function() { return CM.StreamLanguage.define(CM.legacyModes.commonLisp); }
+        };
+
+        // Change listeners (adapter pattern)
+        var changeCallbacks = [];
+
+        // Build extensions
+        var extensions = [
+            CM.lineNumbers(),
+            CM.highlightActiveLineGutter(),
+            CM.highlightActiveLine(),
+            CM.drawSelection(),
+            CM.dropCursor(),
+            CM.indentOnInput(),
+            CM.bracketMatching(),
+            CM.closeBrackets(),
+            CM.foldGutter(),
+            CM.highlightSelectionMatches(),
+            CM.history(),
+            CM.syntaxHighlighting(CM.defaultHighlightStyle, {fallback: true}),
+            CM.EditorView.lineWrapping,
+            CM.keymap.of([
+                ...CM.closeBracketsKeymap,
+                ...CM.defaultKeymap,
+                ...CM.searchKeymap,
+                ...CM.historyKeymap,
+                ...CM.foldKeymap,
+                ...CM.completionKeymap,
+                CM.indentWithTab
+            ]),
+            CM.autocompletion({
+                override: [window.CM6_completionSource],
+                activateOnTyping: true
+            }),
+            themeCompartment.of(isDark ? CM.oneDark : []),
+            langCompartment.of([]),
+            CM.EditorView.updateListener.of(function(update) {
+                if (update.docChanged) {
+                    for (var i = 0; i < changeCallbacks.length; i++) changeCallbacks[i]();
+                }
+            })
+        ];
+
+        var editorView = new CM.EditorView({
+            state: CM.EditorState.create({ doc: '', extensions: extensions }),
+            parent: document.getElementById('ace-ed')
+        });
+
+        // Adapter: keeps ed.getValue/setValue/on interface for code below
+        var ed = {
+            getValue: function() { return editorView.state.doc.toString(); },
+            setValue: function(code, cursor) {
+                editorView.dispatch({
+                    changes: {from: 0, to: editorView.state.doc.length, insert: code || ''}
+                });
+                if (cursor === -1) {
+                    editorView.dispatch({selection: {anchor: 0}});
+                }
+            },
+            on: function(event, handler) {
+                if (event === 'change') changeCallbacks.push(handler);
+            }
+        };
+        window._ed = { resize: function() { editorView.requestMeasure(); } };
+
         var $L = $('#ide-lang');
         function lid() { return $L.val(); }
         function setMode() {
             var m = $L.find(':selected').data('ace');
-            if (m) ed.getSession().setMode('ace/mode/' + m);
+            var factory = CM_LANGS[m];
+            editorView.dispatch({
+                effects: langCompartment.reconfigure(factory ? factory() : [])
+            });
+            if (window.CM6_updateLang) window.CM6_updateLang(m);
         }
 
         // === localStorage Draft ===
