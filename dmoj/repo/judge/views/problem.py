@@ -447,6 +447,7 @@ class ProblemDetail(ProblemMixin, SolvedProblemMixin, ProblemSubmitMixin, Commen
         context['meta_description'] = self.object.summary or metadata[0]
         context['og_image'] = self.object.og_image or metadata[1]
         context['ACE_URL'] = settings.ACE_URL
+        context['CODEMIRROR6_URL'] = settings.CODEMIRROR6_URL
 
         # IDE limits
         context['IDE_MAX_CUSTOM_TESTCASES'] = getattr(settings, 'DMOJ_IDE_MAX_CUSTOM_TESTCASES', 5)
