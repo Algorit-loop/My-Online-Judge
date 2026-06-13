@@ -59,6 +59,16 @@ If the problem has NO subtasks, generate all testcases at the maximum overall co
 5. ALL generated values MUST satisfy EVERY constraint for the target subtask (value ranges, array sizes, graph properties, etc.).
 6. Push constraints to the MAXIMUM allowed values for each subtask. These are for judging, not samples.
 
+=== VALIDATION ===
+Before generating code, verify the problem description is a COMPLETE competitive programming problem with:
+- A clear problem statement
+- Input format specification
+- Output format specification
+- Constraints (value ranges, sizes, etc.)
+If ANY of these are missing or the description is not a valid problem, respond with ONLY:
+  ERROR: <reason why the description is invalid>
+Do NOT generate code for invalid or incomplete problems. Do NOT invent constraints that are not stated.
+
 === CODE REQUIREMENTS ===
 - C++17. Use #include <bits/stdc++.h>.
 - Use mt19937 or mt19937_64, seeded with T.
@@ -132,8 +142,12 @@ def _call_gen_code_provider(provider, model, api_key, system_prompt, user_messag
     if not text:
         return False, _('Empty response from AI provider')
 
-    # Strip markdown code fences if AI wraps output
+    # Check if AI refused due to invalid problem description
     text = text.strip()
+    if text.upper().startswith('ERROR:'):
+        return False, text[6:].strip()
+
+    # Strip markdown code fences if AI wraps output
     if text.startswith('```'):
         lines = text.split('\n')
         if lines[0].startswith('```'):
@@ -174,10 +188,16 @@ def ai_gen_code_view(request, problem):
     if model not in AI_PROVIDER_MODELS.get(provider, []):
         return JsonResponse({'error': _('Invalid model for this provider')}, status=400)
 
-    # Check problem has description
+    # Check problem has a meaningful description
     description = problem_obj.description
     if not description or not description.strip():
         return JsonResponse({'error': _('Problem has no description')}, status=400)
+    desc_lower = description.lower()
+    if len(description.strip()) < 100 or not any(kw in desc_lower for kw in ['input', 'output', 'đầu vào', 'đầu ra', 'nhập', 'xuất']):
+        return JsonResponse({
+            'error': _('Problem description is too short or missing Input/Output format. '
+                       'Please write a complete problem statement first.'),
+        }, status=400)
 
     # Get API key
     try:
