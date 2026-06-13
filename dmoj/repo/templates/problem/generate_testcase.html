@@ -531,7 +531,7 @@
         fetch(AI_GEN_URL, {
             method: 'POST', credentials: 'same-origin',
             headers: {'Content-Type':'application/json', 'X-CSRFToken': CSRF_TOKEN},
-            body: JSON.stringify({provider: provider, model: model}),
+            body: JSON.stringify({provider: provider, model: model, num_cases: parseInt(document.getElementById('gt-num-cases').value) || 20}),
         })
         .then(function(r) { return r.json().then(function(d) { return {s:r.status, d:d}; }); })
         .then(function(res) {

@@ -29,12 +29,25 @@ Each time, the program receives a SINGLE INTEGER T via stdin (1-based testcase i
 Your program must output EXACTLY ONE valid test input to stdout, then exit.
 
 === SUBTASK-BASED GENERATION ===
-If the problem defines subtasks with different constraints:
-- Distribute testcase indices T across subtasks in increasing difficulty order.
-  For example, with 4 subtasks and N~20: T=1-3 for subtask 1, T=4-8 for subtask 2, T=9-14 for subtask 3, T=15+ for subtask 4.
+The total number of testcases is N (you do NOT know N, but assume N ~ {num_cases}).
+If the problem defines subtasks with score percentages, you MUST distribute testcases proportionally by score.
+
+Example: 4 subtasks with scores 10%, 30%, 30%, 30% and N=20:
+  - Subtask 1 (10%) -> 2 testcases: T=1..2
+  - Subtask 2 (30%) -> 6 testcases: T=3..8
+  - Subtask 3 (30%) -> 6 testcases: T=9..14
+  - Subtask 4 (30%) -> 6 testcases: T=15..20
+
+Implementation pattern — compute subtask boundaries from percentages:
+  const int N_TOTAL = {num_cases};
+  // scores[] = percentage of each subtask from problem description
+  // Compute prefix-sum boundaries, then: if (T <= boundary[0]) subtask 1; else if (T <= boundary[1]) subtask 2; ...
+
+Rules:
 - For each subtask, generate inputs at or near the MAXIMUM allowed constraints of that subtask.
 - If a subtask has special properties (e.g., "all elements are equal", "tree is a chain"), the generated input MUST satisfy those properties.
-- Use T as seed for randomization within each subtask's constraint range.
+- Each testcase within a subtask should be different (use T as random seed).
+- The last (hardest) subtask range extends to cover any remaining T values beyond N_TOTAL.
 
 If the problem has NO subtasks, generate all testcases at the maximum overall constraints with random variation.
 
@@ -56,9 +69,9 @@ If the problem has NO subtasks, generate all testcases at the maximum overall co
 {problem_description}"""
 
 
-def _get_gen_code_prompt(problem_description):
+def _get_gen_code_prompt(problem_description, num_cases=20):
     template = AIPromptTemplate.get_prompt('ai_gen_code', _DEFAULT_GEN_CODE_PROMPT)
-    return template.format(problem_description=problem_description)
+    return template.format(problem_description=problem_description, num_cases=num_cases)
 
 
 def _build_gen_code_payload(provider, model, system_prompt, user_message):
@@ -149,6 +162,9 @@ def ai_gen_code_view(request, problem):
 
     provider = body.get('provider', '').strip()
     model = body.get('model', '').strip()
+    num_cases = body.get('num_cases', 20)
+    if not isinstance(num_cases, int) or num_cases < 1 or num_cases > 50:
+        num_cases = 20
 
     # Validate provider
     if provider not in AI_PROVIDER_MODELS:
@@ -178,7 +194,7 @@ def ai_gen_code_view(request, problem):
         return JsonResponse({'error': _('Failed to decrypt API key')}, status=500)
 
     # Build prompt
-    system_prompt = _get_gen_code_prompt(description)
+    system_prompt = _get_gen_code_prompt(description, num_cases)
     user_message = 'Generate the C++ generator program for this problem. Return ONLY the source code.'
 
     try:
