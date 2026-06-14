@@ -14,6 +14,7 @@ from judge.models.profile import Badge, Organization, OrganizationMonthlyUsage, 
 from judge.models.ai_code_review import AICodeReview
 from judge.models.ai_prompt import AIPromptTemplate
 from judge.models.api_key import AIAPIKey, AIAPIKeyTestLog
+from judge.models.gensol_job import GensolJob
 from judge.models.run_submission import RunSubmission
 from judge.models.runtime import Judge, Language, RuntimeVersion
 from judge.models.submission import SUBMISSION_RESULT, Submission, SubmissionSource, SubmissionTestCase

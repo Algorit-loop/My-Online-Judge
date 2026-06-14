@@ -1,0 +1,618 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block js_media %}
+<script type="text/javascript" src="{{ ACE_URL }}/ace.js"></script>
+{% endblock %}
+
+{% block media %}
+<style>
+    .gt-container { max-width: 1060px; margin: 0 auto; }
+
+    .gt-section {
+        background: #f9f9f9; border: 1px solid #ddd;
+        border-radius: 6px; padding: 1.5em; margin-bottom: 1.5em;
+    }
+    .gt-section h3 {
+        margin-top: 0; color: #333;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 0.5em; margin-bottom: 1em;
+    }
+
+    .gt-row { margin-bottom: 1.2em; }
+    .gt-row label { display: block; font-weight: bold; margin-bottom: 0.4em; }
+    .gt-row select, .gt-row input[type="number"] {
+        padding: 0.4em 0.6em; font-size: 1em;
+        border: 1px solid #ccc; border-radius: 4px;
+    }
+    .gt-row select { width: 100%; max-width: 380px; }
+    .gt-row input[type="number"] { width: 90px; }
+    .gt-row .gt-help { color: #666; font-size: 0.85em; margin-top: 0.3em; }
+
+    /* ACE editors */
+    #ace_generator { width: 100%; height: 500px; border: 1px solid #ccc; border-radius: 4px; background: #f5f5f5; }
+    #ace_solution  { width: 100%; height: 400px; border: 1px solid #ccc; border-radius: 4px; }
+
+    .gt-io-note {
+        background: #fff8e1; border-left: 4px solid #f0ad4e;
+        padding: 0.6em 1em; border-radius: 0 4px 4px 0;
+        margin-bottom: 1em; font-size: 0.92em; color: #555;
+    }
+
+    /* Buttons */
+    .gt-btn { border: none; padding: 0.6em 2em; font-size: 1.05em; border-radius: 4px; cursor: pointer; }
+    .gt-btn:disabled { background: #999 !important; cursor: not-allowed; }
+    .gt-btn-success { background: #00a65a; color: #fff; }
+    .gt-btn-success:hover:not(:disabled) { background: #008d4c; }
+    .gt-btn-back {
+        background: #6c757d; color: #fff; border: none; padding: 0.5em 1.2em; font-size: 0.95em;
+        border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block;
+    }
+    .gt-btn-back:hover { background: #545b62; color: #fff; text-decoration: none; }
+    .gt-btn-ai { background: #8e44ad; color: #fff; font-size: 0.95em; padding: 0.4em 1em; border: none; border-radius: 4px; cursor: pointer; }
+    .gt-btn-ai:hover:not(:disabled) { background: #7d3c98; }
+    .gt-btn-secondary { background: #6c757d; color: #fff; font-size: 0.9em; padding: 0.4em 1em; border: none; border-radius: 4px; cursor: pointer; }
+    .gt-btn-secondary:hover:not(:disabled) { background: #545b62; }
+    .gt-btn-primary { background: #3c8dbc; color: #fff; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; padding: 0.6em 1.5em; }
+    .gt-btn-primary:hover { background: #2a6d94; color: #fff; text-decoration: none; }
+
+    /* Error / success */
+    .gt-error {
+        display: none; background: #fdd; border: 1px solid #c00;
+        border-radius: 4px; padding: 0.8em 1em; color: #900; margin-top: 1em;
+        white-space: pre-wrap; word-break: break-word;
+    }
+    .gt-success-msg {
+        display: none; background: #dfd; border: 1px solid #090;
+        border-radius: 4px; padding: 0.8em 1em; color: #060; margin-top: 1em;
+        font-weight: 600;
+    }
+
+    /* Stepper */
+    .gt-stepper { list-style: none; padding: 0; margin: 1.5em 0 0.5em 0; }
+    .gt-stepper li {
+        display: flex; align-items: flex-start; gap: 0.8em;
+        padding: 0.6em 0; border-left: 3px solid #ddd;
+        margin-left: 0.8em; padding-left: 1.2em;
+        position: relative; transition: all 0.3s;
+    }
+    .gt-stepper li.done   { border-left-color: #00a65a; }
+    .gt-stepper li.active { border-left-color: #3c8dbc; }
+    .gt-stepper li.error  { border-left-color: #e74c3c; }
+
+    .gt-step-icon {
+        width: 28px; height: 28px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8em; flex-shrink: 0;
+        background: #eee; color: #999;
+        position: relative; left: -2.05em;
+        margin-right: -1.2em;
+        transition: all 0.3s;
+    }
+    .gt-stepper li.done .gt-step-icon   { background: #00a65a; color: #fff; }
+    .gt-stepper li.active .gt-step-icon { background: #3c8dbc; color: #fff; }
+    .gt-stepper li.error .gt-step-icon  { background: #e74c3c; color: #fff; }
+
+    .gt-step-text { flex: 1; }
+    .gt-step-label { font-weight: 600; font-size: 0.95em; }
+    .gt-step-detail { font-size: 0.82em; color: #777; margin-top: 0.15em; }
+
+    .gt-step-bar {
+        height: 6px; background: #e0e0e0; border-radius: 3px;
+        margin-top: 0.4em; overflow: hidden; display: none;
+    }
+    .gt-step-bar .bar {
+        height: 100%; background: #3c8dbc; border-radius: 3px;
+        transition: width 0.3s;
+    }
+    .gt-stepper li.active .gt-step-bar { display: block; }
+
+    /* Error log box */
+    .gt-error-log {
+        display: none; background: #2d2d2d; color: #f8f8f2;
+        font-family: 'Courier New', monospace; font-size: 0.82em;
+        padding: 0.8em 1em; border-radius: 4px; margin-top: 0.8em;
+        max-height: 250px; overflow-y: auto; white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    /* AI selector inline */
+    .gt-ai-selector {
+        display: none; margin-top: 0.5em; padding: 0.6em 0.8em;
+        background: #f3e8f9; border: 1px solid #d5b8e8; border-radius: 4px;
+    }
+    .gt-ai-row { display: flex; gap: 0.5em; align-items: center; flex-wrap: wrap; }
+    .gt-ai-msg { font-size: 0.85em; margin-top: 0.3em; }
+    .gt-ai-msg.error { color: #c00; }
+    .gt-ai-msg a { color: #3c8dbc; }
+
+    /* Top nav */
+    .gt-top-nav {
+        display: flex; align-items: center; gap: 0.8em;
+        margin-bottom: 0.5em; flex-wrap: wrap;
+    }
+
+    /* Progress actions */
+    .gt-progress-actions {
+        margin-top: 1em; gap: 0.8em; align-items: center; flex-wrap: wrap;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="gt-container">
+    <div class="gt-top-nav">
+        <a href="{{ url('problem_data', problem.code) }}" class="gt-btn-back">
+            <i class="fa fa-arrow-left"></i> {{ _('Back to Test Data') }}
+        </a>
+    </div>
+
+    {# ── Configuration ── #}
+    <div class="gt-section">
+        <h3><i class="fa fa-cog"></i> {{ _('Configuration') }}</h3>
+        <div style="display: flex; gap: 2em; flex-wrap: wrap;">
+            <div class="gt-row">
+                <label for="gt-num-cases">{{ _('Number of test cases') }}</label>
+                <input type="number" id="gt-num-cases" value="{{ saved_num_cases }}" min="1" max="50">
+                <p class="gt-help">{{ _('Between 1 and 50.') }}</p>
+            </div>
+            <div class="gt-row">
+                <label for="gt-sol-lang">{{ _('Solution Language') }}</label>
+                <select id="gt-sol-lang" style="min-width: 250px;">
+                    {% for key, name in languages %}
+                        <option value="{{ key }}"
+                            {% if saved_solution_language %}
+                                {% if key == saved_solution_language %}selected{% endif %}
+                            {% else %}
+                                {% if key == 'CPP17' %}selected{% endif %}
+                            {% endif %}
+                        >{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    {# ── Solution Code ── #}
+    <div class="gt-section">
+        <h3><i class="fa fa-code"></i> {{ _('Solution Code') }}</h3>
+        <div class="gt-io-note">
+            <i class="fa fa-info-circle"></i>
+            {{ _('Your solution must use') }} <strong>{{ _('standard input / standard output') }}</strong>
+            {{ _('(stdin/stdout). Do not use file I/O.') }}
+        </div>
+        <div id="ace_solution"></div>
+    </div>
+
+    {# ── Generator Code ── #}
+    <div class="gt-section">
+        <h3>
+            <i class="fa fa-cogs"></i> {{ _('Generator Code') }} (C++)
+            <button type="button" id="ai-gen-code-btn" class="gt-btn gt-btn-ai" style="margin-left: 1em; font-size: 0.85em;">
+                <i class="fa fa-magic"></i> {{ _('Generate Code with AI') }}
+            </button>
+            <span id="ai-gen-loading" style="display:none; font-size: 0.85em; color: #8e44ad; margin-left: 0.5em;">
+                <i class="fa fa-spinner fa-spin"></i> {{ _('AI is generating...') }}
+            </span>
+        </h3>
+        <div id="ai-gen-selector" class="gt-ai-selector">
+            <div class="gt-ai-row">
+                <select id="ai-gen-provider"></select>
+                <select id="ai-gen-model"></select>
+                <button type="button" id="ai-gen-confirm-btn" class="gt-btn gt-btn-ai" style="font-size:0.85em; padding:0.3em 0.8em;">{{ _('Generate') }}</button>
+                <button type="button" id="ai-gen-cancel-btn" class="gt-btn gt-btn-secondary" style="padding:0.3em 0.6em;">{{ _('Cancel') }}</button>
+            </div>
+            <div id="ai-gen-no-key" class="gt-ai-msg" style="display:none;">
+                {{ _('No verified AI API key found.') }}
+                <a href="{{ url('api_key_page') }}">{{ _('Add one in Settings > AI API Keys.') }}</a>
+            </div>
+            <div id="ai-gen-error" class="gt-ai-msg error" style="display:none;"></div>
+        </div>
+        <p class="gt-help" style="margin-bottom: 0.5em;">
+            {{ _('The generator reads a testcase index (integer, 1-based) from stdin and outputs ONE test input to stdout.') }}
+        </p>
+        <div id="ace_generator"></div>
+    </div>
+
+    {# ── Generate button ── #}
+    <div style="margin-bottom: 1.5em;">
+        <button type="button" id="gt-start-btn" class="gt-btn gt-btn-success" style="font-size: 1.1em; padding: 0.7em 2.5em;">
+            <i class="fa fa-play"></i> {{ _('Generate Testcases') }}
+        </button>
+    </div>
+    <div id="gt-form-error" class="gt-error"></div>
+
+    {# ── Progress (always in DOM, shown/hidden via JS) ── #}
+    <div id="gt-progress-section" class="gt-section" style="display: none;">
+        <h3><i class="fa fa-tasks"></i> {{ _('Progress') }}</h3>
+        <ul class="gt-stepper" id="gt-stepper">
+            <li id="gt-step-cg" data-step="compile-generator">
+                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <div class="gt-step-text">
+                    <div class="gt-step-label">{{ _('Compile generator') }}</div>
+                    <div class="gt-step-detail"></div>
+                </div>
+            </li>
+            <li id="gt-step-rg" data-step="run-generator">
+                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <div class="gt-step-text">
+                    <div class="gt-step-label">{{ _('Generate input files') }}</div>
+                    <div class="gt-step-detail"></div>
+                    <div class="gt-step-bar"><div class="bar" style="width:0%"></div></div>
+                </div>
+            </li>
+            <li id="gt-step-cs" data-step="compile-solution">
+                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <div class="gt-step-text">
+                    <div class="gt-step-label">{{ _('Compile solution') }}</div>
+                    <div class="gt-step-detail"></div>
+                </div>
+            </li>
+            <li id="gt-step-rs" data-step="run-solution">
+                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <div class="gt-step-text">
+                    <div class="gt-step-label">{{ _('Generate output files') }}</div>
+                    <div class="gt-step-detail"></div>
+                    <div class="gt-step-bar"><div class="bar" style="width:0%"></div></div>
+                </div>
+            </li>
+            <li id="gt-step-up" data-step="uploading">
+                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <div class="gt-step-text">
+                    <div class="gt-step-label">{{ _('Upload & import testcases') }}</div>
+                    <div class="gt-step-detail"></div>
+                </div>
+            </li>
+        </ul>
+
+        <div id="gt-done-msg" class="gt-success-msg"></div>
+        <div id="gt-error-msg" class="gt-error"></div>
+        <div id="gt-error-log" class="gt-error-log"></div>
+
+        <div id="gt-progress-actions" class="gt-progress-actions" style="display: none;">
+            <a href="{{ url('problem_data', problem.code) }}" class="gt-btn-primary">
+                <i class="fa fa-arrow-right"></i> {{ _('View Test Data') }}
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    /* ── Config ── */
+    var AI_MODELS      = {{ provider_models_json|safe }};
+    var AI_GEN_URL     = "{{ url('ai_gen_code', problem.code) }}";
+    var GENSOL_START   = "{{ url('gensol_start', problem.code) }}";
+    var KEYS_URL       = "{{ url('api_key_list') }}";
+    var CSRF_TOKEN     = "{{ csrf_token }}";
+    var PROVIDER_NAMES = {openai:'OpenAI', gemini:'Google Gemini', claude:'Anthropic Claude', deepseek:'DeepSeek'};
+
+    var SAVED_GENERATOR = {{ saved_generator_source|safe }};
+    var SAVED_SOLUTION  = {{ saved_solution_source|safe }};
+
+    var gensolState = {
+        jobId: {{ gensol_job.id if gensol_job else 'null' }},
+        idSecret: '{{ gensol_job.id_secret if gensol_job else '' }}',
+        status: '{{ gensol_job.status if gensol_job else '' }}',
+        numCases: {{ gensol_job.num_cases if gensol_job else 0 }},
+        currentStep: '{{ gensol_job.current_step if gensol_job else '' }}',
+        currentTestcase: {{ gensol_job.current_testcase if gensol_job else 0 }},
+    };
+
+    /* ── ACE Editors ── */
+    var aceSolution = ace.edit('ace_solution');
+    aceSolution.setTheme('ace/theme/tomorrow');
+    aceSolution.getSession().setMode('ace/mode/c_cpp');
+    aceSolution.getSession().setUseWrapMode(true);
+    aceSolution.setFontSize(14);
+    aceSolution.setShowPrintMargin(false);
+
+    var aceGenerator = ace.edit('ace_generator');
+    aceGenerator.setTheme('ace/theme/tomorrow');
+    aceGenerator.getSession().setMode('ace/mode/c_cpp');
+    aceGenerator.getSession().setUseWrapMode(true);
+    aceGenerator.setFontSize(14);
+    aceGenerator.setShowPrintMargin(false);
+    aceGenerator.setReadOnly(true);
+
+    /* ── Restore saved code from last job ── */
+    if (SAVED_SOLUTION) aceSolution.getSession().setValue(SAVED_SOLUTION);
+    if (SAVED_GENERATOR) aceGenerator.getSession().setValue(SAVED_GENERATOR);
+
+    /* ── Helpers ── */
+    function showError(id, msg) { var el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
+    function hideError(id) { document.getElementById(id).style.display = 'none'; }
+
+    function showProgress() {
+        document.getElementById('gt-progress-section').style.display = '';
+    }
+
+    /* ── Stepper ── */
+    var STEP_ORDER = ['compile-generator', 'run-generator', 'compile-solution', 'run-solution', 'uploading'];
+    var STEP_IDS = {
+        'compile-generator':'gt-step-cg', 'run-generator':'gt-step-rg',
+        'compile-solution':'gt-step-cs', 'run-solution':'gt-step-rs', 'uploading':'gt-step-up',
+    };
+
+    function setStepState(stepType, state, detail, progress) {
+        var li = document.getElementById(STEP_IDS[stepType]);
+        if (!li) return;
+        li.className = state;
+        var icon = li.querySelector('.gt-step-icon');
+        if (state === 'done') icon.innerHTML = '<i class="fa fa-check"></i>';
+        else if (state === 'active') icon.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+        else if (state === 'error') icon.innerHTML = '<i class="fa fa-times"></i>';
+        else icon.innerHTML = '<i class="fa fa-circle-o"></i>';
+        if (detail !== undefined) li.querySelector('.gt-step-detail').textContent = detail;
+        var bar = li.querySelector('.gt-step-bar .bar');
+        if (bar && progress !== undefined) bar.style.width = progress + '%';
+    }
+
+    function markAllBeforeDone(currentStep) {
+        var idx = STEP_ORDER.indexOf(currentStep);
+        for (var i = 0; i < idx; i++) setStepState(STEP_ORDER[i], 'done', '');
+    }
+
+    function resetStepper() {
+        STEP_ORDER.forEach(function(s) { setStepState(s, '', '', 0); });
+        ['gt-done-msg','gt-error-msg','gt-error-log'].forEach(function(id) {
+            document.getElementById(id).style.display = 'none';
+        });
+        document.getElementById('gt-progress-actions').style.display = 'none';
+        document.getElementById('gt-start-btn').disabled = true;
+    }
+
+    function mapStep(step) {
+        if (step === 'generator') return 'run-generator';
+        if (step === 'solution') return 'run-solution';
+        return step;
+    }
+
+    function showStepperDone() {
+        STEP_ORDER.forEach(function(s) { setStepState(s, 'done', ''); });
+        var el = document.getElementById('gt-done-msg');
+        el.textContent = '{{ _("Test cases generated successfully!") }}';
+        el.style.display = 'block';
+        document.getElementById('gt-progress-actions').style.display = 'flex';
+        document.getElementById('gt-start-btn').disabled = false;
+    }
+
+    function showStepperError(msg, log) {
+        var el = document.getElementById('gt-error-msg');
+        el.textContent = msg;
+        el.style.display = 'block';
+        if (log) {
+            var logEl = document.getElementById('gt-error-log');
+            logEl.textContent = log;
+            logEl.style.display = 'block';
+        }
+        document.getElementById('gt-progress-actions').style.display = 'flex';
+        document.getElementById('gt-start-btn').disabled = false;
+    }
+
+    /* ── wsevent subscription ── */
+    function subscribeEvents(idSecret) {
+        if (!window.event_dispatcher) return;
+        event_dispatcher.auto_reconnect = true;
+        event_dispatcher.on('gensol_' + idSecret, function(data) {
+            if (data.type === 'test-case') {
+                var current = data.current_testcase || gensolState.currentTestcase;
+                gensolState.currentTestcase = current;
+                var step = mapStep(gensolState.currentStep);
+                markAllBeforeDone(step);
+                var pct = gensolState.numCases > 0 ? Math.round(current / gensolState.numCases * 100) : 0;
+                setStepState(step, 'active', current + '/' + gensolState.numCases, pct);
+            } else if (data.type === 'step-change') {
+                gensolState.currentStep = data.step;
+                gensolState.currentTestcase = 0;
+                var ns = mapStep(data.step);
+                markAllBeforeDone(ns);
+                setStepState(ns, 'active', '{{ _("Starting...") }}');
+            } else if (data.type === 'processing') {
+                var cs = gensolState.currentStep === 'generator' ? 'compile-generator' : 'compile-solution';
+                markAllBeforeDone(cs);
+                setStepState(cs, 'active', '{{ _("Compiling...") }}');
+            } else if (data.type === 'done') {
+                showStepperDone();
+            } else if (data.type === 'error') {
+                var es = mapStep(gensolState.currentStep);
+                markAllBeforeDone(es);
+                setStepState(es, 'error', '');
+                showStepperError(data.message || '{{ _("Unknown error") }}');
+            } else if (data.type === 'compile-error') {
+                var ce = gensolState.currentStep === 'generator' ? 'compile-generator' : 'compile-solution';
+                markAllBeforeDone(ce);
+                setStepState(ce, 'error', '{{ _("Compile error") }}');
+                showStepperError('{{ _("Compile error") }}', (data.log || '').substring(0, 2000));
+            } else if (data.type === 'internal-error') {
+                showStepperError('{{ _("Internal error") }}: ' + (data.message || ''));
+            } else if (data.type === 'aborted') {
+                showStepperError('{{ _("Job was terminated") }}');
+            }
+        });
+    }
+
+    /* ── Restore state on page load ── */
+    if (gensolState.jobId) {
+        var s = gensolState.status;
+        if (s === 'GENERATING_INPUT' || s === 'GENERATING_OUTPUT' || s === 'PENDING' || s === 'UPLOADING') {
+            showProgress();
+            resetStepper();
+            var as = mapStep(gensolState.currentStep);
+            markAllBeforeDone(as);
+            var p = gensolState.numCases > 0 ? Math.round(gensolState.currentTestcase / gensolState.numCases * 100) : 0;
+            setStepState(as, 'active', gensolState.currentTestcase + '/' + gensolState.numCases, p);
+            subscribeEvents(gensolState.idSecret);
+        } else if (s === 'DONE') {
+            showProgress();
+            showStepperDone();
+        } else if (s === 'ERROR') {
+            showProgress();
+            showStepperError('{{ gensol_job.error_message if gensol_job else "" }}');
+        }
+    }
+
+    /* ═══════════════════════════════════════
+       AI Generate Code
+       ═══════════════════════════════════════ */
+    var aiKeysLoaded = false, aiVerifiedProviders = {};
+
+    function loadAIKeys(cb) {
+        if (aiKeysLoaded) { cb(); return; }
+        fetch(KEYS_URL, {credentials:'same-origin'})
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            (resp.keys || []).forEach(function(k) {
+                if (k.status === 'verified') aiVerifiedProviders[k.provider] = k;
+            });
+            aiKeysLoaded = true; cb();
+        }).catch(function() { cb(); });
+    }
+
+    function populateProviders() {
+        var pSel = document.getElementById('ai-gen-provider');
+        var mSel = document.getElementById('ai-gen-model');
+        pSel.innerHTML = '';
+        var provs = Object.keys(aiVerifiedProviders);
+        if (!provs.length) {
+            document.getElementById('ai-gen-no-key').style.display = 'block';
+            pSel.style.display = 'none'; mSel.style.display = 'none';
+            document.getElementById('ai-gen-confirm-btn').style.display = 'none';
+            return;
+        }
+        document.getElementById('ai-gen-no-key').style.display = 'none';
+        pSel.style.display = ''; mSel.style.display = '';
+        document.getElementById('ai-gen-confirm-btn').style.display = '';
+        provs.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p; opt.textContent = PROVIDER_NAMES[p] || p;
+            pSel.appendChild(opt);
+        });
+        updateModels();
+    }
+
+    function updateModels() {
+        var mSel = document.getElementById('ai-gen-model');
+        mSel.innerHTML = '';
+        var models = AI_MODELS[document.getElementById('ai-gen-provider').value] || [];
+        models.forEach(function(m) {
+            var opt = document.createElement('option');
+            opt.value = m; opt.textContent = m;
+            mSel.appendChild(opt);
+        });
+    }
+
+    document.getElementById('ai-gen-provider').addEventListener('change', updateModels);
+
+    document.getElementById('ai-gen-code-btn').addEventListener('click', function() {
+        var sel = document.getElementById('ai-gen-selector');
+        if (sel.style.display === 'block') { sel.style.display = 'none'; return; }
+        sel.style.display = 'block';
+        document.getElementById('ai-gen-error').style.display = 'none';
+        loadAIKeys(populateProviders);
+    });
+
+    document.getElementById('ai-gen-cancel-btn').addEventListener('click', function() {
+        document.getElementById('ai-gen-selector').style.display = 'none';
+    });
+
+    document.getElementById('ai-gen-confirm-btn').addEventListener('click', function() {
+        var provider = document.getElementById('ai-gen-provider').value;
+        var model = document.getElementById('ai-gen-model').value;
+        if (!provider || !model) return;
+        var btn = this;
+        var loadEl = document.getElementById('ai-gen-loading');
+        var errEl = document.getElementById('ai-gen-error');
+        btn.disabled = true; loadEl.style.display = 'inline'; errEl.style.display = 'none';
+
+        fetch(AI_GEN_URL, {
+            method: 'POST', credentials: 'same-origin',
+            headers: {'Content-Type':'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({provider: provider, model: model, num_cases: parseInt(document.getElementById('gt-num-cases').value) || 20}),
+        })
+        .then(function(r) { return r.json().then(function(d) { return {s:r.status, d:d}; }); })
+        .then(function(res) {
+            btn.disabled = false; loadEl.style.display = 'none';
+            if (res.s !== 200 || res.d.error) {
+                errEl.textContent = res.d.error || 'Unknown error';
+                errEl.style.display = 'block';
+                return;
+            }
+            aceGenerator.getSession().setValue(res.d.code);
+            document.getElementById('ai-gen-selector').style.display = 'none';
+        })
+        .catch(function(err) {
+            btn.disabled = false; loadEl.style.display = 'none';
+            errEl.textContent = 'Network error: ' + err.message;
+            errEl.style.display = 'block';
+        });
+    });
+
+    /* ═══════════════════════════════════════
+       Start generation
+       ═══════════════════════════════════════ */
+    function startGeneration(confirmOverwrite) {
+        hideError('gt-form-error');
+        var genSource = aceGenerator.getSession().getValue().trim();
+        var solSource = aceSolution.getSession().getValue().trim();
+        var solLang = document.getElementById('gt-sol-lang').value;
+        var numCases = parseInt(document.getElementById('gt-num-cases').value) || 0;
+
+        if (!genSource) { showError('gt-form-error', '{{ _("Generator code is required.") }}'); return; }
+        if (!solSource) { showError('gt-form-error', '{{ _("Solution code is required.") }}'); return; }
+        if (numCases < 1 || numCases > 50) { showError('gt-form-error', '{{ _("Number of cases must be 1-50.") }}'); return; }
+
+        var btn = document.getElementById('gt-start-btn');
+        btn.disabled = true;
+
+        fetch(GENSOL_START, {
+            method: 'POST', credentials: 'same-origin',
+            headers: {'Content-Type':'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({
+                generator_source: genSource, solution_source: solSource,
+                generator_language: 'CPP17', solution_language: solLang,
+                num_cases: numCases, confirm_overwrite: confirmOverwrite,
+            }),
+        })
+        .then(function(r) { return r.json().then(function(d) { return {s:r.status, d:d}; }); })
+        .then(function(res) {
+            if (res.s !== 200 || res.d.error) {
+                btn.disabled = false;
+                var msg = res.d.error || 'Unknown error';
+                if (msg === 'confirm_overwrite_required') {
+                    if (confirm('{{ _("Problem already has testcases. They will be deleted and replaced. Continue?") }}')) {
+                        startGeneration(true);
+                    }
+                    return;
+                }
+                showError('gt-form-error', msg);
+                return;
+            }
+
+            gensolState.jobId = res.d.job_id;
+            gensolState.idSecret = res.d.id_secret;
+            gensolState.numCases = numCases;
+            gensolState.currentStep = 'generator';
+            gensolState.currentTestcase = 0;
+            gensolState.status = 'GENERATING_INPUT';
+
+            showProgress();
+            resetStepper();
+            setStepState('compile-generator', 'active', '{{ _("Waiting for judge...") }}');
+            subscribeEvents(res.d.id_secret);
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            showError('gt-form-error', 'Network error: ' + err.message);
+        });
+    }
+
+    document.getElementById('gt-start-btn').addEventListener('click', function() {
+        startGeneration(false);
+    });
+})();
+</script>
+{% endblock %}

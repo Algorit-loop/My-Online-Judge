@@ -13,6 +13,7 @@ from judge.admin.profile import ProfileAdmin, UserAdmin
 from judge.admin.ai_api_key import AIAPIKeyAdmin, AIAPIKeyTestLogAdmin
 from judge.admin.ai_code_review import AICodeReviewAdmin
 from judge.admin.ai_prompt import AIPromptTemplateAdmin
+from judge.admin.gensol_job import GensolJobAdmin
 from judge.admin.run_submission import RunSubmissionAdmin
 from judge.admin.runtime import JudgeAdmin, LanguageAdmin
 from judge.admin.submission import SubmissionAdmin
@@ -23,6 +24,7 @@ from judge.models import Badge, BlogPost, BlogPostTag, Comment, CommentLock, Con
     ContestTag, Judge, Language, License, MiscConfig, NavigationBar, Organization, \
     OrganizationRequest, Problem, ProblemGroup, ProblemType, Profile, RunSubmission, Submission, Tag, \
     TagGroup, TagProblem, Ticket
+from judge.models.gensol_job import GensolJob
 from judge.models.api_key import AIAPIKey, AIAPIKeyTestLog
 from judge.models.ai_code_review import AICodeReview
 from judge.models.ai_prompt import AIPromptTemplate
@@ -49,6 +51,7 @@ admin.site.register(Problem, ProblemAdmin)
 admin.site.register(ProblemGroup, ProblemGroupAdmin)
 admin.site.register(ProblemType, ProblemTypeAdmin)
 admin.site.register(Profile, ProfileAdmin)
+admin.site.register(GensolJob, GensolJobAdmin)
 admin.site.register(RunSubmission, RunSubmissionAdmin)
 admin.site.register(Submission, SubmissionAdmin)
 admin.site.register(Ticket, TicketAdmin)

@@ -48,6 +48,7 @@ services:
       - cache:/cache/
       - ./media/:/media/
       - ./problems/:/problems/
+      - ./generate_testcase/:/generate_testcase/
       - ./repo/:/site/
     working_dir: /site/
     env_file: [environment/mysql.env, environment/site.env]
@@ -80,6 +81,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./problems/:/problems/
+      - ./generate_testcase/:/generate_testcase/
       - ./repo/:/site/
     working_dir: /site/
     env_file: [environment/mysql.env, environment/site.env]

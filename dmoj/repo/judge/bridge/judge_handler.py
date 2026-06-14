@@ -17,6 +17,7 @@ from judge.models import Judge, Language, LanguageLimit, Problem, Profile, \
     RuntimeVersion, Submission, SubmissionTestCase
 from judge.models.problem import ProblemTestcaseResultAccess
 from judge.models.run_submission import RunSubmission
+from judge.models.gensol_job import GensolJob
 from judge.utils.url import get_absolute_submission_file_url
 
 logger = logging.getLogger('judge.bridge')
@@ -33,6 +34,11 @@ SubmissionData = namedtuple(
 RunSubmissionData = namedtuple(
     'RunSubmissionData',
     'time memory user_id file_only file_size_limit sample_input_files',
+)
+
+GensolData = namedtuple(
+    'GensolData',
+    'time memory user_id',
 )
 
 
@@ -64,6 +70,8 @@ class JudgeHandler(ZlibPacketHandler):
             'handshake': self.on_handshake,
         }
         self._is_run = False
+        self._is_gensol = False
+        self._gensol_step = None
         self._run_test_cases = []
         self._run_num_samples = 0
         self._working = False
@@ -107,7 +115,14 @@ class JudgeHandler(ZlibPacketHandler):
 
         json_log.info(self._make_json_log(action='disconnect', info='judge disconnected'))
         if self._working:
-            if self._is_run:
+            if self._is_gensol:
+                GensolJob.objects.filter(id=self._working).update(
+                    status='ERROR', error_message='Judge disconnected')
+                event.post('gensol_%s' % GensolJob.get_id_secret(self._working),
+                           {'type': 'internal-error', 'message': 'Judge disconnected'})
+                json_log.error(self._make_json_log(sub=self._working, action='close',
+                                                   info='IE due to shutdown on gensol grading'))
+            elif self._is_run:
                 RunSubmission.objects.filter(id=self._working).update(status='IE', result='IE', error='')
                 json_log.error(self._make_json_log(sub=self._working, action='close',
                                                    info='IE due to shutdown on run grading'))
@@ -310,6 +325,37 @@ class JudgeHandler(ZlibPacketHandler):
             },
         })
 
+    def gensol_submit(self, id, problem, language, source, gensol_step):
+        data = self.get_related_gensol_data(id, gensol_step)
+        if data is None:
+            raise RuntimeError('GensolJob vanished: %s' % id)
+        self._working = id
+        self._is_run = False
+        self._is_gensol = True
+        self._gensol_step = gensol_step
+        self._no_response_job = threading.Timer(20, self._kill_if_no_response)
+        self._no_response_job.start()
+        self.send({
+            'name': 'submission-request',
+            'submission-id': id,
+            'problem-id': problem,
+            'language': language,
+            'source': source,
+            'time-limit': data.time,
+            'memory-limit': data.memory,
+            'short-circuit': False,
+            'scoring-mode': 'partial_testcase',
+            'meta': {
+                'pretests-only': False,
+                'in-contest': None,
+                'attempt-no': 1,
+                'user': data.user_id,
+                'file-only': False,
+                'file-size-limit': None,
+                'gensol-output-limit': getattr(settings, 'GENSOL_OUTPUT_LIMIT', 12 * 1024 * 1024),
+            },
+        })
+
     def get_related_run_data(self, run_id):
         _ensure_connection()
         try:
@@ -345,6 +391,33 @@ class JudgeHandler(ZlibPacketHandler):
             sample_input_files=sample_files,
         )
 
+    def get_related_gensol_data(self, job_id, step):
+        _ensure_connection()
+        try:
+            pid, time_limit, memory_limit, uid = (
+                GensolJob.objects.filter(id=job_id)
+                .values_list('problem__id', 'problem__time_limit', 'problem__memory_limit',
+                             'user__id')).get()
+        except GensolJob.DoesNotExist:
+            logger.error('GensolJob vanished: %s', job_id)
+            return None
+
+        # Check language limits for the specific language used in this step
+        lang_field = 'generator_language__id' if step == 'generator' else 'solution_language__id'
+        try:
+            lid = GensolJob.objects.filter(id=job_id).values_list(lang_field, flat=True).get()
+            time_limit, memory_limit = (
+                LanguageLimit.objects.filter(problem__id=pid, language__id=lid)
+                .values_list('time_limit', 'memory_limit').get())
+        except (GensolJob.DoesNotExist, LanguageLimit.DoesNotExist):
+            pass
+
+        return GensolData(
+            time=time_limit,
+            memory=memory_limit,
+            user_id=uid,
+        )
+
     def _kill_if_no_response(self):
         logger.error('Judge failed to acknowledge submission: %s: %s', self.name, self._working)
         self.close()
@@ -357,7 +430,11 @@ class JudgeHandler(ZlibPacketHandler):
         _ensure_connection()
 
         id = packet['submission-id']
-        if self._is_run:
+        if self._is_gensol:
+            GensolJob.objects.filter(id=id).update(judged_on=self.judge)
+            event.post('gensol_%s' % GensolJob.get_id_secret(id), {'type': 'processing'})
+            json_log.info(self._make_json_log(packet, action='gensol-processing'))
+        elif self._is_run:
             RunSubmission.objects.filter(id=id).update(status='P', judged_on=self.judge)
             event.post('run_%s' % RunSubmission.get_id_secret(id), {'type': 'processing'})
             json_log.info(self._make_json_log(packet, action='run-processing'))
@@ -372,7 +449,9 @@ class JudgeHandler(ZlibPacketHandler):
 
     def on_submission_wrong_acknowledge(self, packet, expected, got):
         json_log.error(self._make_json_log(packet, action='processing', info='wrong-acknowledge', expected=expected))
-        if self._is_run:
+        if self._is_gensol:
+            GensolJob.objects.filter(id=expected).update(status='ERROR', error_message='Wrong acknowledgement')
+        elif self._is_run:
             RunSubmission.objects.filter(id=expected).update(status='IE', result='IE', error=None)
         else:
             Submission.objects.filter(id=expected).update(status='IE', result='IE', error=None)
@@ -388,7 +467,7 @@ class JudgeHandler(ZlibPacketHandler):
         if self._no_response_job:
             self._no_response_job.cancel()
             self._no_response_job = None
-        # _is_run is already set by submit() or run_submit()
+        # _is_run / _is_gensol is already set by submit() / run_submit() / gensol_submit()
         self.on_submission_processing(packet)
 
     def abort(self):
@@ -421,7 +500,9 @@ class JudgeHandler(ZlibPacketHandler):
         json_log.exception(self._make_json_log(sub=self._working, info='packet processing exception'))
 
     def _submission_is_batch(self, id):
-        if self._is_run:
+        if self._is_gensol:
+            pass  # gensol doesn't track batch info
+        elif self._is_run:
             RunSubmission.objects.filter(id=id).update(batch=True)
         elif not Submission.objects.filter(id=id).update(batch=True):
             logger.warning('Unknown submission: %s', id)
@@ -467,7 +548,14 @@ class JudgeHandler(ZlibPacketHandler):
         logger.info('%s: Grading has begun on: %s', self.name, packet['submission-id'])
         self.batch_id = None
 
-        if self._is_run:
+        if self._is_gensol:
+            if GensolJob.objects.filter(id=packet['submission-id']).update(current_testcase=0):
+                event.post('gensol_%s' % GensolJob.get_id_secret(packet['submission-id']),
+                           {'type': 'grading-begin'})
+                json_log.info(self._make_json_log(packet, action='gensol-grading-begin'))
+            else:
+                logger.warning('Unknown gensol job: %s', packet['submission-id'])
+        elif self._is_run:
             if RunSubmission.objects.filter(id=packet['submission-id']).update(
                     status='G', current_testcase=1, batch=False, judged_date=timezone.now()):
                 self._run_test_cases = []
@@ -491,8 +579,14 @@ class JudgeHandler(ZlibPacketHandler):
     def on_grading_end(self, packet):
         logger.info('%s: Grading has ended on: %s', self.name, packet['submission-id'])
         is_run = self._is_run
+        is_gensol = self._is_gensol
+        gensol_step = self._gensol_step
         self._free_self(packet)
         self.batch_id = None
+
+        if is_gensol:
+            self._on_gensol_grading_end(packet, gensol_step)
+            return
 
         if is_run:
             self._on_run_grading_end(packet)
@@ -637,10 +731,34 @@ class JudgeHandler(ZlibPacketHandler):
             finish=True,
         ))
 
+    def _on_gensol_grading_end(self, packet, gensol_step):
+        """Handle grading-end for a GensolJob. Triggers next step or finalizes."""
+        from judge.utils.gensol import on_gensol_grading_end
+        job_id = packet['submission-id']
+        try:
+            on_gensol_grading_end(job_id, gensol_step)
+        except Exception:
+            logger.exception('Error in gensol grading end for job %s', job_id)
+            GensolJob.objects.filter(id=job_id).update(
+                status='ERROR', error_message='Internal error during gensol processing')
+            event.post('gensol_%s' % GensolJob.get_id_secret(job_id),
+                       {'type': 'internal-error', 'message': 'Internal error'})
+
     def on_compile_error(self, packet):
         logger.info('%s: Submission failed to compile: %s', self.name, packet['submission-id'])
         is_run = self._is_run
+        is_gensol = self._is_gensol
         self._free_self(packet)
+
+        if is_gensol:
+            id = packet['submission-id']
+            GensolJob.objects.filter(id=id).update(
+                status='ERROR', error_message='Compile error: %s' % packet['log'][:2000])
+            event.post('gensol_%s' % GensolJob.get_id_secret(id),
+                       {'type': 'compile-error', 'log': packet['log']})
+            json_log.info(self._make_json_log(packet, action='gensol-compile-error', log=packet['log'],
+                                              finish=True))
+            return
 
         if is_run:
             RunSubmission.objects.filter(id=packet['submission-id']).update(
@@ -664,7 +782,10 @@ class JudgeHandler(ZlibPacketHandler):
     def on_compile_message(self, packet):
         logger.info('%s: Submission generated compiler messages: %s', self.name, packet['submission-id'])
 
-        if self._is_run:
+        if self._is_gensol:
+            # Gensol doesn't store compile messages, just log
+            json_log.info(self._make_json_log(packet, action='gensol-compile-message', log=packet['log']))
+        elif self._is_run:
             RunSubmission.objects.filter(id=packet['submission-id']).update(error=packet['log'])
             event.post('run_%s' % RunSubmission.get_id_secret(packet['submission-id']),
                        {'type': 'compile-message'})
@@ -684,9 +805,19 @@ class JudgeHandler(ZlibPacketHandler):
         except ValueError:
             logger.exception('Judge %s failed while handling submission %s', self.name, packet['submission-id'])
         is_run = self._is_run
+        is_gensol = self._is_gensol
         self._free_self(packet)
 
         id = packet['submission-id']
+
+        if is_gensol:
+            GensolJob.objects.filter(id=id).update(
+                status='ERROR', error_message='Internal error: %s' % packet['message'][:2000])
+            event.post('gensol_%s' % GensolJob.get_id_secret(id),
+                       {'type': 'internal-error', 'message': packet['message']})
+            json_log.info(self._make_json_log(packet, action='gensol-internal-error', message=packet['message'],
+                                              finish=True))
+            return
 
         if is_run:
             RunSubmission.objects.filter(id=id).update(status='IE', result='IE', error=packet['message'])
@@ -708,7 +839,16 @@ class JudgeHandler(ZlibPacketHandler):
     def on_submission_terminated(self, packet):
         logger.info('%s: Submission aborted: %s', self.name, packet['submission-id'])
         is_run = self._is_run
+        is_gensol = self._is_gensol
         self._free_self(packet)
+
+        if is_gensol:
+            GensolJob.objects.filter(id=packet['submission-id']).update(
+                status='ERROR', error_message='Job was terminated')
+            event.post('gensol_%s' % GensolJob.get_id_secret(packet['submission-id']),
+                       {'type': 'aborted'})
+            json_log.info(self._make_json_log(packet, action='gensol-aborted', finish=True))
+            return
 
         if is_run:
             RunSubmission.objects.filter(id=packet['submission-id']).update(status='AB', result='AB', points=0)
@@ -747,6 +887,10 @@ class JudgeHandler(ZlibPacketHandler):
         id = packet['submission-id']
         updates = packet['cases']
         max_position = max(map(itemgetter('position'), updates))
+
+        if self._is_gensol:
+            self._on_gensol_test_case(id, updates, max_position)
+            return
 
         if self._is_run:
             RunSubmission.objects.filter(id=id).update(current_testcase=max_position + 1)
@@ -848,6 +992,36 @@ class JudgeHandler(ZlibPacketHandler):
         if do_post:
             event.post('sub_%s' % Submission.get_id_secret(id), {'type': 'test-case'})
             self._post_update_submission(id, state='test-case')
+
+    def _on_gensol_test_case(self, job_id, updates, max_position):
+        """Handle test case results for a gensol job."""
+        from judge.utils.gensol import save_testcase_output, on_gensol_error
+
+        # Positions are 1-indexed, so max_position itself is the count of testcases completed.
+        GensolJob.objects.filter(id=job_id).update(current_testcase=max_position)
+
+        # Fatal error status flags: RTE(2), TLE(4), MLE(8), IR(16), OLE(64)
+        FATAL_FLAGS = 2 | 4 | 8 | 16 | 64
+        STATUS_MAP = {4: 'TLE', 8: 'MLE', 64: 'OLE', 2: 'RTE', 16: 'IR'}
+
+        for result in updates:
+            status = result['status']
+            if status & FATAL_FLAGS:
+                # Determine the specific error
+                for flag, code in STATUS_MAP.items():
+                    if status & flag:
+                        tc_status = code
+                        break
+                on_gensol_error(job_id, result['position'], tc_status,
+                                result.get('feedback') or '')
+                return
+
+            save_testcase_output(job_id, self._gensol_step, result['position'], result['output'])
+
+        event.post('gensol_%s' % GensolJob.get_id_secret(job_id), {
+            'type': 'test-case',
+            'current_testcase': max_position,
+        })
 
     def on_malformed(self, packet):
         logger.error('%s: Malformed packet: %s', self.name, packet)

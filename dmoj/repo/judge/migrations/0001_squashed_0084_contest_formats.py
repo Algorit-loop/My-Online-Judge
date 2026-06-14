@@ -707,7 +707,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='contest',
             name='rate_exclude',
-            field=models.ManyToManyField(blank=True, related_name='_contest_rate_exclude_+', to='judge.Profile', verbose_name='exclude from ratings'),
+            field=models.ManyToManyField(blank=True, related_name='rate_exclude+', to='judge.profile', verbose_name='exclude from ratings'),
         ),
         migrations.AddField(
             model_name='contest',
