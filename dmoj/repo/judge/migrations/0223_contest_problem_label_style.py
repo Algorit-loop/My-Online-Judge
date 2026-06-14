@@ -14,6 +14,7 @@ class Migration(migrations.Migration):
             field=models.CharField(
                 choices=[('numeric', 'Numeric (1, 2, 3, \u2026)'), ('alphabetic', 'Alphabetic (A, B, C, \u2026)')],
                 default='numeric',
+                help_text='How to label problems in the ranking table. ICPC format always uses Alphabetic regardless of this setting.',
                 max_length=10,
                 verbose_name='problem label style',
             ),

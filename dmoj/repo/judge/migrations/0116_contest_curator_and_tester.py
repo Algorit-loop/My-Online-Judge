@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='contest',
             name='organizers',
-            field=models.ManyToManyField(help_text='These users will be able to edit the contest.', related_name='_contest_authors_+', to='judge.Profile'),
+            field=models.ManyToManyField(help_text='These users will be able to edit the contest.', related_name='authors+', to='judge.profile'),
         ),
         migrations.RenameField(
             model_name='contest',
@@ -23,11 +23,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='contest',
             name='curators',
-            field=models.ManyToManyField(blank=True, help_text='These users will be able to edit the contest, but will not be listed as authors.', related_name='_contest_curators_+', to='judge.Profile'),
+            field=models.ManyToManyField(blank=True, help_text='These users will be able to edit the contest, but will not be listed as authors.', related_name='curators+', to='judge.profile'),
         ),
         migrations.AddField(
             model_name='contest',
             name='testers',
-            field=models.ManyToManyField(blank=True, help_text='These users will be able to view the contest, but not edit it.', related_name='_contest_testers_+', to='judge.Profile'),
+            field=models.ManyToManyField(blank=True, help_text='These users will be able to view the contest, but not edit it.', related_name='testers+', to='judge.profile'),
         ),
     ]
