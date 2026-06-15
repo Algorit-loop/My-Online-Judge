@@ -158,12 +158,13 @@
             flex: 1; display: flex; flex-direction: column; overflow: hidden;
             background: #fff; border-radius: 10px; border: 1px solid var(--bd);
         }
-        .ide-editor { flex: 1; position: relative; min-height: 120px; }
+        .ide-editor { flex: 1; position: relative; min-height: 120px; overflow: hidden; }
+        #ace-ed { position: absolute; inset: 0; }
         .ide-editor .cm-editor {
-            position: absolute; inset: 0; border-radius: 0 0 10px 10px;
+            height: 100%; border-radius: 0 0 10px 10px;
             font-size: 14px;
         }
-        .ide-editor .cm-editor .cm-scroller { overflow: auto; }
+        .ide-editor .cm-editor .cm-scroller { overflow: auto !important; }
         .ide-editor .cm-editor .cm-content { font-family: var(--mono); }
         .ide-editor .cm-editor .cm-gutters { font-family: var(--mono); border-right: 1px solid var(--bd); }
         .ide-editor .cm-editor.cm-focused { outline: none; }
@@ -1057,7 +1058,7 @@
                     {% endif %}
                 {% endif %}
             </div>
-            <div class="ide-editor" style="position:relative">
+            <div class="ide-editor">
                 {% if no_judges %}
                 <div class="ide-login-overlay">
                     <i class="fa fa-exclamation-triangle"></i>

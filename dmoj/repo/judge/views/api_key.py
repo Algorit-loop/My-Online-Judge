@@ -254,7 +254,6 @@ def _test_openai(api_key, model):
     payload = json.dumps({
         'model': model,
         'input': _get_test_prompt(),
-        'max_output_tokens': 5,
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
     try:
@@ -279,7 +278,6 @@ def _test_gemini(api_key, model):
     }
     payload = json.dumps({
         'contents': [{'parts': [{'text': _get_test_prompt()}]}],
-        'generationConfig': {'maxOutputTokens': 5},
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
     try:
@@ -305,7 +303,7 @@ def _test_claude(api_key, model):
     headers.update(config.get('extra_headers', {}))
     payload = json.dumps({
         'model': model,
-        'max_tokens': 5,
+        'max_tokens': 128,
         'messages': [{'role': 'user', 'content': _get_test_prompt()}],
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
@@ -332,7 +330,6 @@ def _test_deepseek(api_key, model):
     payload = json.dumps({
         'model': model,
         'messages': [{'role': 'user', 'content': _get_test_prompt()}],
-        'max_tokens': 5,
     }).encode()
     req = urllib.request.Request(url, data=payload, headers=headers)
     try:

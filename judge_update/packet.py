@@ -191,31 +191,47 @@ class PacketManager:
             if not self._testcase_queue:
                 return
 
-            self._send_packet(
-                {
-                    'name': 'test-case-status',
-                    'submission-id': self.judge.current_submission.id,
-                    'cases': [
-                        {
-                            'position': position,
-                            'status': result.result_flag,
-                            'time': result.execution_time,
-                            'points': result.points,
-                            'total-points': result.total_points,
-                            'memory': result.max_memory,
-                            'output': result.output,
-                            'extended-feedback': result.extended_feedback,
-                            'feedback': result.feedback,
-                            'voluntary-context-switches': result.context_switches[0],
-                            'involuntary-context-switches': result.context_switches[1],
-                            'runtime-version': result.runtime_version,
-                        }
-                        for position, result in self._testcase_queue
-                    ],
-                }
-            )
+            # Send in batches to avoid exceeding bridge's MAX_ALLOWED_PACKET_SIZE (16MB).
+            # When output_prefix_length is large (e.g. gensol mode with 12MB limit),
+            # batching many test cases into one packet can easily exceed the limit.
+            BATCH_LIMIT = 15 * 1024 * 1024
+            while self._testcase_queue:
+                batch = []
+                batch_size = 0
+                while self._testcase_queue:
+                    position, result = self._testcase_queue[0]
+                    output = result.output
+                    item_size = len(output) + 512  # rough overhead per case
+                    # Always add at least 1 item; stop before adding if it would exceed limit
+                    if batch and batch_size + item_size > BATCH_LIMIT:
+                        break
+                    batch_size += item_size
+                    batch.append((position, result, output))
+                    self._testcase_queue.pop(0)
 
-            self._testcase_queue.clear()
+                self._send_packet(
+                    {
+                        'name': 'test-case-status',
+                        'submission-id': self.judge.current_submission.id,
+                        'cases': [
+                            {
+                                'position': position,
+                                'status': result.result_flag,
+                                'time': result.execution_time,
+                                'points': result.points,
+                                'total-points': result.total_points,
+                                'memory': result.max_memory,
+                                'output': output,
+                                'extended-feedback': result.extended_feedback,
+                                'feedback': result.feedback,
+                                'voluntary-context-switches': result.context_switches[0],
+                                'involuntary-context-switches': result.context_switches[1],
+                                'runtime-version': result.runtime_version,
+                            }
+                            for position, result, output in batch
+                        ],
+                    }
+                )
 
     def _periodically_flush_testcase_queue(self):
         while not self._closed:

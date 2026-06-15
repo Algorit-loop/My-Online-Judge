@@ -98,16 +98,19 @@ def _get_mime_type(filename):
 
 def _build_openai_payload(file_data_b64, mime_type, model, system_prompt):
     if mime_type == 'application/pdf':
-        input_content = [
+        content = [
             {'type': 'input_text', 'text': system_prompt},
             {'type': 'input_file', 'file_data': f'data:{mime_type};base64,{file_data_b64}'},
         ]
     else:
-        input_content = [
+        content = [
             {'type': 'input_text', 'text': system_prompt},
             {'type': 'input_image', 'image_url': f'data:{mime_type};base64,{file_data_b64}'},
         ]
-    return {'model': model, 'input': input_content}
+    return {
+        'model': model,
+        'input': [{'role': 'user', 'content': content}],
+    }
 
 
 def _build_gemini_payload(file_data_b64, mime_type, model, system_prompt):

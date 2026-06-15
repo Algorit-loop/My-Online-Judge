@@ -111,15 +111,17 @@ class JudgeHandler(ZlibPacketHandler):
         self.judges.remove(self)
         if self.name is not None:
             self._disconnected()
-        logger.info('Judge disconnected from: %s with name %s', self.client_address, self.name)
+        disconnect_reason = getattr(self, '_disconnect_reason', '') or 'Judge disconnected'
+        logger.info('Judge disconnected from: %s with name %s (reason: %s)', self.client_address, self.name,
+                    disconnect_reason)
 
-        json_log.info(self._make_json_log(action='disconnect', info='judge disconnected'))
+        json_log.info(self._make_json_log(action='disconnect', info=disconnect_reason))
         if self._working:
             if self._is_gensol:
                 GensolJob.objects.filter(id=self._working).update(
-                    status='ERROR', error_message='Judge disconnected')
+                    status='ERROR', error_message=disconnect_reason)
                 event.post('gensol_%s' % GensolJob.get_id_secret(self._working),
-                           {'type': 'internal-error', 'message': 'Judge disconnected'})
+                           {'type': 'internal-error', 'message': disconnect_reason})
                 json_log.error(self._make_json_log(sub=self._working, action='close',
                                                    info='IE due to shutdown on gensol grading'))
             elif self._is_run:

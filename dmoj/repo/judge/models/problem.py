@@ -34,7 +34,7 @@ def disallowed_characters_validator(text):
 
 
 class ProblemType(models.Model):
-    name = models.CharField(max_length=20, verbose_name=_('problem category ID'), unique=True)
+    name = models.CharField(max_length=40, verbose_name=_('problem category ID'), unique=True)
     full_name = models.CharField(max_length=100, verbose_name=_('problem category name'))
 
     def __str__(self):

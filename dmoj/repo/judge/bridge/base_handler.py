@@ -28,7 +28,9 @@ def proxy_list(human_readable):
 
 
 class Disconnect(Exception):
-    pass
+    def __init__(self, reason=''):
+        self.reason = reason
+        super().__init__(reason)
 
 
 # socketserver.BaseRequestHandler does all the handling in __init__,
@@ -72,7 +74,7 @@ class ZlibPacketHandler(metaclass=RequestHandlerMeta):
         if size > MAX_ALLOWED_PACKET_SIZE:
             logger.log(logging.WARNING if self._got_packet else logging.INFO,
                        'Disconnecting client due to too-large message size (%d bytes): %s', size, self.client_address)
-            raise Disconnect()
+            raise Disconnect('Packet too large: %d bytes (max %d)' % (size, MAX_ALLOWED_PACKET_SIZE))
 
         buffer = []
         remainder = size
@@ -170,7 +172,8 @@ class ZlibPacketHandler(metaclass=RequestHandlerMeta):
 
             while True:
                 self.read_sized_packet(self.read_size())
-        except Disconnect:
+        except Disconnect as e:
+            self._disconnect_reason = e.reason
             return
         except zlib.error:
             if self._got_packet:

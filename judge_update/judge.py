@@ -543,6 +543,13 @@ class JudgeWorker:
                 for _, case in flattened_cases:
                     case.output_prefix_length = run_output_limit
 
+        # Override output limits for gensol mode (generate testcase).
+        gensol_output_limit = self.submission.meta.get('gensol-output-limit', 0)
+        if gensol_output_limit > 0:
+            for _, case in flattened_cases:
+                case.output_prefix_length = gensol_output_limit
+                case.config['output_limit_length'] = gensol_output_limit
+
         case_number = 0
         is_short_circuiting = False
         is_short_circuiting_enabled = self.submission.short_circuit
