@@ -2,6 +2,85 @@
 {% load i18n %}
 
 {% block extrahead %}{{ block.super }}
+    <style>
+        .ai-tag-btn {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 6px 14px;
+            background: #417690;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .ai-tag-btn:hover { background: #205067; }
+        .ai-tag-btn i { margin-right: 5px; }
+
+        .ai-tag-panel {
+            display: none;
+            margin-top: 10px;
+            padding: 14px;
+            background: #f8f9fa;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        .ai-tag-panel .ai-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .ai-tag-panel label {
+            font-weight: bold;
+            min-width: 70px;
+            font-size: 0.85em;
+        }
+        .ai-tag-panel select {
+            padding: 5px 8px;
+            font-size: 0.85em;
+            min-width: 180px;
+        }
+        .ai-tag-generate-btn {
+            padding: 7px 18px;
+            background: #417690;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .ai-tag-generate-btn:hover { background: #205067; }
+        .ai-tag-generate-btn:disabled { background: #999; cursor: not-allowed; }
+
+        .ai-tag-spinner {
+            display: none;
+            color: #417690;
+            font-size: 0.85em;
+            margin-top: 8px;
+        }
+        .ai-tag-error {
+            display: none;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #fdd;
+            border: 1px solid #c00;
+            border-radius: 4px;
+            color: #900;
+            font-size: 0.85em;
+        }
+        .ai-tag-success {
+            display: none;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #dfd;
+            border: 1px solid #090;
+            border-radius: 4px;
+            color: #060;
+            font-size: 0.85em;
+        }
+    </style>
     <script>
         django.jQuery(function ($) {
             $('.submissions-link').appendTo('div#bottombar').show();
@@ -11,10 +90,7 @@
             if (params.get('ai_draft') === '1') {
                 var description = sessionStorage.getItem('ai_problem_description');
                 if (description) {
-                    // Set the hidden textarea value
                     $('#id_description').val(description);
-
-                    // Wait for Martor/Ace editor to initialize, then set its value
                     var attempts = 0;
                     var interval = setInterval(function() {
                         attempts++;
@@ -24,15 +100,145 @@
                                 editor.setValue(description, -1);
                                 clearInterval(interval);
                             }
-                        } catch (e) {
-                            // Ace editor not ready yet
-                        }
+                        } catch (e) {}
                         if (attempts > 50) clearInterval(interval);
                     }, 100);
-
                     sessionStorage.removeItem('ai_problem_description');
                 }
             }
+
+            {% if original %}
+            // === AI Tag Suggest ===
+            var PROVIDER_MODELS = {{ ai_provider_models_json|safe }};
+            var SUGGEST_URL = '{% url "admin:judge_problem_ai_suggest_tags" original.pk %}';
+            var PROVIDER_NAMES = {
+                'openai': 'OpenAI',
+                'gemini': 'Google Gemini',
+                'claude': 'Anthropic Claude',
+                'deepseek': 'DeepSeek'
+            };
+
+            var $typesRow = $('.form-row.field-types');
+            if ($typesRow.length) {
+                // Button
+                var $btn = $('<button type="button" class="ai-tag-btn">' +
+                    '<i class="fa fa-magic"></i> {% trans "Add tags with AI" %} / Th\u00eam d\u1ea1ng \u0111\u1ec1 v\u1edbi AI' +
+                    '</button>');
+
+                // Panel
+                var $panel = $('<div class="ai-tag-panel">' +
+                    '<div class="ai-row">' +
+                        '<label>{% trans "Provider" %}:</label>' +
+                        '<select id="ai-tag-provider"><option value="">-- {% trans "Select provider" %} --</option></select>' +
+                    '</div>' +
+                    '<div class="ai-row">' +
+                        '<label>{% trans "Model" %}:</label>' +
+                        '<select id="ai-tag-model"><option value="">-- {% trans "Select model" %} --</option></select>' +
+                    '</div>' +
+                    '<div class="ai-row">' +
+                        '<button type="button" class="ai-tag-generate-btn" id="ai-tag-submit">' +
+                            '<i class="fa fa-bolt"></i> {% trans "Predict" %} / D\u1ef1 \u0111o\u00e1n' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="ai-tag-spinner" id="ai-tag-spinner">' +
+                        '<i class="fa fa-spinner fa-spin"></i> {% trans "Processing... This may take up to 2 minutes." %}' +
+                    '</div>' +
+                    '<div class="ai-tag-error" id="ai-tag-error"></div>' +
+                    '<div class="ai-tag-success" id="ai-tag-success"></div>' +
+                '</div>');
+
+                $typesRow.append($btn);
+                $typesRow.append($panel);
+
+                // Populate providers
+                var $providerSelect = $panel.find('#ai-tag-provider');
+                var $modelSelect = $panel.find('#ai-tag-model');
+
+                Object.keys(PROVIDER_MODELS).forEach(function(key) {
+                    $providerSelect.append($('<option>').val(key).text(PROVIDER_NAMES[key] || key));
+                });
+
+                $providerSelect.on('change', function() {
+                    $modelSelect.html('<option value="">-- {% trans "Select model" %} --</option>');
+                    var models = PROVIDER_MODELS[this.value] || [];
+                    models.forEach(function(m) {
+                        $modelSelect.append($('<option>').val(m).text(m));
+                    });
+                });
+
+                // Toggle panel
+                $btn.on('click', function() {
+                    $panel.slideToggle(200);
+                });
+
+                // Submit
+                $panel.find('#ai-tag-submit').on('click', function() {
+                    var provider = $providerSelect.val();
+                    var model = $modelSelect.val();
+                    if (!provider || !model) {
+                        $panel.find('#ai-tag-error').text('{% trans "Please select a provider and model." %}').show();
+                        return;
+                    }
+
+                    var $submitBtn = $(this);
+                    var $spinner = $panel.find('#ai-tag-spinner');
+                    var $error = $panel.find('#ai-tag-error');
+                    var $success = $panel.find('#ai-tag-success');
+
+                    $submitBtn.prop('disabled', true);
+                    $error.hide();
+                    $success.hide();
+                    $spinner.show();
+
+                    var csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+
+                    fetch(SUGGEST_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({provider: provider, model: model})
+                    })
+                    .then(function(resp) {
+                        return resp.json().then(function(data) {
+                            return {status: resp.status, data: data};
+                        }, function() {
+                            return {status: resp.status, data: {error: '{% trans "Invalid response from server" %}'}};
+                        });
+                    })
+                    .then(function(result) {
+                        $spinner.hide();
+                        $submitBtn.prop('disabled', false);
+
+                        if (result.status !== 200 || result.data.error) {
+                            $error.text(result.data.error || '{% trans "Unknown error" %}').show();
+                            return;
+                        }
+
+                        // Apply tags to Select2
+                        var tags = result.data.tags;
+                        var pks = tags.map(function(t) { return t.pk.toString(); });
+                        var names = tags.map(function(t) { return t.name; });
+
+                        $('#id_types').val(pks).trigger('change');
+
+                        var $msg = $('<span>').append(
+                            $('<i class="fa fa-check">'),
+                            ' {% trans "AI suggested" %} ' + tags.length + ' tags: ',
+                            $('<strong>').text(names.join(', ')),
+                            '. {% trans "Remember to save the problem to apply changes." %}'
+                        );
+                        $success.empty().append($msg).show();
+                    })
+                    .catch(function(err) {
+                        $spinner.hide();
+                        $submitBtn.prop('disabled', false);
+                        $error.text('{% trans "Network error" %}: ' + err.message).show();
+                    });
+                });
+            }
+            {% endif %}
         });
     </script>
 {% endblock extrahead %}
