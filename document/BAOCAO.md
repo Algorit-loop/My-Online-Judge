@@ -1,208 +1,214 @@
-Có, Jack. Mình đã xem được repo public `Algorit-loop/My-Online-Judge`. Dựa trên source/docs hiện có, báo cáo nên viết theo hướng: **“Xây dựng và mở rộng hệ thống Online Judge dựa trên DMOJ/VNOJ, bổ sung IDE trực tuyến, AI và các cải tiến vận hành”**.
+# ĐỀ TÀI
 
-Repo hiện có cấu trúc chính gồm `dmoj`, `document`, `judge_update`, `.gitignore`, `README.md`; trong `dmoj` có các phần như `site`, `bridged`, `celery`, `wsevent`, `nginx/conf.d`, `docker-compose.yml`, đúng với hướng triển khai hệ thống Online Judge bằng Docker nhiều service. ([GitHub][1]) ([GitHub][2])
+**“Nghiên cứu, xây dựng và mở rộng hệ thống chấm bài lập trình trực tuyến BKDNOJ dựa trên nền tảng DMOJ/VNOJ, tích hợp IDE trực tuyến, trợ lý AI và cơ chế chống gian lận trong thi đấu”**
 
-## Tên đề tài nên dùng
-
-Mình đề xuất tên này:
-
-**“Xây dựng và phát triển hệ thống chấm bài lập trình trực tuyến Bách Khoa Đà Nẵng Online Judge”**
-
-Tên dài hơn, rõ tính kỹ thuật hơn:
-
-**“Nghiên cứu, xây dựng và mở rộng hệ thống chấm bài lập trình trực tuyến Bách Khoa Đà Nẵng Online Judge dựa trên nền tảng DMOJ/VNOJ”**
-
-Tên thứ hai hay hơn cho báo cáo vì thể hiện rõ: có nghiên cứu, có xây dựng, có kế thừa, có mở rộng.
+> Ghi chú dàn ý: Báo cáo được tổ chức theo cấu trúc đồ án tốt nghiệp gồm phần Mở đầu, 5 chương nội dung, phần Kết luận, Tài liệu tham khảo và Phụ lục. Mỗi mục bên dưới nêu *nội dung cần viết* và *bằng chứng/đối chiếu mã nguồn thực tế* để đảm bảo báo cáo bám sát hệ thống đã cài đặt.
 
 ---
 
-# Dàn ý báo cáo đề xuất
+# PHẦN ĐẦU (Front matter)
 
-## MỞ ĐẦU — 3 đến 5 trang
+Các thành phần đặt trước Chương 1, theo mẫu đồ án:
 
-Theo mẫu trường, phần mở đầu cần có: **mục đích thực hiện đề tài, mục tiêu đề tài, phạm vi và đối tượng nghiên cứu, phương pháp nghiên cứu, cấu trúc đồ án tốt nghiệp**. 
-
-Nên chia như sau:
-
-### 1. Lý do chọn đề tài
-
-Nói về nhu cầu học lập trình, luyện thuật toán, tổ chức contest, chấm bài tự động.
-
-Ý chính nên viết:
-
-* Việc học lập trình cần môi trường thực hành liên tục.
-* Chấm bài thủ công tốn thời gian và khó đảm bảo công bằng.
-* Online Judge giúp tự động hóa quá trình nộp bài, biên dịch, chạy test, đánh giá kết quả.
-* Các hệ thống như DMOJ/VNOJ đã mạnh, nhưng cần tùy biến cho môi trường sử dụng riêng.
-* Hệ thống BKDNOJ (Bach Khoa Da Nang Online Judge) đang được sử dụng nhưng còn nhiều hạn chế: giao diện cũ, không có IDE trực tuyến, không tích hợp AI hỗ trợ người học, khả năng mở rộng và tùy biến hạn chế.
-* BKDNOJ được xây dựng để khắc phục các hạn chế trên, phục vụ luyện tập, thi lập trình và mở rộng thêm AI/IDE.
-
-### 2. Mục tiêu đề tài
-
-Nên viết theo dạng rõ ràng:
-
-* Nghiên cứu kiến trúc hệ thống Online Judge.
-* Xây dựng hệ thống BKDNOJ dựa trên DMOJ/VNOJ.
-* Triển khai hệ thống bằng Docker Compose.
-* Cấu hình site server, bridge, judge server, WebSocket, Redis, database.
-* Bổ sung các tính năng mới như IDE trực tuyến, AI Code Review, AI Problem Creator, AI Generate Testcase, quản lý API key.
-* Kiểm thử hệ thống qua các luồng nộp bài, chạy thử, chấm bài và cập nhật kết quả realtime.
-
-### 3. Phạm vi đề tài
-
-Nên giới hạn để báo cáo không bị quá rộng:
-
-* Tập trung vào hệ thống web Online Judge.
-* Tập trung vào luồng problem, submission, contest, judge, IDE, AI.
-* Không đi quá sâu vào việc tự viết sandbox judge từ đầu.
-* Không tập trung vào mobile app.
-* AI Generate Testcase đã được implement (model GensolJob, view, bridge handler, admin) — đưa vào chương chức năng chính.
-
-### 4. Phương pháp nghiên cứu
-
-* Nghiên cứu tài liệu và source code DMOJ/VNOJ.
-* Phân tích kiến trúc hệ thống hiện có.
-* Thiết kế bổ sung chức năng mới.
-* Triển khai thử nghiệm bằng Docker.
-* Kiểm thử chức năng và đánh giá kết quả.
+* **Trang bìa, trang phụ bìa, nhiệm vụ đồ án, lời cam đoan, lời cảm ơn.**
+* **Tóm tắt (Abstract):** 1 trang tiếng Việt + 1 trang tiếng Anh, tóm tắt mục tiêu, phương pháp, kết quả chính và đóng góp.
+* **Mục lục, Danh mục hình vẽ, Danh mục bảng biểu.**
+* **Danh mục từ viết tắt:** OJ (Online Judge), IDE, AI/LLM, API, WS (WebSocket), DB, AC/WA/TLE/MLE/RTE/CE/IE/OLE, GenSol (Generate Solution/Testcase), Elo-MMR…
 
 ---
 
-# CHƯƠNG 1: TỔNG QUAN VỀ HỆ THỐNG ONLINE JUDGE — 8 đến 10 trang
+# MỞ ĐẦU — 3 đến 5 trang
 
-## 1.1. Tổng quan về Online Judge
+Phần mở đầu cần có đủ: **lý do chọn đề tài, mục tiêu, phạm vi và đối tượng nghiên cứu, phương pháp nghiên cứu, câu hỏi nghiên cứu và cấu trúc đồ án.**
 
-Giải thích:
+## 1. Lý do chọn đề tài
 
-* Online Judge là gì.
-* Quy trình cơ bản: người dùng nộp code → hệ thống biên dịch → chạy test → so sánh output → trả kết quả.
-* Các kết quả thường gặp: AC, WA, TLE, MLE, RTE, CE.
+* Việc học lập trình và rèn luyện thuật toán cần một môi trường thực hành **liên tục, tự động và công bằng**.
+* Chấm bài thủ công tốn thời gian, dễ sai sót và khó bảo đảm tính khách quan; Online Judge tự động hóa toàn bộ chu trình *nộp bài → biên dịch → chạy test → so khớp kết quả → trả điểm*.
+* Các nền tảng mã nguồn mở như DMOJ/VNOJ đã trưởng thành nhưng **chưa đáp ứng đầy đủ** một số nhu cầu thực tế: thiếu IDE trực tuyến để thử nghiệm nhanh, chưa có trợ lý AI hỗ trợ người học và người ra đề, thiếu cơ chế chống gian lận khi thi.
+* Hệ thống **BKDNOJ** được xây dựng dựa trên DMOJ/VNOJ nhằm khắc phục các hạn chế đó, phục vụ luyện tập, tổ chức kỳ thi và hỗ trợ giảng dạy.
 
-## 1.2. Vai trò của Online Judge
+## 2. Mục tiêu đề tài
 
-Nên viết 3 nhóm:
+* Nghiên cứu kiến trúc và cơ chế hoạt động của hệ thống Online Judge (DMOJ/VNOJ).
+* Triển khai hệ thống BKDNOJ nhiều dịch vụ bằng Docker Compose (site, bridge, judge, WebSocket, Redis, Celery, database).
+* Mở rộng các chức năng mới: **IDE trực tuyến**, **chế độ chấm điểm linh hoạt**, **AI Code Review / AI Problem Creator / AI Generate Testcase**, **quản lý API key mã hóa**, **chống gian lận Contest Focus Lock**, **hệ thống rating Elo-MMR**.
+* Kiểm thử, thực nghiệm và đánh giá hệ thống trên các luồng nộp bài, chạy thử, chấm điểm và cập nhật realtime.
 
-* Đối với sinh viên: luyện thuật toán, tự học, kiểm tra năng lực.
-* Đối với giảng viên: tạo bài tập, tổ chức contest, theo dõi kết quả.
-* Đối với tổ chức/CLB: tổ chức kỳ thi, ranking, quản lý người dùng.
+## 3. Phạm vi và đối tượng nghiên cứu
 
-## 1.3. Một số hệ thống tham khảo
+* **Đối tượng:** kiến trúc Online Judge mã nguồn mở, cơ chế judge/sandbox, hàng đợi tác vụ, giao tiếp realtime, tích hợp mô hình ngôn ngữ lớn (LLM).
+* **Phạm vi:** tập trung vào hệ thống web (problem, submission, contest, judge, IDE, AI, rating). Kế thừa và cấu hình sandbox của DMOJ judge thay vì viết lại từ đầu; không phát triển ứng dụng di động.
 
-Có thể đưa bảng:
+## 4. Phương pháp nghiên cứu
+
+* Nghiên cứu tài liệu và mã nguồn DMOJ/VNOJ; phân tích kiến trúc hệ thống hiện có.
+* Thiết kế và cài đặt bổ sung chức năng mới theo quy trình kỹ thuật phần mềm (phân tích yêu cầu → thiết kế → cài đặt → kiểm thử).
+* Triển khai thực nghiệm bằng Docker Compose; thu thập số liệu chức năng và hiệu năng để đánh giá.
+
+## 5. Câu hỏi nghiên cứu (Research Questions)
+
+* **RQ1:** Có thể mở rộng nền tảng DMOJ/VNOJ để bổ sung IDE trực tuyến và chấm điểm linh hoạt mà vẫn giữ tương thích với giao thức judge gốc không?
+* **RQ2:** Việc tích hợp trợ lý AI (review code, sinh đề, sinh testcase) có khả thi và hữu ích cho người học và người ra đề không?
+* **RQ3:** Cơ chế Contest Focus Lock kết hợp auto-ban có giúp giảm gian lận khi thi trên nền web không?
+* **RQ4:** Hệ thống có đáp ứng được yêu cầu phi chức năng (hiệu năng, realtime, bảo mật) ở quy mô luyện tập/thi nội bộ không?
+
+## 6. Cấu trúc đồ án
+
+* **Chương 1 — Tổng quan:** bối cảnh, các hệ thống liên quan, đóng góp của đề tài.
+* **Chương 2 — Cơ sở lý thuyết và công nghệ.**
+* **Chương 3 — Phân tích và thiết kế hệ thống.**
+* **Chương 4 — Xây dựng và triển khai hệ thống.**
+* **Chương 5 — Kiểm thử, thực nghiệm và đánh giá.**
+* **Kết luận và hướng phát triển.**
+
+---
+
+# CHƯƠNG 1: TỔNG QUAN — 8 đến 10 trang
+
+## 1.1. Bối cảnh và động lực
+
+### 1.1.1. Nhu cầu đào tạo lập trình và tổ chức thi đấu
+
+* Phong trào học lập trình, luyện thuật toán và thi đấu (ICPC, Olympic Tin học, các kỳ thi nội bộ) ngày càng phát triển.
+* Nhu cầu một nền tảng tự động hóa chấm bài, tổ chức contest và theo dõi tiến bộ của người học là thiết yếu đối với trường học và câu lạc bộ.
+
+### 1.1.2. Hạn chế của các nền tảng hiện có
+
+* Nền tảng thương mại (Codeforces, LeetCode, AtCoder): mạnh nhưng **đóng**, khó tùy biến cho môi trường nội bộ, khó kiểm soát dữ liệu.
+* Nền tảng mã nguồn mở (DMOJ/VNOJ): mở và mạnh nhưng **thiếu** IDE trực tuyến tích hợp, trợ lý AI, cơ chế chống gian lận hiện đại, và việc sinh testcase còn thủ công.
+* Đây chính là **khoảng trống** mà đề tài hướng tới lấp đầy.
+
+## 1.2. Các hệ thống liên quan
+
+### 1.2.1. Online Judge truyền thống
+
+Mô tả nguyên lý chung và so sánh các nền tảng tiêu biểu:
 
 | Hệ thống   | Đặc điểm                                 |
 | ---------- | ---------------------------------------- |
-| Codeforces | Contest mạnh, cộng đồng lớn              |
-| AtCoder    | Bài chuẩn, contest đều                   |
-| LeetCode   | IDE thân thiện, phù hợp luyện phỏng vấn  |
-| DMOJ       | Mã nguồn mở, kiến trúc judge riêng       |
-| VNOJ       | Fork từ DMOJ, phù hợp cộng đồng Việt Nam |
-| BKDNOJ       | Fork/tùy biến từ VNOJ, bổ sung AI và IDE |
+| Codeforces | Contest mạnh, cộng đồng lớn, hệ thống rating chuẩn |
+| AtCoder    | Bộ đề chuẩn, contest định kỳ              |
+| LeetCode   | IDE thân thiện, phù hợp luyện phỏng vấn   |
+| DMOJ       | Mã nguồn mở, kiến trúc judge/sandbox riêng |
+| VNOJ       | Fork từ DMOJ, bản địa hóa cho cộng đồng Việt Nam |
+| BKDNOJ     | Fork/tùy biến từ VNOJ, bổ sung IDE + AI + chống gian lận |
 
-## 1.4. Tổng quan DMOJ/VNOJ và lý do kế thừa
+### 1.2.2. Nền tảng mã nguồn mở DMOJ/VNOJ và lý do kế thừa
 
-Trong tài liệu repo, BKDNOJ được mô tả là fork từ VNOJ, kế thừa DMOJ/VNOJ và bổ sung IDE trực tuyến, AI đa nhà cung cấp, AI Code Review, AI Problem Creator, quản lý API key, contribution points và nhiều cấu hình tùy chỉnh. ([GitHub][3])
+* DMOJ là Online Judge mã nguồn mở với kiến trúc tách biệt **site ↔ bridge ↔ judge**, hỗ trợ sandbox (`cptbox`) và hơn 60 ngôn ngữ lập trình.
+* VNOJ kế thừa DMOJ, bản địa hóa và bổ sung tính năng cho cộng đồng Việt Nam.
+* BKDNOJ kế thừa DMOJ/VNOJ → **không viết lại từ số 0** mà nghiên cứu, triển khai, tùy biến và mở rộng một hệ thống lớn, tận dụng sandbox và giao thức judge đã được kiểm chứng.
 
-Phần này rất quan trọng vì giúp hội đồng hiểu: **bạn không viết lại toàn bộ từ số 0, mà nghiên cứu, triển khai, tùy biến và mở rộng một hệ thống lớn**.
+### 1.2.3. Định vị đề tài
 
-## 1.5. Bài toán đặt ra cho BKDNOJ
+Khác với các nền tảng nguồn mở gốc, BKDNOJ bổ sung đồng thời bốn nhóm mở rộng: IDE trực tuyến, trợ lý AI đa nhà cung cấp, chống gian lận thi đấu, và chấm điểm linh hoạt — tạo nên một nền tảng "luyện tập + thi đấu + hỗ trợ học tập" toàn diện hơn.
 
-Nên kết luận chương 1 bằng các vấn đề:
+## 1.3. Đóng góp của đề tài
 
-* Cần hệ thống chấm bài ổn định.
-* Cần giao diện dễ sử dụng hơn.
-* Cần IDE để chạy thử code trước khi submit.
-* Cần AI hỗ trợ người học và người ra đề.
-* Cần kiến trúc dễ triển khai, dễ mở rộng.
+### 1.3.1. Yêu cầu đặc thù
+
+* Cần giữ **tương thích ngược** với giao thức judge của DMOJ trong khi mở rộng tính năng.
+* Cần cơ chế **chạy thử nhanh** tách biệt khỏi luồng chấm chính thức.
+* Cần **bảo mật** khóa API của người dùng và dữ liệu cuộc thi.
+
+### 1.3.2. Các đóng góp chính
+
+1. **Chế độ chấm điểm linh hoạt (Scoring Mode):** 3 chế độ short circuit / partial by subtask / partial by testcase.
+2. **IDE trực tuyến** kiểu LeetCode dựa trên CodeMirror 6, với pipeline `run-request` độc lập.
+3. **Bộ trợ lý AI:** Code Review, Problem Creator, Generate Testcase (GenSol), hỗ trợ 4 nhà cung cấp (OpenAI/Gemini/Claude/DeepSeek).
+4. **Quản lý API key** theo người dùng, mã hóa bằng Fernet.
+5. **Contest Focus Lock** + cơ chế auto-ban chống gian lận.
+6. **Hệ thống rating Elo-MMR** và bảng xếp hạng.
+
+## 1.4. Bài toán đặt ra cho BKDNOJ
+
+Tổng hợp các vấn đề cần giải quyết: hệ thống chấm bài ổn định, giao diện dễ dùng, IDE chạy thử, trợ lý AI cho người học/người ra đề, chống gian lận, và kiến trúc dễ triển khai – dễ mở rộng.
 
 ---
 
-# CHƯƠNG 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ SỬ DỤNG — 10 đến 14 trang
+# CHƯƠNG 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ SỬ DỤNG — 12 đến 16 trang
 
-Chương này nên viết theo công nghệ thực tế trong repo.
+Chương này trình bày nền tảng lý thuyết của các thành phần cốt lõi, sau đó tổng hợp các công nghệ thực tế được dùng trong hệ thống (Python 3.11, Django 4.2+, uWSGI, Celery, MariaDB, Redis, Node.js WebSocket, jQuery, SCSS, ACE Editor, CodeMirror 6, Chart.js, MathJax, Docker, Nginx, giao thức TCP + Zlib và các nhà cung cấp AI).
 
-Theo tài liệu trong repo, stack chính gồm Python 3.11, Django 4.2+, uWSGI, Celery, MariaDB, Redis, Node.js WebSocket, jQuery, SCSS/SASS, ACE Editor, CodeMirror 6 (IDE mới), Chart.js, MathJax, Docker, Docker Compose, Nginx, TCP/IP Socket + Zlib và các AI provider. ([GitHub][3])
+## 2.1. Mô hình chấm bài trong hệ thống Online Judge
 
-## 2.1. Django và mô hình web backend
+### 2.1.1. Quy trình chấm tự động
 
-Nội dung:
+Trình bày nguyên lý: *người dùng nộp mã → biên dịch trong môi trường cô lập → chạy lần lượt từng testcase với giới hạn thời gian/bộ nhớ → so khớp output với đáp án (hoặc qua checker) → tổng hợp điểm và trạng thái*.
 
-* Django dùng để xây dựng web app chính.
-* Quản lý user, problem, contest, submission.
-* Kết nối database.
-* Xử lý view/template/admin.
+### 2.1.2. Các trạng thái và kết quả chấm
 
-## 2.2. Cơ sở dữ liệu MariaDB
+Trình bày tập trạng thái và kết quả (sẽ chi tiết hóa ở mục 3.4): QU/P/G/D và AC/WA/TLE/MLE/RTE/CE/IE/OLE; ý nghĩa của checker (so khớp tuyệt đối, bỏ qua khoảng trắng, checker tùy biến).
 
-Nội dung:
+### 2.1.3. Mô hình chấm điểm (scoring model)
 
-* Lưu user, profile, problem, contest, submission, testcase, AI key.
-* Dùng UTF8MB4 để hỗ trợ Unicode.
-* Dùng InnoDB cho quan hệ dữ liệu.
+Cơ sở lý thuyết cho ba chiến lược tính điểm — đây là nền tảng cho đóng góp "Scoring Mode" ở Chương 3:
 
-## 2.3. Redis và Celery
+* **All-or-nothing (short circuit):** dừng tại test sai đầu tiên, "được tất cả hoặc không gì".
+* **Partial theo subtask/batch (kiểu IOI):** mỗi subtask độc lập, một test sai làm subtask đó 0 điểm.
+* **Partial theo từng testcase:** cộng dồn điểm theo từng test đúng.
 
-Nội dung:
+## 2.2. Cô lập và bảo mật môi trường thực thi (Sandbox)
 
-* Redis dùng cho cache, session, message broker.
-* Celery dùng xử lý tác vụ nền như rejudge, export data, email, PDF generation.
-* Generate Testcase (GensolJob) cũng sử dụng cơ chế tác vụ nền thông qua Bridge/Judge pipeline.
+Mã người dùng là **mã không tin cậy**, cần chạy trong môi trường cô lập:
 
-## 2.4. Nginx và uWSGI
+* **`cptbox` (ptrace-based sandbox của DMOJ):** lọc system call, kiểm soát truy cập file/mạng, ngăn mã độc thoát khỏi sandbox.
+* **Giới hạn tài nguyên:** thời gian CPU/thực thi, bộ nhớ (address space), kích thước output, số tiến trình.
+* Nền tảng lý thuyết: namespace/cgroup của Linux, nguyên tắc least-privilege.
 
-Nội dung:
+## 2.3. Kiến trúc bất đồng bộ và hàng đợi tác vụ
 
-* Nginx làm reverse proxy.
-* uWSGI chạy Django app.
-* Nginx route `/`, `/static/`, `/media/`, `/event/`, `/channels/`.
+### 2.3.1. Mô hình xử lý bất đồng bộ với message broker
 
-Theo tài liệu repo, Nginx route `/` đến site uWSGI, `/event/` đến WebSocket, `/channels/` đến HTTP polling fallback, `/static/` và `/media/` phục vụ file tĩnh/upload. ([GitHub][3])
+Lý do tách tác vụ nặng (chấm bài, rejudge, export, gửi email, sinh PDF) khỏi luồng request HTTP để bảo đảm độ phản hồi của web.
 
-## 2.5. Docker và Docker Compose
+### 2.3.2. Redis và Celery
 
-Nội dung:
+* **Redis:** cache, session, message broker.
+* **Celery:** xử lý tác vụ nền bất đồng bộ (concurrency 2 worker trong cấu hình mặc định).
+* Cơ chế Generate Testcase (GenSol) cũng tận dụng pipeline Bridge/Judge để xử lý nền.
 
-* Đóng gói môi trường.
-* Chạy nhiều service tách biệt.
-* Dễ triển khai và tái tạo môi trường.
+## 2.4. Giao tiếp realtime với WebSocket
 
-## 2.6. WebSocket realtime
+* Vấn đề: trạng thái chấm bài thay đổi liên tục, polling tốn tài nguyên.
+* Giải pháp: dịch vụ **WSEvent (Node.js)** đẩy sự kiện realtime; trình duyệt không cần reload; có HTTP polling fallback cho client không hỗ trợ WebSocket.
 
-Nội dung:
+## 2.5. Giao thức Judge (Bridge protocol)
 
-* Dùng để cập nhật trạng thái chấm bài realtime.
-* Trình duyệt không cần reload.
-* Kết quả từ bridge được post sang WSEvent rồi broadcast về browser.
+* Site gửi request → **Bridge** (trung gian) → **Judge** biên dịch và chạy test → kết quả về Bridge.
+* Đóng gói gói tin: `json.dumps` → nén `zlib` → đóng khung bằng **4 byte độ dài** (header) trên kết nối TCP.
+* Kết quả đi: Judge → Bridge → DB/WSEvent → Browser.
 
-## 2.7. Judge protocol
+## 2.6. Containerization với Docker và Docker Compose
 
-Nội dung:
+* Đóng gói môi trường, chạy nhiều dịch vụ tách biệt, dễ tái tạo và triển khai.
+* Cô lập tài nguyên giữa các container; định nghĩa network nội bộ và volume bền vững.
 
-* Site gửi request.
-* Bridge trung gian.
-* Judge server biên dịch và chạy test.
-* Packet dùng JSON + Zlib compression + header 4 byte length.
+## 2.7. Mã hóa và bảo mật dữ liệu nhạy cảm
 
-Tài liệu repo mô tả giao thức bridge/judge dùng `json.dumps`, nén `zlib`, đóng khung bằng 4 byte độ dài, sau đó kết quả đi từ Judge → Bridge → DB/WSEvent → Browser. ([GitHub][4])
+* **Fernet (symmetric encryption):** dùng để mã hóa **API key của người dùng** trước khi lưu DB; khóa Fernet dẫn xuất từ **SHA-256 của `SECRET_KEY`**.
+* Chỉ lưu **last4** của key để nhận diện; không lưu khóa ở dạng rõ.
 
-## 2.8. Code Editor: ACE Editor và CodeMirror 6
+## 2.8. Tích hợp mô hình ngôn ngữ lớn (LLM)
 
-Nội dung:
+* Nguyên lý gọi LLM qua API: prompt template + ngữ cảnh (mã nguồn/đề bài) → mô hình trả về phân tích/đề bài/lời giải.
+* Hệ thống hỗ trợ **4 nhà cung cấp**: OpenAI, Gemini, Claude, DeepSeek; prompt template cấu hình được từ admin (gồm khóa `ai_gen_code` cho GenSol).
 
-* ACE Editor (1.4.14) dùng cho editor truyền thống (submit, admin).
-* CodeMirror 6 dùng cho giao diện IDE mới (problem-ide.html) — editor hiện đại, hỗ trợ 30+ ngôn ngữ syntax highlighting.
-* IDE layout 2 cột kéo thay đổi kích thước, tích hợp CodeMirror 6 làm editor chính.
+## 2.9. Thuật toán xếp hạng Elo-MMR
 
-## 2.9. Công nghệ AI sử dụng
+* Mô hình rating người chơi như **phân phối xác suất** (mean $\mu$, variance $\sigma^2$), cập nhật theo Bayesian sau mỗi contest `is_rated = True`.
+* Dùng hàm **tanh** mô hình hóa phi tuyến kết quả đối đầu; rating hiển thị $= \mu - (\sigma - \sigma_{lim})$.
+* Tệp mã nguồn: `judge/ratings.py`. (Chi tiết ở mục 3.8 và Phụ lục.)
 
-Nội dung:
+## 2.10. Các code editor: ACE và CodeMirror 6
 
-* OpenAI/Gemini/Claude/DeepSeek.
-* API key theo user, mã hóa bằng Fernet.
-* Prompt template tùy chỉnh từ admin.
-* AI Code Review.
-* AI Problem Creator.
-* AI Generate Testcase (GensolJob).
+* **ACE Editor (1.4.14):** editor truyền thống cho trang submit/admin.
+* **CodeMirror 6:** editor hiện đại cho giao diện IDE mới (`problem-ide.html`), hỗ trợ 30+ ngôn ngữ syntax highlighting, layout 2 cột co giãn.
+
+## 2.11. Tổng hợp lựa chọn công nghệ
+
+Đưa **một bảng tổng hợp** ánh xạ *yêu cầu → công nghệ → lý do lựa chọn* (ví dụ: web backend → Django; broker → Redis; realtime → WSEvent; sandbox → cptbox; container → Docker; mã hóa → Fernet…), kèm nhận xét ngắn về sự phù hợp.
 
 ---
 
@@ -251,17 +257,33 @@ Chia theo actor:
 * Generate testcase tự động.
 * Kiểm tra API key.
 
+### 3.1.5. Đặc tả Use Case
+
+Lập **sơ đồ Use Case** cho ba nhóm tác nhân (Người dùng/Thí sinh, Admin/Giảng viên, và các tác nhân hệ thống Judge/AI), kèm **bảng đặc tả** cho các use case trọng yếu. Mẫu bảng đặc tả:
+
+| Mục | Nội dung |
+| --- | --- |
+| **Use case** | Nộp bài (Submit) |
+| **Tác nhân** | Người dùng đã đăng nhập |
+| **Tiền điều kiện** | Đã đăng nhập, problem cho phép nộp |
+| **Luồng chính** | Chọn ngôn ngữ → nhập/upload mã → gửi → hệ thống tạo `Submission` (QU) → chấm → cập nhật kết quả realtime |
+| **Luồng phụ/ngoại lệ** | CE nếu lỗi biên dịch; IE nếu lỗi nội bộ; rate-limit nếu nộp quá nhanh |
+| **Hậu điều kiện** | Lưu kết quả, cập nhật điểm/bảng xếp hạng |
+
+Lập bảng tương tự cho: *Chạy thử bằng IDE (Run)*, *Yêu cầu AI Review*, *Tạo đề bằng AI*, *Sinh testcase (GenSol)*, *Tham gia contest có Focus Lock*, *Quản lý API key*.
+
 ## 3.2. Yêu cầu phi chức năng
 
-Nên viết:
+Trình bày dưới dạng **bảng tiêu chí phi chức năng**:
 
-* Bảo mật API key.
-* Tính ổn định khi chấm bài.
-* Cập nhật kết quả realtime.
-* Dễ triển khai bằng Docker.
-* Dễ mở rộng judge server.
-* Giao diện responsive.
-* Hỗ trợ nhiều ngôn ngữ lập trình.
+| Nhóm | Yêu cầu |
+| --- | --- |
+| **Bảo mật** | Mã hóa API key (Fernet); phân quyền theo vai trò; chống XSS/CSRF; cô lập sandbox khi chấm |
+| **Hiệu năng** | Chấm bài ổn định; cập nhật trạng thái realtime; chịu được tải nộp đồng thời ở quy mô lớp/CLB |
+| **Khả dụng/Realtime** | WebSocket cập nhật không cần reload; có HTTP polling fallback |
+| **Khả mở rộng** | Dễ thêm judge server; kiến trúc nhiều dịch vụ tách biệt |
+| **Khả triển khai** | Triển khai bằng Docker Compose; cấu hình qua biến môi trường |
+| **Tính dùng được** | Giao diện responsive; hỗ trợ nhiều ngôn ngữ lập trình; đa ngôn ngữ giao diện |
 
 ## 3.3. Kiến trúc tổng thể
 
@@ -353,7 +375,13 @@ Nên nhấn mạnh:
 
 ## 3.6. Thiết kế cơ sở dữ liệu
 
-Dựa trên repo, nên chia nhóm model:
+### 3.6.1. Sơ đồ thực thể – quan hệ (ERD)
+
+Trình bày **ERD tổng thể** ở mức khái quát (xem `document/gzx/05_erd_database.dbml`), tập trung vào các bảng cốt lõi và quan hệ giữa chúng. Nêu nguyên tắc thiết kế: chuẩn hóa dữ liệu, dùng khóa ngoại để bảo toàn toàn vẹn tham chiếu, đánh chỉ mục cho các trường truy vấn nhiều (user, problem, contest, submission).
+
+### 3.6.2. Các nhóm bảng theo domain nghiệp vụ
+
+Dựa trên repo, các model được chia nhóm:
 
 * User/Profile/Organization.
 * Problem/ProblemData/ProblemTestCase/ProblemTranslation.
@@ -367,6 +395,13 @@ Dựa trên repo, nên chia nhóm model:
 * Contest.enable_focus_lock + ContestParticipation.focus_violations (Contest Focus Lock).
 
 Tài liệu repo liệt kê nhóm AI gồm `AICodeReview`, `AIPromptTemplate`, `AIAPIKey`, `AIAPIKeyTestLog`; `RunSubmission` cho IDE Run; `GensolJob` cho Generate Testcase (migration 0232, 0233). ([GitHub][3]) ([GitHub][5])
+
+### 3.6.3. Các quyết định thiết kế chính
+
+* **Tách bảng `RunSubmission` khỏi `Submission`:** để luồng chạy thử (IDE) không ảnh hưởng dữ liệu chấm chính thức và bảng xếp hạng.
+* **Giữ trường `short_circuit` cũ song song với `scoring_mode`:** bảo đảm tương thích ngược với giao thức judge gốc.
+* **Lưu API key dạng mã hóa + last4:** cân bằng giữa bảo mật và khả năng nhận diện key.
+* **Đánh số migration nối tiếp DMOJ/VNOJ (0222–0233):** giữ lịch sử schema rõ ràng, dễ rollback.
 
 ## 3.7. Thiết kế chức năng AI
 
@@ -415,6 +450,35 @@ File liên quan:
 * Bridge: `judge/bridge/django_handler.py`, `judge/bridge/judge_handler.py`
 * Migration: `0232_gensol_job.py`, `0233_seed_ai_gen_code_prompt.py`
 * Cleanup: `judge/management/commands/cleanup_gensol_jobs.py`
+
+## 3.8. Thiết kế cơ chế chống gian lận (Contest Focus Lock)
+
+Thiết kế logic chống gian lận khi thi trên nền web (cài đặt chi tiết ở mục 4.9):
+
+* Admin bật `enable_focus_lock` cho contest → giao diện thi yêu cầu fullscreen, ẩn navbar.
+* Client phát hiện mất focus/đổi tab/thoát fullscreen → gọi endpoint `/contest/report_focus_violation` (chỉ áp dụng khi contest đang **LIVE**).
+* Server cập nhật **nguyên tử** số lần vi phạm bằng `F()` expression trên `ContestParticipation.focus_violations`.
+* Cơ chế **auto-ban**: khi số lần vi phạm vượt ngưỡng `BKDNOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING` → `check_ban()` gọi `ban_user()`; khi giảm xuống dưới ngưỡng → `unban_user()`.
+* Nêu rõ giới hạn: cơ chế web không thay thế được proctoring chuyên dụng (đóng góp ở mức "hạn chế" gian lận).
+
+File liên quan: `judge/models/contest.py` (`focus_violations`, `check_ban`), `judge/views/contests.py` (`ContestReportFocusViolation`).
+
+## 3.9. Thiết kế hệ thống xếp hạng và bảng xếp hạng
+
+* **Rating Elo-MMR** (`judge/ratings.py`): cập nhật rating sau mỗi contest `is_rated`; lưu mean/variance/performance; rating hiển thị khuyến khích thi đấu nhiều.
+* **Rating tiers:** phân hạng theo mốc rating (màu/nhãn) hiển thị trên hồ sơ và bảng xếp hạng.
+* **Bảng xếp hạng (leaderboard):** podium top 3 kèm avatar, định dạng penalty time, sắp xếp theo điểm và thời gian phạt.
+* (Chi tiết hằng số và thuật toán đặt ở Phụ lục, tham chiếu `RATING_SYSTEM_REPORT.md`.)
+
+## 3.10. Thiết kế bảo mật nhiều lớp
+
+Tổng hợp thiết kế bảo mật theo chiều sâu (defense-in-depth):
+
+* **Lớp xác thực & phân quyền:** đăng nhập, phân quyền theo vai trò, kiểm soát truy cập view.
+* **Lớp ứng dụng web:** chống XSS (đã vá lỗi hiển thị), CSRF token, kiểm tra đầu vào ở biên hệ thống, rate-limit nộp bài.
+* **Lớp dữ liệu nhạy cảm:** mã hóa API key bằng Fernet, chỉ lưu last4.
+* **Lớp thực thi mã không tin cậy:** sandbox `cptbox`, giới hạn tài nguyên, cô lập tiến trình.
+* **Lớp dữ liệu cuộc thi:** ẩn kết quả/bảng xếp hạng theo cấu hình, kiểm soát truy cập trong thời gian thi.
 
 ---
 
@@ -544,21 +608,38 @@ Chức năng đã có trong master (migration 0228). Nên viết:
 
 Phần này nên đưa như **đóng góp riêng**, vì nó khác hệ thống OJ gốc.
 
+## 4.10. Cài đặt hệ thống rating và bảng xếp hạng
+
+* Cài đặt tính rating Elo-MMR trong `judge/ratings.py`, kích hoạt sau contest `is_rated`.
+* Hiển thị rating tiers (màu/nhãn) trên hồ sơ người dùng.
+* Trang bảng xếp hạng: podium top 3 + avatar, định dạng penalty time, cập nhật theo điểm và thời gian phạt.
+* Nên có ảnh: trang bảng xếp hạng và trang lịch sử rating của người dùng.
+
 ---
 
-# CHƯƠNG 5: KIỂM THỬ VÀ ĐÁNH GIÁ — 8 đến 12 trang
+# CHƯƠNG 5: KIỂM THỬ, THỰC NGHIỆM VÀ ĐÁNH GIÁ — 10 đến 14 trang
 
-## 5.1. Mục tiêu kiểm thử
+## 5.1. Mục tiêu và phạm vi thực nghiệm
 
-* Kiểm tra hệ thống chạy ổn định.
-* Kiểm tra luồng submit.
-* Kiểm tra luồng run IDE.
-* Kiểm tra AI (Code Review, Problem Creator, Generate Testcase).
-* Kiểm tra WebSocket realtime.
-* Kiểm tra phân quyền admin/user.
-* Kiểm tra Contest Focus Lock.
+Thực nghiệm nhằm trả lời các câu hỏi nghiên cứu (RQ1–RQ4) ở phần Mở đầu:
 
-## 5.2. Bảng test chức năng
+* Kiểm tra hệ thống chạy ổn định và đúng chức năng (submit, run IDE, AI, realtime, phân quyền, Focus Lock, rating).
+* Đánh giá hiệu năng xử lý nộp bài và độ trễ cập nhật realtime.
+* Đánh giá tính hữu ích và độ tin cậy của các chức năng AI.
+
+## 5.2. Thiết lập thực nghiệm
+
+* **Môi trường:** mô tả cấu hình máy chủ/host (CPU, RAM), phiên bản Docker, số worker uWSGI (8) và Celery (2), số judge server.
+* **Dữ liệu thử:** bộ problem mẫu (AC/WA/TLE/MLE), tài khoản thử cho từng vai trò, contest mẫu có/không bật Focus Lock.
+* **Công cụ đo:** ApacheBench/wrk cho tải HTTP; quan sát log bridge/judge; đo thời gian từ lúc nộp đến lúc có kết quả realtime.
+
+## 5.3. Phương pháp thu thập và tính toán số liệu
+
+* Mỗi kịch bản chạy nhiều lần, lấy trung vị (median) và giá trị lớn nhất để giảm nhiễu.
+* Số liệu hiệu năng: requests/second, độ trễ trung vị, tỉ lệ lỗi (failed requests).
+* Số liệu chức năng: tỉ lệ pass của bảng kiểm thử đầu cuối.
+
+## 5.4. Bảng kiểm thử chức năng đầu cuối
 
 Ví dụ:
 
@@ -576,19 +657,31 @@ Ví dụ:
 | 10  | AI Problem Creator | Upload ảnh đề bài | AI trả về markdown đề   |
 | 11  | Focus Lock      | Chuyển tab khi thi   | Ghi nhận vi phạm          |
 
-## 5.3. Kiểm thử hiệu năng cơ bản
+## 5.5. Kiểm thử hiệu năng
 
-Jack có thể đưa kết quả ApacheBench trước đây:
+Đưa kết quả đo tải (ví dụ ApacheBench/wrk) trên các endpoint chính:
 
-* Số request.
-* Concurrency.
-* Thời gian xử lý.
-* Failed request.
-* Requests per second.
+* Số request và mức đồng thời (concurrency).
+* Thời gian xử lý (trung vị, lớn nhất).
+* Số request thất bại (failed requests).
+* Throughput (requests per second).
+* Độ trễ cập nhật realtime của WebSocket khi chấm bài.
 
-## 5.4. Đánh giá kết quả
+## 5.6. Đánh giá các chức năng AI
 
-Nên chia:
+* **AI Code Review:** đánh giá chất lượng phân tích (thuật toán, độ phức tạp, lỗi) trên một số bài mẫu.
+* **AI Problem Creator:** tỉ lệ trích xuất đúng nội dung đề từ ảnh/PDF/text.
+* **AI Generate Testcase (GenSol):** tỉ lệ sinh testcase thành công, thời gian sinh, kiểm soát chất lượng input/output.
+* Nhận xét về sự phụ thuộc vào nhà cung cấp và chất lượng prompt template.
+
+## 5.7. Thảo luận — trả lời câu hỏi nghiên cứu
+
+* **RQ1:** Kết quả cho thấy có/không thể mở rộng IDE + chấm điểm linh hoạt mà vẫn tương thích judge gốc (dẫn chứng từ 5.4, 5.5).
+* **RQ2:** Mức độ khả thi và hữu ích của trợ lý AI (dẫn chứng từ 5.6).
+* **RQ3:** Hiệu quả của Focus Lock + auto-ban trong giảm gian lận (dẫn chứng từ 5.4).
+* **RQ4:** Mức đáp ứng yêu cầu phi chức năng (dẫn chứng từ 5.5).
+
+## 5.8. Tổng hợp đánh giá
 
 ### Ưu điểm
 
@@ -600,6 +693,7 @@ Nên chia:
 * Hỗ trợ 4 AI provider (OpenAI, Gemini, Claude, DeepSeek).
 * Triển khai được bằng Docker.
 * Có cơ chế chống gian lận Contest Focus Lock.
+* Có hệ thống rating Elo-MMR và bảng xếp hạng (podium top 3 + avatar).
 
 ### Hạn chế
 
@@ -623,6 +717,7 @@ Nên chia:
 | API key theo user     | Không                        | Có                |
 | Contest Focus Lock    | Không                        | Có                |
 | Auto-ban gian lận     | Không                        | Có                |
+| Rating Elo-MMR        | Có (cơ bản)                  | Có + bảng xếp hạng cải tiến |
 | Docker hóa triển khai | Có/tùy cấu hình              | Có cấu hình riêng |
 
 ---
@@ -645,6 +740,7 @@ Nên viết theo 3 mục:
 * Xây dựng AI Generate Testcase (GensolJob + Bridge/Judge pipeline).
 * Xây dựng quản lý API key (mã hóa Fernet, hỗ trợ 4 provider).
 * Xây dựng Contest Focus Lock và cơ chế auto-ban gian lận.
+* Xây dựng hệ thống rating Elo-MMR và bảng xếp hạng.
 * Cải tiến UI/UX và contest.
 
 ## Hạn chế
@@ -690,10 +786,10 @@ Phần phụ lục có thể giúp báo cáo dày và chuyên nghiệp hơn:
 | ------------------ | -------: |
 | Mở đầu             |      3–5 |
 | Chương 1           |     8–10 |
-| Chương 2           |    10–14 |
-| Chương 3           |    14–18 |
+| Chương 2           |    12–16 |
+| Chương 3           |    16–20 |
 | Chương 4           |    18–24 |
-| Chương 5           |     8–12 |
+| Chương 5           |    10–14 |
 | Kết luận           |      2–3 |
 | Tài liệu tham khảo |      2–4 |
 | Phụ lục            |     8–15 |
@@ -703,6 +799,19 @@ Với dàn ý này, báo cáo của Jack rất hợp lý ở mức **65–80 tra
 Điểm nên nhấn mạnh khi viết là:
 
 > **BKDNOJ không chỉ là cài đặt lại DMOJ/VNOJ, mà là quá trình nghiên cứu kiến trúc Online Judge, triển khai hệ thống thực tế, tùy biến giao diện, bổ sung IDE trực tuyến (CodeMirror 6), tích hợp AI đa nhà cung cấp (Code Review, Problem Creator, Generate Testcase), xây dựng cơ chế chống gian lận và cải tiến luồng vận hành phù hợp với nhu cầu riêng.**
+
+---
+
+# TÀI LIỆU THAM KHẢO (gợi ý nhóm nguồn)
+
+Sắp xếp theo chuẩn trích dẫn của trường (IEEE hoặc APA). Các nhóm nguồn nên có:
+
+* **Nền tảng nguồn mở:** tài liệu và mã nguồn DMOJ, VNOJ (judge, bridge, sandbox `cptbox`).
+* **Công nghệ:** tài liệu Django, Celery, Redis, Docker, Nginx, uWSGI, CodeMirror 6.
+* **Thuật toán rating:** bài báo Elo-MMR (Aram Ebtekar, Paul Liu — "An Elo-like System for Massive Multiplayer Competitions").
+* **Mô hình ngôn ngữ lớn:** tài liệu API của OpenAI, Google Gemini, Anthropic Claude, DeepSeek.
+* **Bảo mật:** OWASP Top 10; tài liệu Fernet (cryptography).
+* **Tài liệu nội bộ dự án:** `THESIS_REFERENCE.md`, `IDE_RUN_FEATURE.md`, `SUBMIT_RUN_GENSOL_FLOW.md`, `RATING_SYSTEM_REPORT.md` và các sơ đồ trong `document/gzx/`.
 
 [1]: https://github.com/Algorit-loop/My-Online-Judge "GitHub - Algorit-loop/My-Online-Judge · GitHub"
 [2]: https://github.com/Algorit-loop/My-Online-Judge/tree/master/dmoj "My-Online-Judge/dmoj at master · Algorit-loop/My-Online-Judge · GitHub"
