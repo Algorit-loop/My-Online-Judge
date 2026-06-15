@@ -1,0 +1,67 @@
+@startuml Sequence_API_Key
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 200
+skinparam participant {
+  BackgroundColor #E8F5E9
+}
+
+title Sequence Diagram: Quan ly AI API Key (ALOJ moi)
+
+actor "User" as U
+participant "Django Site" as Site
+database "MariaDB" as DB
+participant "AI Provider" as AI
+
+== 1. Xem danh sach API keys ==
+U -> Site : GET /accounts/api-keys/
+Site -> DB : SELECT AIAPIKey\nWHERE user=current_user
+Site --> U : Trang quan ly API keys\n(hien thi: provider, last4,\nstatus, default_model)
+
+== 2. Them API key moi ==
+U -> Site : POST /accounts/api-keys/add/\n{provider, api_key_plaintext,\ndefault_model}
+
+Site -> Site : Ma hoa API key:\n1. SHA-256('aiapikey-encryption-'\n   + SECRET_KEY)\n2. Base64URL encode\n3. Fernet(key).encrypt(plaintext)
+Site -> Site : Lay 4 ky tu cuoi\nlam key_last4
+
+Site -> DB : INSERT AIAPIKey\n{user, provider,\nkey_ciphertext,\nkey_last4,\nstatus='pending',\ndefault_model}
+
+Site --> U : JSON {success, key_id}
+
+== 3. Test ket noi API key ==
+U -> Site : POST /accounts/api-keys/<id>/test/
+
+Site -> DB : SELECT AIAPIKey WHERE id=<id>
+Site -> Site : Giai ma API key\nbang Fernet
+
+Site -> DB : SELECT AIPromptTemplate\nWHERE key='api_key_test'
+note right of Site : Prompt: "Reply exactly: OK"
+
+Site -> AI : HTTPS POST\n{model: default_model,\nmessage: test prompt}\ntimeout=30s
+
+alt Test thanh cong
+  AI --> Site : Response: "OK"
+  Site -> DB : UPDATE AIAPIKey\nstatus='verified'
+  Site -> DB : INSERT AIAPIKeyTestLog\n{success=True,\nresponse_time_ms}
+  Site --> U : JSON {status: 'success',\nresponse_time_ms}
+else Test that bai
+  AI --> Site : Error / Timeout
+  Site -> DB : UPDATE AIAPIKey\nstatus='failed',\nstatus_detail=error
+  Site -> DB : INSERT AIAPIKeyTestLog\n{success=False,\ndetail=error}
+  Site --> U : JSON {status: 'error',\ndetail}
+end
+
+Site -> Site : Xoa plaintext\nkhoi memory
+
+== 4. Xem log test ==
+U -> Site : GET /accounts/api-keys/<id>/logs/
+Site -> DB : SELECT AIAPIKeyTestLog\nWHERE api_key=<id>\nORDER BY tested_at DESC
+Site --> U : JSON [{tested_at, provider,\nmodel, success, detail,\nresponse_time_ms}, ...]
+
+== 5. Xoa API key ==
+U -> Site : POST /accounts/api-keys/<id>/delete/
+Site -> DB : DELETE AIAPIKey WHERE id=<id>
+note right of DB : Cascade delete\nAIAPIKeyTestLog
+Site --> U : JSON {success}
+
+@enduml

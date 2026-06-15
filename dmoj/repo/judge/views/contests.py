@@ -138,7 +138,7 @@ class ContestList(InfinitePaginationMixin, TitleMixin, ContestListMixin, ListVie
                     .select_related('contest') \
                     .prefetch_related('contest__authors', 'contest__curators', 'contest__testers') \
                     .annotate(key=F('contest__key')):
-                if participation.ended:
+                if participation.ended or participation.has_left:
                     finished.add(participation.contest.key)
                 else:
                     active.append(participation)
@@ -601,12 +601,26 @@ class ContestJoin(LoginRequiredMixin, ContestMixin, SingleObjectMixin, View):
             SPECTATE = ContestParticipation.SPECTATE
             LIVE = ContestParticipation.LIVE
             can_only_spectate = self.is_editor or self.is_tester
+
+            # Check if the user has previously left a LIVE participation for this contest.
+            # If so, they can only spectate from now on.
+            if not can_only_spectate:
+                try:
+                    live_part = ContestParticipation.objects.get(
+                        contest=contest, user=profile, virtual=LIVE,
+                    )
+                except ContestParticipation.DoesNotExist:
+                    live_part = None
+
+                if live_part is not None and live_part.has_left:
+                    can_only_spectate = True
+
             try:
                 participation = ContestParticipation.objects.get(
                     contest=contest, user=profile, virtual=(SPECTATE if can_only_spectate else LIVE),
                 )
             except ContestParticipation.DoesNotExist:
-                if contest.require_registration and not contest.can_register and not can_only_spectate:
+                if not can_only_spectate and contest.require_registration and not contest.can_register:
                     return generic_message(request, _('Not registered'),
                                            _('You are not registered for this contest.'))
 
@@ -667,6 +681,11 @@ class ContestLeave(LoginRequiredMixin, ContestMixin, SingleObjectMixin, View):
         if profile.current_contest is None or profile.current_contest.contest_id != contest.id:
             return generic_message(request, _('No such contest'),
                                    _('You are not in contest "%s".') % contest.key, 404)
+
+        participation = profile.current_contest
+        if participation.live and not contest.ended:
+            participation.has_left = True
+            participation.save(update_fields=['has_left'])
 
         profile.remove_contest()
         return HttpResponseRedirect(reverse('contest_view', args=(contest.key,)))

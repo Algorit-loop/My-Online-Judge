@@ -8041,4 +8041,24 @@ msgstr "CẢNH BÁO: Kỳ thi này có chế độ Khóa Tập Trung. Màn hình
 msgid "Click to enter fullscreen"
 msgstr "Nhấn để vào toàn màn hình"
 
+#: judge/models/contest.py
+msgid "has left contest"
+msgstr "đã rời kỳ thi"
+
+#: judge/models/contest.py
+msgid "Whether this participant has left the contest. Once left, the participant cannot rejoin as a live participant."
+msgstr "Thí sinh đã rời kỳ thi. Sau khi rời, thí sinh không thể tham gia lại với tư cách chính thức."
+
+#: templates/contest/media-js.html
+msgid "Are you sure you want to leave this contest?"
+msgstr "Bạn có chắc chắn muốn rời kỳ thi này?"
+
+#: templates/contest/media-js.html
+msgid "WARNING: Once you leave, you will NOT be able to rejoin as an official participant. You will only be able to spectate the contest."
+msgstr "CẢNH BÁO: Sau khi rời, bạn sẽ KHÔNG thể tham gia lại với tư cách thí sinh chính thức. Bạn chỉ có thể theo dõi kỳ thi."
+
+#: templates/contest/media-js.html
+msgid "This action cannot be undone."
+msgstr "Hành động này không thể hoàn tác."
+
 

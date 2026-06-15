@@ -1,0 +1,61 @@
+@startuml Component_Network
+!theme plain
+skinparam component {
+  BackgroundColor #F0F8FF
+}
+skinparam package {
+  BackgroundColor #FAFAFA
+}
+
+title So do mang Docker va Nginx Routing
+
+package "Docker Network: nginx" as NetNginx #FFE0E0 {
+  [Nginx :80] as Nginx
+  [Site :8000] as SiteN
+  [WSEvent :15100-15102] as WSN
+  [Bridge :9998-9999] as BridgeN
+}
+
+package "Docker Network: site" as NetSite #E0FFE0 {
+  [Site :8000] as SiteS
+  [Celery] as CeleryS
+  [Bridge :9998] as BridgeS
+  [Redis :6379] as RedisS
+  [WSEvent] as WSS
+}
+
+package "Docker Network: db" as NetDB #E0E0FF {
+  [Site] as SiteD
+  [Celery] as CeleryD
+  [Bridge] as BridgeD
+  database "MariaDB :3306" as DBD
+}
+
+note right of NetNginx
+  **Nginx Routing:**
+  / -> Site:8000 (uWSGI)
+  /static/ -> /assets/static/
+  /media/ -> /media/
+  /event/ -> WSEvent:15100 (WS)
+  /channels/ -> WSEvent:15102 (Poll)
+  /pdf/ -> /media/ (cache 7d)
+  Max body: 64MB
+  Timeout: 600s
+end note
+
+note right of NetSite
+  **Internal Communication:**
+  Site <-> Redis (cache, session)
+  Celery <-> Redis (broker DB1)
+  Site -> Bridge (TCP :9998)
+  Bridge -> WSEvent (POST :15101)
+end note
+
+note right of NetDB
+  **Database Access:**
+  MariaDB UTF8MB4
+  InnoDB engine
+  Port 3306 (NOT exposed)
+end note
+
+@enduml

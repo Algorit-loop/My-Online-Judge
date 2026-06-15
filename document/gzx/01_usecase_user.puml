@@ -1,0 +1,109 @@
+@startuml UseCase_User
+!theme plain
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor<<new>> #DDFFD6
+  BorderColor<<new>> #2E8B57
+}
+
+left to right direction
+
+actor "Khach (Guest)" as Guest
+actor "Nguoi dung (User)" as User
+actor "Problem Setter" as Setter
+actor "Contest Admin" as ContAdmin
+actor "Admin" as Admin
+actor "Judge Server" as Judge
+
+Guest <|-- User
+User <|-- Setter
+Setter <|-- ContAdmin
+ContAdmin <|-- Admin
+
+rectangle "HE THONG ALOJ - ONLINE JUDGE" {
+
+  ' === GUEST ===
+  package "Xem thong tin" {
+    usecase "Xem danh sach bai tap" as UC_ProbList
+    usecase "Xem chi tiet bai tap" as UC_ProbDetail
+    usecase "Xem danh sach contest" as UC_ContList
+    usecase "Xem bang xep hang" as UC_Ranking
+    usecase "Xem blog / bai viet" as UC_Blog
+    usecase "Xem trang thai judge" as UC_Status
+  }
+
+  ' === USER ===
+  package "Tai khoan" {
+    usecase "Dang ky" as UC_Register
+    usecase "Dang nhap" as UC_Login
+    usecase "Dang nhap OAuth2\n(Google/Facebook/GitHub)" as UC_OAuth
+    usecase "Bat 2FA (TOTP/WebAuthn)" as UC_2FA
+    usecase "Chinh sua profile" as UC_Profile
+  }
+
+  package "Nop bai & Cham bai" {
+    usecase "Nop bai (Submit)" as UC_Submit
+    usecase "Xem ket qua realtime" as UC_Result
+    usecase "Xem source code" as UC_Source
+    usecase "Chay thu code (IDE Run)" as UC_Run <<new>>
+  }
+
+  package "Contest" {
+    usecase "Dang ky tham gia contest" as UC_ContJoin
+    usecase "Nop bai trong contest" as UC_ContSubmit
+    usecase "Xem leaderboard realtime" as UC_Leaderboard
+    usecase "Virtual participation" as UC_Virtual
+  }
+
+  package "AI Features" <<new>> {
+    usecase "AI Code Review" as UC_AIReview <<new>>
+    usecase "Quan ly AI API Key" as UC_APIKey <<new>>
+    usecase "Test API Key" as UC_TestKey <<new>>
+  }
+
+  package "Cong dong" {
+    usecase "Binh luan & Vote" as UC_Comment
+    usecase "Tao bai blog" as UC_BlogPost
+    usecase "Tao ticket (bao loi)" as UC_Ticket
+    usecase "Tham gia Organization" as UC_Org
+  }
+}
+
+' --- Guest connections ---
+Guest --> UC_ProbList
+Guest --> UC_ProbDetail
+Guest --> UC_ContList
+Guest --> UC_Ranking
+Guest --> UC_Blog
+Guest --> UC_Status
+Guest --> UC_Register
+Guest --> UC_Login
+
+' --- User connections ---
+User --> UC_OAuth
+User --> UC_2FA
+User --> UC_Profile
+User --> UC_Submit
+User --> UC_Result
+User --> UC_Source
+User --> UC_Run
+User --> UC_ContJoin
+User --> UC_ContSubmit
+User --> UC_Leaderboard
+User --> UC_Virtual
+User --> UC_AIReview
+User --> UC_APIKey
+User --> UC_TestKey
+User --> UC_Comment
+User --> UC_BlogPost
+User --> UC_Ticket
+User --> UC_Org
+
+' --- Includes/Extends ---
+UC_Submit ..> UC_Result : <<include>>
+UC_Run ..> UC_Result : <<include>>
+UC_AIReview ..> UC_APIKey : <<include>>
+UC_ContSubmit ..> UC_Submit : <<include>>
+
+@enduml

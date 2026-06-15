@@ -652,6 +652,11 @@ class ContestParticipation(models.Model):
         verbose_name=_('focus violations'), default=0,
         help_text=_('Number of times the participant exited fullscreen or switched tabs.'),
     )
+    has_left = models.BooleanField(
+        verbose_name=_('has left contest'), default=False,
+        help_text=_('Whether this participant has left the contest. '
+                     'Once left, the participant cannot rejoin as a live participant.'),
+    )
     virtual = models.IntegerField(verbose_name=_('virtual participation id'), default=LIVE,
                                   help_text=_('0 means non-virtual, otherwise the n-th virtual participation.'))
     format_data = JSONField(verbose_name=_('contest format specific data'), null=True, blank=True)

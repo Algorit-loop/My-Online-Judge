@@ -1,0 +1,543 @@
+// ==============================================
+// ALOJ - Algorit Online Judge
+// Entity Relationship Diagram (ERD)
+// Render tai: https://dbdiagram.io
+// ==============================================
+
+// ========== NHOM USER / PROFILE ==========
+
+Table User {
+  id int [pk, increment]
+  username varchar(150) [unique, not null]
+  password varchar(128)
+  email varchar(254)
+  is_staff boolean
+  is_active boolean
+  is_superuser boolean
+  date_joined datetime
+}
+
+Table Profile {
+  id int [pk, increment]
+  user_id int [ref: - User.id, unique, not null]
+  about text
+  timezone varchar(50)
+  language_id int [ref: > Language.id]
+  points float [default: 0]
+  performance_points float [default: 0]
+  contribution_points int [default: 0, note: 'ALOJ moi']
+  vnoj_points int [default: 0]
+  problem_count int [default: 0]
+  ace_theme varchar(30)
+  site_theme varchar(10)
+  last_access datetime
+  ip varchar(39)
+  display_rank varchar(10)
+  mute boolean
+  is_unlisted boolean
+  ban_reason text
+  rating int
+  is_totp_enabled boolean
+  is_webauthn_enabled boolean
+  current_contest_id int [ref: > ContestParticipation.id]
+  api_token varchar(64)
+}
+
+Table Organization {
+  id int [pk, increment]
+  name varchar(128)
+  slug varchar(128) [unique]
+  short_name varchar(20)
+  about text
+  creation_date datetime
+  is_open boolean
+  is_unlisted boolean
+  slots int
+  access_code varchar(7)
+  logo_override_image varchar(150)
+  performance_points float
+  member_count int
+}
+
+Table OrganizationRequest {
+  id int [pk, increment]
+  user_id int [ref: > Profile.id]
+  organization_id int [ref: > Organization.id]
+  time datetime
+  state varchar(1) [note: 'P/A/R']
+  reason text
+}
+
+// M:N Profile <-> Organization
+Table profile_organizations {
+  profile_id int [ref: > Profile.id]
+  organization_id int [ref: > Organization.id]
+
+  indexes {
+    (profile_id, organization_id) [pk]
+  }
+}
+
+// M:N Organization admins
+Table organization_admins {
+  organization_id int [ref: > Organization.id]
+  profile_id int [ref: > Profile.id]
+
+  indexes {
+    (organization_id, profile_id) [pk]
+  }
+}
+
+Table Badge {
+  id int [pk, increment]
+  name varchar(128)
+  mini varchar(200)
+  full_size varchar(200)
+}
+
+// ========== NHOM PROBLEM ==========
+
+Table Problem {
+  id int [pk, increment]
+  code varchar(32) [unique, not null]
+  name varchar(100) [not null]
+  description text
+  time_limit float
+  memory_limit int
+  points float
+  scoring_mode varchar(20) [note: 'short_circuit/partial_batch/partial_testcase']
+  is_public boolean
+  date datetime
+  user_count int
+  ac_rate float
+  group_id int [ref: > ProblemGroup.id]
+  license_id int [ref: > License.id]
+  organization_id int [ref: > Organization.id]
+  is_organization_private boolean
+  submission_source_visibility_mode varchar(1)
+  testcase_visibility_mode varchar(1)
+  testcase_result_visibility_mode varchar(1)
+  enable_new_ide boolean [note: 'ALOJ moi - bat IDE']
+  suggester_id int [ref: > Profile.id]
+}
+
+Table ProblemType {
+  id int [pk, increment]
+  name varchar(20) [unique]
+  full_name varchar(100)
+}
+
+Table ProblemGroup {
+  id int [pk, increment]
+  name varchar(20) [unique]
+  full_name varchar(100)
+}
+
+Table License {
+  id int [pk, increment]
+  key varchar(20) [unique]
+  name varchar(256)
+  link varchar(256)
+}
+
+Table ProblemData {
+  id int [pk, increment]
+  problem_id int [ref: - Problem.id, unique]
+  zipfile varchar(100)
+  generator varchar(100)
+  output_prefix int
+  output_limit int
+  grader varchar(100)
+}
+
+Table ProblemTestCase {
+  id int [pk, increment]
+  dataset_id int [ref: > ProblemData.id]
+  order int
+  type varchar(1) [note: 'C=standard']
+  input_file varchar(100)
+  output_file varchar(100)
+  points int
+  is_pretest boolean
+  is_sample boolean [note: 'ALOJ moi - danh dau sample cho IDE']
+}
+
+Table ProblemTranslation {
+  id int [pk, increment]
+  problem_id int [ref: > Problem.id]
+  language varchar(7)
+  name varchar(100)
+  description text
+
+  indexes {
+    (problem_id, language) [unique]
+  }
+}
+
+Table ProblemClarification {
+  id int [pk, increment]
+  problem_id int [ref: > Problem.id]
+  description text
+  date datetime
+}
+
+Table LanguageLimit {
+  id int [pk, increment]
+  problem_id int [ref: > Problem.id]
+  language_id int [ref: > Language.id]
+  time_limit float
+  memory_limit int
+
+  indexes {
+    (problem_id, language_id) [unique]
+  }
+}
+
+Table Solution {
+  id int [pk, increment]
+  problem_id int [ref: - Problem.id, unique]
+  is_public boolean
+  publish_on datetime
+  content text
+}
+
+// M:N Problem <-> ProblemType
+Table problem_types {
+  problem_id int [ref: > Problem.id]
+  problemtype_id int [ref: > ProblemType.id]
+}
+
+// M:N Problem <-> Language
+Table problem_allowed_languages {
+  problem_id int [ref: > Problem.id]
+  language_id int [ref: > Language.id]
+}
+
+// M:N Problem <-> Profile (authors)
+Table problem_authors {
+  problem_id int [ref: > Problem.id]
+  profile_id int [ref: > Profile.id]
+}
+
+// ========== NHOM SUBMISSION ==========
+
+Table Submission {
+  id int [pk, increment]
+  user_id int [ref: > Profile.id, not null]
+  problem_id int [ref: > Problem.id, not null]
+  date datetime [not null]
+  time float
+  memory float
+  points float
+  language_id int [ref: > Language.id, not null]
+  status varchar(2) [note: 'QU/P/G/D/IE/CE/AB']
+  result varchar(3) [note: 'AC/WA/TLE/MLE/OLE/RTE/CE/IE']
+  error text
+  current_testcase int
+  case_points float
+  case_total float
+  judged_on_id int [ref: > Judge.id]
+  judged_date datetime
+  contest_object_id int [ref: > Contest.id]
+}
+
+Table SubmissionSource {
+  id int [pk, increment]
+  submission_id int [ref: - Submission.id, unique, not null]
+  source text [not null, note: 'max 65536']
+}
+
+Table SubmissionTestCase {
+  id int [pk, increment]
+  submission_id int [ref: > Submission.id, not null]
+  case_num int
+  status varchar(3)
+  time float
+  memory float
+  points float
+  total float
+  batch int
+  feedback varchar(50)
+  output text
+
+  indexes {
+    (submission_id, case_num) [unique]
+  }
+}
+
+// ========== NHOM IDE RUN (ALOJ MOI) ==========
+
+Table RunSubmission [headercolor: #2E8B57, note: 'ALOJ moi - IDE Run'] {
+  id int [pk, increment]
+  user_id int [ref: > Profile.id, not null]
+  problem_id int [ref: > Problem.id, not null]
+  date datetime
+  time float
+  memory float
+  points float
+  language_id int [ref: > Language.id, not null]
+  status varchar(2) [note: 'QU/P/G/D']
+  result varchar(3)
+  error text
+  current_testcase int
+  case_points float
+  case_total float
+  judged_on_id int [ref: > Judge.id]
+  source text [note: 'max 65536, inline']
+  case_results json [note: 'Ket qua tung test, khong tao SubmissionTestCase']
+}
+
+// ========== NHOM CONTEST ==========
+
+Table Contest {
+  id int [pk, increment]
+  key varchar(32) [unique, not null]
+  name varchar(100) [not null]
+  description text
+  start_time datetime
+  end_time datetime
+  time_limit interval
+  frozen_last_minutes int [default: 0]
+  is_visible boolean
+  is_rated boolean
+  use_clarifications boolean
+  is_private boolean
+  is_organization_private boolean
+  organization_id int [ref: > Organization.id]
+  format_name varchar(32) [note: 'default/ioi/icpc/atcoder/ecoo/vnoj/legacy_ioi']
+  format_config json
+  enable_focus_lock boolean [default: false, note: 'ALOJ moi']
+  scoreboard_visibility varchar(1)
+  problem_label_style varchar(10)
+  user_count int
+  access_code varchar(255)
+}
+
+Table ContestProblem {
+  id int [pk, increment]
+  problem_id int [ref: > Problem.id, not null]
+  contest_id int [ref: > Contest.id, not null]
+  points int
+  partial boolean
+  is_pretested boolean
+  order int
+  max_submissions int
+
+  indexes {
+    (problem_id, contest_id) [unique]
+  }
+}
+
+Table ContestParticipation {
+  id int [pk, increment]
+  contest_id int [ref: > Contest.id, not null]
+  user_id int [ref: > Profile.id, not null]
+  real_start datetime
+  score float
+  cumtime int
+  frozen_score float
+  is_disqualified boolean
+  focus_violations int [default: 0, note: 'ALOJ moi - dem vi pham']
+  virtual int [note: '0=LIVE, -1=SPECTATE']
+  format_data json
+
+  indexes {
+    (contest_id, user_id, virtual) [unique]
+  }
+}
+
+Table ContestSubmission {
+  id int [pk, increment]
+  submission_id int [ref: - Submission.id, unique, not null]
+  problem_id int [ref: > ContestProblem.id, not null]
+  participation_id int [ref: > ContestParticipation.id, not null]
+  points float
+  is_pretest boolean
+}
+
+Table ContestTag {
+  id int [pk, increment]
+  name varchar(20) [unique]
+  color varchar(7)
+  description text
+}
+
+Table ContestAnnouncement {
+  id int [pk, increment]
+  contest_id int [ref: > Contest.id]
+  title varchar(100)
+  description text
+  date datetime
+}
+
+Table Rating {
+  id int [pk, increment]
+  user_id int [ref: > Profile.id, not null]
+  contest_id int [ref: > Contest.id, not null]
+  participation_id int [ref: - ContestParticipation.id, unique]
+  rank int
+  rating int
+  mean float
+  performance float
+
+  indexes {
+    (user_id, contest_id) [unique]
+  }
+}
+
+Table ContestMoss {
+  id int [pk, increment]
+  contest_id int [ref: > Contest.id]
+  problem_id int [ref: > Problem.id]
+  language varchar(10)
+  submission_count int
+  url varchar(200)
+}
+
+// M:N Contest <-> ContestTag
+Table contest_tags {
+  contest_id int [ref: > Contest.id]
+  contesttag_id int [ref: > ContestTag.id]
+}
+
+// ========== NHOM AI (ALOJ MOI) ==========
+
+Table AIAPIKey [headercolor: #2E8B57, note: 'ALOJ moi'] {
+  id int [pk, increment]
+  user_id int [ref: > Profile.id, not null]
+  provider varchar(20) [note: 'openai/gemini/claude/deepseek']
+  key_ciphertext text [not null, note: 'Fernet encrypted']
+  key_last4 varchar(4)
+  status varchar(10) [note: 'pending/verified/failed']
+  status_detail text
+  default_model varchar(100)
+  last_used_at datetime
+  added_at datetime
+
+  indexes {
+    (user_id, provider) [unique]
+  }
+}
+
+Table AIAPIKeyTestLog [headercolor: #2E8B57, note: 'ALOJ moi'] {
+  id int [pk, increment]
+  api_key_id int [ref: > AIAPIKey.id, not null]
+  provider varchar(20)
+  model_tested varchar(100)
+  success boolean
+  detail text
+  response_time_ms int
+  tested_at datetime
+}
+
+Table AICodeReview [headercolor: #2E8B57, note: 'ALOJ moi'] {
+  id int [pk, increment]
+  submission_id int [ref: > Submission.id, not null]
+  user_id int [ref: > Profile.id, not null]
+  provider varchar(20)
+  model varchar(100)
+  review_text text
+  output_language varchar(20) [default: 'vi']
+  created_at datetime
+}
+
+Table AIPromptTemplate [headercolor: #2E8B57, note: 'ALOJ moi'] {
+  id int [pk, increment]
+  key varchar(50) [unique, note: 'ai_code_review / ai_problem_creator / api_key_test']
+  name varchar(100)
+  prompt_text text
+  description text
+  updated_at datetime
+}
+
+// ========== NHOM GENSOL (ALOJ MOI) ==========
+
+Table GensolJob [headercolor: #2E8B57, note: 'ALOJ moi - Generate Testcase'] {
+  id int [pk, increment]
+  problem_id int [ref: > Problem.id, not null]
+  user_id int [ref: > Profile.id, not null]
+  status varchar(20) [note: 'PENDING/GENERATING_INPUT/GENERATING_OUTPUT/UPLOADING/DONE/ERROR']
+  generator_source text [note: 'max 65536']
+  generator_language_id int [ref: > Language.id, not null]
+  solution_source text [note: 'max 65536']
+  solution_language_id int [ref: > Language.id, not null]
+  num_cases int
+  current_step varchar(20)
+  current_testcase int
+  error_message text
+  error_testcase int
+  created_date datetime
+  updated_date datetime
+  judged_on_id int [ref: > Judge.id]
+}
+
+// ========== NHOM RUNTIME / JUDGE ==========
+
+Table Language {
+  id int [pk, increment]
+  key varchar(30) [unique]
+  name varchar(100)
+  short_name varchar(10)
+  common_name varchar(100)
+  ace varchar(30)
+  pygments varchar(30)
+  file_only boolean
+}
+
+Table Judge {
+  id int [pk, increment]
+  name varchar(50) [unique]
+  created datetime
+  online boolean
+  start_time datetime
+  load float
+  description text
+  auth_key varchar(100)
+}
+
+Table RuntimeVersion {
+  id int [pk, increment]
+  judge_id int [ref: > Judge.id, not null]
+  language_id int [ref: > Language.id, not null]
+  name varchar(64)
+  version varchar(64)
+}
+
+// ========== NHOM COMMENT / BLOG / TICKET ==========
+
+Table Comment {
+  id int [pk, increment]
+  author_id int [ref: > Profile.id]
+  page varchar(30)
+  body text
+  score int
+  parent_id int [ref: > Comment.id, note: 'MPTT tree']
+  lft int
+  rght int
+  tree_id int
+  level int
+}
+
+Table BlogPost {
+  id int [pk, increment]
+  title varchar(100)
+  slug varchar(128)
+  content text
+  publish_on datetime
+  visible boolean
+}
+
+Table Ticket {
+  id int [pk, increment]
+  title varchar(100)
+  user_id int [ref: > Profile.id]
+  content text
+  is_open boolean
+}
+
+Table TicketMessage {
+  id int [pk, increment]
+  ticket_id int [ref: > Ticket.id]
+  user_id int [ref: > Profile.id]
+  body text
+}

@@ -1,0 +1,52 @@
+@startuml State_GensolJob
+!theme plain
+skinparam state {
+  BackgroundColor #E8F5E9
+}
+
+title State Diagram: Trang thai GensolJob (ALOJ moi)
+
+[*] --> PENDING : Admin tao job
+
+state "PENDING" as PENDING : Job da tao\ncho Bridge nhan
+
+state "GENERATING_INPUT" as GEN_IN : Dang chay Generator\nSinh input data\ntung test case
+
+state "GENERATING_OUTPUT" as GEN_OUT : Dang chay Solution\nSinh expected output\ntung test case
+
+state "UPLOADING" as UPLOAD : Dang upload\ntest cases vao\nProblemData
+
+state "DONE" as DONE : Hoan tat\nTat ca test cases\nda duoc tao
+
+state "ERROR" as ERROR : Loi xay ra\nGhi nhan error_message\nva error_testcase
+
+PENDING --> GEN_IN : Bridge gui den Judge\n(gensol-request type=GEN)
+
+GEN_IN --> GEN_IN : Moi test case:\nchay generator\nluu case_N.in
+GEN_IN --> GEN_OUT : Tat ca input\nda sinh xong\n(Redis LPUSH signal)
+
+GEN_IN --> ERROR : Generator TLE/MLE/RTE\n(gensol-stop-on-error)
+
+GEN_OUT --> GEN_OUT : Moi test case:\nchay solution\nluu case_N.out
+GEN_OUT --> UPLOAD : Tat ca output\nda sinh xong\n(Redis LPUSH signal)
+
+GEN_OUT --> ERROR : Solution TLE/MLE/RTE
+
+UPLOAD --> DONE : Upload thanh cong\nvao ProblemTestCase
+
+UPLOAD --> ERROR : Loi khi upload\nhoac luu file
+
+DONE --> [*]
+ERROR --> [*]
+
+note right of GEN_IN
+  **WebSocket channel:**
+  gensol_<id_secret>
+  (HMAC-SHA512)
+
+  **Redis signal:**
+  LPUSH gensol_done:<id>
+  BLPOP (timeout=300s)
+end note
+
+@enduml

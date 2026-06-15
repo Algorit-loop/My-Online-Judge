@@ -1,0 +1,99 @@
+@startuml Deployment_Docker
+!theme plain
+skinparam node {
+  BackgroundColor #F0F8FF
+}
+skinparam component {
+  BackgroundColor<<aloj>> #E8F5E9
+  BackgroundColor<<official>> #E3F2FD
+  BackgroundColor<<external>> #FFF3CD
+}
+
+title So do trien khai Docker Compose - ALOJ
+
+node "Server (Ubuntu 20.04+)" as Server {
+
+  frame "docker-compose.yml" as DC {
+
+    node "aloj_nginx" <<official>> {
+      component "nginx:alpine" as NginxImg
+      note right: Port 80 (public)\nReverse proxy\nStatic files
+    }
+
+    node "aloj_site" <<aloj>> {
+      component "aloj/aloj-site\nPython 3.11 + Django 4.2\nuWSGI (8 workers)" as SiteImg
+      note right: Port 8000 (internal)\nNetworks: site, nginx, db
+    }
+
+    node "aloj_wsevent" <<aloj>> {
+      component "aloj/aloj-wsevent\nNode.js Alpine" as WSImg
+      note right: Port 15100-15102 (internal)\nNetworks: site, nginx
+    }
+
+    node "aloj_bridged" <<aloj>> {
+      component "aloj/aloj-bridged\nPython 3.11" as BridgeImg
+      note right: Port 9998, 9999 (exposed)\nNetworks: site, nginx, db
+    }
+
+    node "aloj_celery" <<aloj>> {
+      component "aloj/aloj-celery\nPython 3.11\nCelery (2 workers)" as CeleryImg
+      note right: No port\nNetworks: site, db
+    }
+
+    node "aloj_mysql" <<official>> {
+      component "mariadb:latest" as DBImg
+      note right: Port 3306 (internal)\nNetwork: db
+    }
+
+    node "aloj_redis" <<official>> {
+      component "redis:alpine" as RedisImg
+      note right: Port 6379 (internal)\nNetwork: site
+    }
+  }
+
+  frame "Volumes" as Volumes {
+    storage "assets" as V_Assets
+    storage "./database/" as V_DB
+    storage "./media/" as V_Media
+    storage "./problems/" as V_Problems
+    storage "./repo/" as V_Repo
+    storage "./generate_testcase/" as V_GenTest
+  }
+}
+
+node "Judge Server (Remote)" <<external>> {
+  component "vnoj/judge-tiervnoj\nSandbox + SYS_PTRACE\n30+ Languages" as JudgeImg
+}
+
+' Connections
+NginxImg --> SiteImg : "uWSGI :8000"
+NginxImg --> WSImg : "WS :15100\nPoll :15102"
+NginxImg --> V_Assets : "/static/"
+NginxImg --> V_Media : "/media/"
+
+SiteImg --> DBImg : "SQL :3306"
+SiteImg --> RedisImg : "Cache :6379"
+SiteImg --> BridgeImg : "TCP :9998"
+SiteImg --> V_Repo
+SiteImg --> V_Media
+SiteImg --> V_Problems
+
+CeleryImg --> DBImg
+CeleryImg --> RedisImg
+CeleryImg --> V_Repo
+CeleryImg --> V_Problems
+
+BridgeImg --> DBImg
+BridgeImg --> RedisImg
+BridgeImg --> V_Repo
+BridgeImg --> V_Problems
+BridgeImg --> V_GenTest
+BridgeImg --> JudgeImg : "TCP :9999"
+BridgeImg --> WSImg : "POST :15101"
+
+WSImg --> RedisImg
+WSImg --> V_Repo
+
+DBImg --> V_DB
+
+@enduml
