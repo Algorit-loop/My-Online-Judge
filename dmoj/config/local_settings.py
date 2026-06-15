@@ -121,7 +121,7 @@ EMAIL_PORT = 587
 ADMINS = ()
 
 # The sender for the aforementioned emails.
-SERVER_EMAIL = 'ALOJ: Algorit Online Judge <aloj@onlinejudge.com>'
+SERVER_EMAIL = 'BKDNOJ: Bách Khoa Đà Nẵng Online Judge <bkdnoj@onlinejudge.com>'
 
 
 ################################################
@@ -159,10 +159,10 @@ DMOJ_RESOURCES = '/assets/resources/'
 ############################################
 
 ## DMOJ site display settings.
-SITE_NAME = 'Algorit Online Judge'
+SITE_NAME = 'Bách Khoa Đà Nẵng Online Judge'
 SITE_FULL_URL = os.environ.get('SITE_FULL_URL', 'http://localhost/')
-SITE_LONG_NAME = 'ALOJ: Algorit Online Judge'
-SITE_ADMIN_EMAIL = 'aloj@onlinejudge.com'
+SITE_LONG_NAME = 'BKDNOJ: Bách Khoa Đà Nẵng Online Judge'
+SITE_ADMIN_EMAIL = 'bkdnoj@onlinejudge.com'
 TERMS_OF_SERVICE_URL = None
 
 ## Media files settings.
@@ -355,7 +355,7 @@ LOGGING = {
 
 FILE_UPLOAD_PERMISSIONS = 0o644
 
-ALOJ_CP_TICKET = 5
+BKDNOJ_CP_TICKET = 5
 
 # REGISTRATION_OPEN = False
 

@@ -41,14 +41,14 @@ class CommentForm(ModelForm):
     def clean_body(self):
         body = self.cleaned_data['body']
         if self.request is not None and not self.request.user.is_staff:
-            if len(body) < settings.ALOJ_COMMENT_MIN_LENGTH:
-                raise ValidationError(_('Comment is too short (min %d chars).') % settings.ALOJ_COMMENT_MIN_LENGTH)
-            if len(body) > settings.ALOJ_COMMENT_MAX_LENGTH:
-                raise ValidationError(_('Comment is too long (max %d chars).') % settings.ALOJ_COMMENT_MAX_LENGTH)
+            if len(body) < settings.BKDNOJ_COMMENT_MIN_LENGTH:
+                raise ValidationError(_('Comment is too short (min %d chars).') % settings.BKDNOJ_COMMENT_MIN_LENGTH)
+            if len(body) > settings.BKDNOJ_COMMENT_MAX_LENGTH:
+                raise ValidationError(_('Comment is too long (max %d chars).') % settings.BKDNOJ_COMMENT_MAX_LENGTH)
 
-            if settings.ALOJ_COMMENT_BLACKLIST_TERMS:
+            if settings.BKDNOJ_COMMENT_BLACKLIST_TERMS:
                 body_casefolded = body.casefold()
-                blacklist_casefolded = [term.casefold() for term in settings.ALOJ_COMMENT_BLACKLIST_TERMS]
+                blacklist_casefolded = [term.casefold() for term in settings.BKDNOJ_COMMENT_BLACKLIST_TERMS]
                 for term in blacklist_casefolded:
                     if term in body_casefolded:
                         raise ValidationError(_('Your comment contains forbidden content.'))
@@ -64,19 +64,19 @@ class CommentForm(ModelForm):
 
             elif profile.is_new_user:
                 raise ValidationError(_('You need to have solved at least %d problems '
-                                        'before your voice can be heard.') % settings.ALOJ_INTERACT_MIN_PROBLEM_COUNT)
+                                        'before your voice can be heard.') % settings.BKDNOJ_INTERACT_MIN_PROBLEM_COUNT)
             if not self.request.user.is_staff:
-                if profile.contribution_points < settings.ALOJ_COMMENT_MIN_CONTRIBUTION:
+                if profile.contribution_points < settings.BKDNOJ_COMMENT_MIN_CONTRIBUTION:
                     raise ValidationError(
                         _('You need at least %d contribution points to comment.')
-                        % settings.ALOJ_COMMENT_MIN_CONTRIBUTION,
+                        % settings.BKDNOJ_COMMENT_MIN_CONTRIBUTION,
                     )
 
-                if (settings.ALOJ_COMMENT_RATE_LIMIT_COUNT is not None and
+                if (settings.BKDNOJ_COMMENT_RATE_LIMIT_COUNT is not None and
                         Comment.objects.filter(
                             author=profile,
-                            time__gte=timezone.now() - settings.ALOJ_COMMENT_RATE_LIMIT_WINDOW,
-                        ).count() >= settings.ALOJ_COMMENT_RATE_LIMIT_COUNT):
+                            time__gte=timezone.now() - settings.BKDNOJ_COMMENT_RATE_LIMIT_WINDOW,
+                        ).count() >= settings.BKDNOJ_COMMENT_RATE_LIMIT_COUNT):
                     raise ValidationError(_('You are commenting too fast. Chill out.'))
 
         return super(CommentForm, self).clean()
@@ -157,7 +157,7 @@ class CommentedDetailView(TemplateResponseMixin, SingleObjectMixin, View):
             context['is_new_user'] = profile.is_new_user
             context['interact_min_problem_count_msg'] = \
                 _('You need to have solved at least %d problems before your voice can be heard.') \
-                % settings.ALOJ_INTERACT_MIN_PROBLEM_COUNT
+                % settings.BKDNOJ_INTERACT_MIN_PROBLEM_COUNT
         context['comment_list'] = queryset
         context['vote_hide_threshold'] = settings.DMOJ_COMMENT_VOTE_HIDE_THRESHOLD
         context['reply_cutoff'] = timezone.now() - settings.DMOJ_COMMENT_REPLY_TIMEFRAME

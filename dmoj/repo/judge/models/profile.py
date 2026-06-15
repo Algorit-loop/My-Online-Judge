@@ -68,12 +68,12 @@ class Organization(models.Model):
     current_consumed_credit = models.FloatField(default=0, help_text='Total used credit this month')
     paid_credit = models.FloatField(default=0, help_text=_('Remaining purchased credits'), db_column='available_credit')
 
-    _pp_table = [pow(settings.ALOJ_ORG_PP_STEP, i) for i in range(settings.ALOJ_ORG_PP_ENTRIES)]
+    _pp_table = [pow(settings.BKDNOJ_ORG_PP_STEP, i) for i in range(settings.BKDNOJ_ORG_PP_ENTRIES)]
 
     def calculate_points(self, table=_pp_table):
         data = self.members.get_queryset().order_by('-performance_points') \
                    .values_list('performance_points', flat=True).filter(performance_points__gt=0)
-        pp = settings.ALOJ_ORG_PP_SCALE * sum(ratio * pp for ratio, pp in zip(table, data))
+        pp = settings.BKDNOJ_ORG_PP_SCALE * sum(ratio * pp for ratio, pp in zip(table, data))
         if not float_compare_equal(self.performance_points, pp):
             self.performance_points = pp
             self.save(update_fields=['performance_points'])
@@ -177,7 +177,7 @@ class Profile(models.Model):
     organizations = SortedManyToManyField(Organization, verbose_name=_('organization'), blank=True,
                                           related_name='members', related_query_name='member')
     display_rank = models.CharField(max_length=10, default='user', verbose_name=_('display rank'),
-                                    choices=settings.ALOJ_DISPLAY_RANKS)
+                                    choices=settings.BKDNOJ_DISPLAY_RANKS)
     mute = models.BooleanField(verbose_name=_('comment mute'), help_text=_('Some users are at their best when silent.'),
                                default=False)
     is_unlisted = models.BooleanField(verbose_name=_('unlisted user'), help_text=_('User will not be ranked.'),
@@ -239,7 +239,7 @@ class Profile(models.Model):
 
     @cached_property
     def has_enough_solves(self):
-        return self.problem_count >= settings.ALOJ_INTERACT_MIN_PROBLEM_COUNT
+        return self.problem_count >= settings.BKDNOJ_INTERACT_MIN_PROBLEM_COUNT
 
     @cached_property
     def is_new_user(self):
@@ -257,7 +257,7 @@ class Profile(models.Model):
         if self.allow_tagging:
             if self.user.has_perm('judge.add_tagproblem'):
                 return True
-            if self.rating is not None and self.rating >= settings.ALOJ_TAG_PROBLEM_MIN_RATING:
+            if self.rating is not None and self.rating >= settings.BKDNOJ_TAG_PROBLEM_MIN_RATING:
                 return True
         return False
 
@@ -320,9 +320,9 @@ class Profile(models.Model):
         count_good_tickets = Ticket.objects.filter(user=self.id, is_contributive=True) \
             .count()
         count_suggested_problem = self.suggested_problems.filter(is_public=True).count()
-        new_pp = (total_comment_scores + total_blog_scores) * settings.ALOJ_CP_COMMENT + \
-            count_good_tickets * settings.ALOJ_CP_TICKET + \
-            count_suggested_problem * settings.ALOJ_CP_PROBLEM
+        new_pp = (total_comment_scores + total_blog_scores) * settings.BKDNOJ_CP_COMMENT + \
+            count_good_tickets * settings.BKDNOJ_CP_TICKET + \
+            count_suggested_problem * settings.BKDNOJ_CP_PROBLEM
         if new_pp != old_pp:
             self.contribution_points = new_pp
             self.save(update_fields=['contribution_points'])

@@ -6,90 +6,77 @@ skinparam participant {
   BackgroundColor #E8F5E9
 }
 
-title Sequence Diagram: Generate Testcase - GensolJob (ALOJ moi)
+title Sequence Diagram: Generate Testcase - GensolJob (BKDNOJ moi)
 
 actor "Admin\n(Problem Setter)" as A
-participant "Django Site" as Site
+participant "Django Site\n(GensolStartView)" as Site
+participant "gensol utils\n(utils/gensol.py)" as Util
 database "MariaDB" as DB
 participant "Bridge\n:9998" as Bridge
 participant "Judge Server\n:9999" as Judge
-participant "Redis" as Redis
 participant "WSEvent" as WS
 
-== Phase 1: Admin nhap Generator va Solution ==
+== 1. Admin nhap Generator va Solution ==
 A -> Site : GET /problem/<code>/test_data/generate
-Site --> A : Form nhap:\n- Generator source code\n- Solution source code\n- Chon ngon ngu\n- So luong test case
+Site --> A : Form: generator source, solution source,\nchon ngon ngu, so test case (1..50)
 
-A -> Site : POST gensol_start\n{generator_source, solution_source,\ngenerator_lang, solution_lang, num_cases}
+A -> Site : POST gensol/start\n{generator_source, solution_source,\ngenerator_lang, solution_lang, num_cases}
 
-== Phase 2: Tao GensolJob ==
-Site -> DB : INSERT GensolJob\n(status='PENDING')
+== 2. Tao GensolJob + STAGE GENERATOR ==
+Site -> DB : INSERT GensolJob (status='PENDING')
+Site -> Util : start_gensol_job(job)
+Util -> DB : DELETE ProblemTestCase cu
+Util -> Util : Tao "virtual zip":\nmoi input = so thu tu (1..N), output rong
+Util -> DB : Upload zip -> ProblemData + init.yml
+Util -> DB : UPDATE status='GENERATING_INPUT'\ncurrent_step='generator'
+Util -> Bridge : judge_request\n**gensol-request** {gensol-step='generator'}
 Site --> A : JSON {job_id, id_secret}
+A -> WS : Subscribe channel **gensol_<id_secret>**
 
-A -> WS : Subscribe channel\n**gensol_<id_secret>**
-
-== Phase 3: STAGE GEN - Chay Generator ==
-Site -> Bridge : TCP :9998\n**gensol-request** type='GEN'\n{job-id, source=generator,\ncustom-inputs=['','',...]×N}
-
-Bridge -> Judge : TCP :9999\nsubmission-request + meta:\n{gensol-stop-on-error: true}
-
-Bridge -> DB : UPDATE GensolJob\nstatus='GENERATING_INPUT'
-Bridge -> WS : POST event\n{status: generating_input}
-WS -> A : WebSocket update
+Bridge -> Judge : TCP :9999 gensol_submit\n(submission-request, sample-testcase-only)
 
 loop Moi test case (1..N)
-  Judge -> Judge : Chay generator\n(empty stdin)\nSinh input data
-  Judge --> Bridge : test-case-status\n{output = generated input}
-  Bridge -> Bridge : Luu output vao file\n/generate_testcase/<id>/\ncase_<n>.in
-  Bridge -> WS : POST event\n{testcase: n, status}
-  WS -> A : WebSocket\n{progress update}
+  Judge -> Judge : Chay generator (stdin = so thu tu)\n-> sinh input data
+  Judge --> Bridge : test-case-status {position, output}
+  Bridge -> Util : save_testcase_output('generator', n, output)
+  Util -> Util : Luu working_dir/inputs/<n>.txt
+  Bridge -> WS : POST event {testcase: n}
+  WS -> A : WebSocket {progress}
 end
 
+== 3. grading-end: chuyen sang STAGE SOLUTION ==
 Judge --> Bridge : grading-end
-Bridge -> Redis : LPUSH gensol_done:<id>
+Bridge -> Util : on_gensol_grading_end(job, 'generator')
+Util -> Util : _transition_to_solution:\nbuild zip tu inputs (output rong)
+Util -> DB : Upload zip -> ProblemData + init.yml
+Util -> DB : UPDATE status='GENERATING_OUTPUT'\ncurrent_step='solution'
+Util -> Bridge : judge_request\n**gensol-request** {gensol-step='solution'}
 
-== Phase 4: STAGE SOL - Chay Solution ==
-Site -> Redis : BLPOP gensol_done:<id>\n(timeout=300s)
-Redis --> Site : Signal received
-
-Site -> Site : Doc generated inputs\ntu files
-
-Site -> Bridge : TCP :9998\n**gensol-request** type='SOL'\n{job-id, source=solution,\ncustom-inputs=[input1, input2,...]}
-
-Bridge -> Judge : TCP :9999\nsubmission-request
-
-Bridge -> DB : UPDATE GensolJob\nstatus='GENERATING_OUTPUT'
-Bridge -> WS : POST event\n{status: generating_output}
-WS -> A : WebSocket update
+Bridge -> Judge : TCP :9999 gensol_submit
 
 loop Moi test case (1..N)
-  Judge -> Judge : Chay solution\nvoi generated input\nSinh expected output
-  Judge --> Bridge : test-case-status\n{output = expected output}
-  Bridge -> Bridge : Luu output vao file\n/generate_testcase/<id>/\ncase_<n>.out
+  Judge -> Judge : Chay solution (stdin = input da sinh)\n-> sinh expected output
+  Judge --> Bridge : test-case-status {position, output}
+  Bridge -> Util : save_testcase_output('solution', n, output)
+  Util -> Util : Luu working_dir/outputs/<n>.txt
 end
 
+== 4. grading-end: finalize + upload ==
 Judge --> Bridge : grading-end
-Bridge -> Redis : LPUSH gensol_done:<id>
+Bridge -> Util : on_gensol_grading_end(job, 'solution')
+Util -> Util : _finalize_job: build zip cuoi (inputs + outputs)
+Util -> Util : Kiem tra size <= GENSOL_MAX_ZIP_SIZE (64MB)
+Util -> DB : Upload zip -> ProblemData + init.yml\n+ tao ProblemTestCase[]
+Util -> DB : UPDATE status='DONE'
+Util -> Util : Cleanup working_dir
+Util -> WS : POST event {type: done}
+WS -> A : WebSocket {Generate thanh cong! N test cases}
 
-== Phase 5: Upload Test Cases ==
-Site -> Redis : BLPOP gensol_done:<id>
-Redis --> Site : Signal received
-
-Site -> DB : UPDATE GensolJob\nstatus='UPLOADING'
-
-Site -> Site : Doc tat ca files:\ncase_1.in, case_1.out\ncase_2.in, case_2.out\n...
-
-Site -> DB : INSERT ProblemTestCase[]\n(input_file, output_file,\npoints, order)
-
-Site -> DB : UPDATE GensolJob\nstatus='DONE'
-
-Site -> WS : POST event\n{type: done, num_cases: N}
-WS -> A : WebSocket\n{Generate thanh cong!\nN test cases da duoc tao}
-
-note right of A
-  Admin co the xem va
-  chinh sua test cases
-  tai trang test_data
+note over Bridge, Util
+  Toan bo dieu phoi (generator -> solution -> finalize)
+  chay TRONG tien trinh Bridge bang cach goi
+  judge/utils/gensol.py - **KHONG dung Redis signal**.
+  Loi test case: on_gensol_error -> status='ERROR'.
 end note
 
 @enduml

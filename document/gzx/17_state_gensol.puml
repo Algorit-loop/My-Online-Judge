@@ -4,7 +4,7 @@ skinparam state {
   BackgroundColor #E8F5E9
 }
 
-title State Diagram: Trang thai GensolJob (ALOJ moi)
+title State Diagram: Trang thai GensolJob (BKDNOJ moi)
 
 [*] --> PENDING : Admin tao job
 
@@ -20,21 +20,21 @@ state "DONE" as DONE : Hoan tat\nTat ca test cases\nda duoc tao
 
 state "ERROR" as ERROR : Loi xay ra\nGhi nhan error_message\nva error_testcase
 
-PENDING --> GEN_IN : Bridge gui den Judge\n(gensol-request type=GEN)
+PENDING --> GEN_IN : start_gensol_job\n(gensol-request, step=generator)
 
-GEN_IN --> GEN_IN : Moi test case:\nchay generator\nluu case_N.in
-GEN_IN --> GEN_OUT : Tat ca input\nda sinh xong\n(Redis LPUSH signal)
+GEN_IN --> GEN_IN : Moi test case:\nchay generator\nluu inputs/<n>.txt
+GEN_IN --> GEN_OUT : grading-end (generator)\non_gensol_grading_end\n-> _transition_to_solution
 
-GEN_IN --> ERROR : Generator TLE/MLE/RTE\n(gensol-stop-on-error)
+GEN_IN --> ERROR : Generator TLE/MLE/RTE\n(on_gensol_error)
 
-GEN_OUT --> GEN_OUT : Moi test case:\nchay solution\nluu case_N.out
-GEN_OUT --> UPLOAD : Tat ca output\nda sinh xong\n(Redis LPUSH signal)
+GEN_OUT --> GEN_OUT : Moi test case:\nchay solution\nluu outputs/<n>.txt
+GEN_OUT --> UPLOAD : grading-end (solution)\non_gensol_grading_end\n-> _finalize_job
 
 GEN_OUT --> ERROR : Solution TLE/MLE/RTE
 
-UPLOAD --> DONE : Upload thanh cong\nvao ProblemTestCase
+UPLOAD --> DONE : Build zip cuoi (in+out)\nUpload ProblemTestCase\n(size <= 64MB)
 
-UPLOAD --> ERROR : Loi khi upload\nhoac luu file
+UPLOAD --> ERROR : Zip qua lon\nhoac loi upload
 
 DONE --> [*]
 ERROR --> [*]
@@ -44,9 +44,9 @@ note right of GEN_IN
   gensol_<id_secret>
   (HMAC-SHA512)
 
-  **Redis signal:**
-  LPUSH gensol_done:<id>
-  BLPOP (timeout=300s)
+  **Dieu phoi:** Bridge goi
+  judge/utils/gensol.py
+  (KHONG dung Redis signal)
 end note
 
 @enduml

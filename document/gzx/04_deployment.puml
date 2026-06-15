@@ -9,7 +9,7 @@ skinparam component {
   BackgroundColor<<external>> #FFF3CD
 }
 
-title So do trien khai Docker Compose - ALOJ
+title So do trien khai Docker Compose - BKDNOJ
 
 node "Server (Ubuntu 20.04+)" as Server {
 

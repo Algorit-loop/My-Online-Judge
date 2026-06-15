@@ -672,7 +672,7 @@ class ContestParticipation(models.Model):
     recompute_results.alters_data = True
 
     def check_ban(self):
-        if not settings.ALOJ_SHOULD_BAN_FOR_CHEATING_IN_CONTESTS or self.contest.is_organization_private:
+        if not settings.BKDNOJ_SHOULD_BAN_FOR_CHEATING_IN_CONTESTS or self.contest.is_organization_private:
             return
 
         disqualifications_count = ContestParticipation.objects.filter(
@@ -680,11 +680,11 @@ class ContestParticipation(models.Model):
             contest__is_organization_private=False,
             is_disqualified=True,
         ).count()
-        if disqualifications_count >= settings.ALOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING and \
+        if disqualifications_count >= settings.BKDNOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING and \
                 not self.user.is_banned:
-            self.user.ban_user(settings.ALOJ_CONTEST_CHEATING_BAN_MESSAGE)
-        elif disqualifications_count < settings.ALOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING and \
-                self.user.is_banned and self.user.ban_reason == settings.ALOJ_CONTEST_CHEATING_BAN_MESSAGE:
+            self.user.ban_user(settings.BKDNOJ_CONTEST_CHEATING_BAN_MESSAGE)
+        elif disqualifications_count < settings.BKDNOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING and \
+                self.user.is_banned and self.user.ban_reason == settings.BKDNOJ_CONTEST_CHEATING_BAN_MESSAGE:
             self.user.unban_user()
     check_ban.alters_data = True
 

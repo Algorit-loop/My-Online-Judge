@@ -531,7 +531,7 @@ Một số cấu hình quan trọng đã được thiết lập:
 ```python
 # DMOJ Site Display
 SITE_NAME = 'ALGORIT'
-SITE_LONG_NAME = 'Algorit Online Judge'
+SITE_LONG_NAME = 'Bách Khoa Đà Nẵng Online Judge'
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",

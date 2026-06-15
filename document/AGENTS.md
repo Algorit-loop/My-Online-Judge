@@ -1,4 +1,4 @@
-# ALOJ – Algorit Online Judge · AI Agent Reference
+# BKDNOJ – Bách Khoa Đà Nẵng Online Judge · AI Agent Reference
 
 > **Base platform**: [VNOJ Docker](https://github.com/VNOI-Admin/vnoj-docker) (fork của [DMOJ](https://github.com/DMOJ/online-judge))  
 > **Stack**: Django · MariaDB · Redis · Celery · Nginx · Docker Compose  
@@ -99,7 +99,7 @@ aloj-docker/
     ├── problems/              # Dữ liệu test + judge YML configs
     ├── database/              # MariaDB data volume (bind mount)
     ├── media/                 # File upload (submission_file, martor, pdf)
-    ├── repo/                  # Source code ALOJ (git submodule)
+    ├── repo/                  # Source code BKDNOJ (git submodule)
     │   ├── resources/         # SCSS, JS, static assets
     │   │   ├── submission.scss
     │   │   ├── base.scss, style.scss, navbar.scss
@@ -180,7 +180,7 @@ judge-server/
 | `./database/` | MariaDB data (bind mount) |
 | `./media/` | File media upload |
 | `./problems/` | Test data bài tập |
-| `./repo/` | Source code ALOJ (mount → `/site/`) |
+| `./repo/` | Source code BKDNOJ (mount → `/site/`) |
 
 ### Docker Networks
 
@@ -260,8 +260,8 @@ BRIDGED_HOST=bridged
 ### `config/local_settings.py` (key settings)
 
 ```python
-SITE_NAME        = 'Algorit Online Judge'
-SITE_LONG_NAME   = 'ALOJ: Algorit Online Judge'
+SITE_NAME        = 'Bách Khoa Đà Nẵng Online Judge'
+SITE_LONG_NAME   = 'BKDNOJ: Bách Khoa Đà Nẵng Online Judge'
 SITE_ADMIN_EMAIL = 'aloj@onlinejudge.com'
 LANGUAGE_CODE    = 'vi'
 DEFAULT_USER_TIME_ZONE = 'Asia/Ho_Chi_Minh'

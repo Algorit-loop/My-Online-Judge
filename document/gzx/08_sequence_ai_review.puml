@@ -6,7 +6,7 @@ skinparam participant {
   BackgroundColor #E8F5E9
 }
 
-title Sequence Diagram: AI Code Review (ALOJ moi)
+title Sequence Diagram: AI Code Review (BKDNOJ moi)
 
 actor "Browser" as B
 participant "Django Site" as Site

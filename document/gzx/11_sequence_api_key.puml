@@ -6,7 +6,7 @@ skinparam participant {
   BackgroundColor #E8F5E9
 }
 
-title Sequence Diagram: Quan ly AI API Key (ALOJ moi)
+title Sequence Diagram: Quan ly AI API Key (BKDNOJ moi)
 
 actor "User" as U
 participant "Django Site" as Site

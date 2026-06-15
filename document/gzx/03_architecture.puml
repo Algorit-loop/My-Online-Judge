@@ -1,4 +1,4 @@
-@startuml Architecture_ALOJ
+@startuml Architecture_BKDNOJ
 !theme plain
 skinparam component {
   BackgroundColor<<new>> #DDFFD6
@@ -13,7 +13,7 @@ skinparam cloud {
   BackgroundColor #FFF0F0
 }
 
-title Kien truc tong the he thong ALOJ - Algorit Online Judge
+title Kien truc tong the he thong BKDNOJ - Bách Khoa Đà Nẵng Online Judge
 
 cloud "Internet" as Internet {
   actor "Browser\n(User)" as Browser
@@ -74,7 +74,7 @@ Site -left-> AI : "HTTPS\n(AI Code Review\nAI Problem Creator\nAI Gen Code)"
 ' Celery
 Celery -down-> DB : "SQL"
 Celery -left-> Redis : "Broker (DB1)"
-Celery -right-> Bridge : "TCP :9998\n(gensol-request)"
+Celery -right-> Bridge : "TCP :9998\n(rejudge submission-request)"
 
 ' Bridge
 Bridge -down-> Judge : "TCP :9999\n(JSON + Zlib\n4-byte header)"

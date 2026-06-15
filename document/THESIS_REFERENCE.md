@@ -1,5 +1,5 @@
 # TAI LIEU THAM KHAO VIET BAO CAO DO AN TOT NGHIEP
-# DU AN: ALOJ - ALGORIT ONLINE JUDGE
+# DU AN: BKDNOJ - BÁCH KHOA ĐÀ NẴNG ONLINE JUDGE
 # ====================================
 
 > File nay cung cap day du thong tin chinh xac tu source code de viet bao cao do an tot nghiep.
@@ -34,8 +34,8 @@
 
 | Thong tin | Chi tiet |
 |-----------|---------|
-| **Ten du an** | ALOJ - Algorit Online Judge |
-| **Ten day du** | Algorit Online Judge |
+| **Ten du an** | BKDNOJ - Bách Khoa Đà Nẵng Online Judge |
+| **Ten day du** | Bách Khoa Đà Nẵng Online Judge |
 | **Domain** | algoritoj.id.vn |
 | **Loai** | He thong cham bai tu dong (Online Judge) |
 | **Tham khao tu** | DMOJ (dmoj.ca) va VNOJ (oj.vnoi.info) |
@@ -51,9 +51,9 @@ DMOJ (Don Mills Online Judge) la mot he thong cham bai tu dong ma nguon mo, duoc
 
 VNOJ (Vietnam Online Judge - oj.vnoi.info) la phien ban fork tu DMOJ, duoc tuy chinh boi VNOI-Admin cho cong dong Competitive Programming Viet Nam. VNOJ bo sung them cac tinh nang nhu: Polygon import, organization subdomain, contest format VNOJ, v.v.
 
-## 1.4. ALOJ la gi?
+## 1.4. BKDNOJ la gi?
 
-ALOJ (Algorit Online Judge) la phien ban fork tu VNOJ, duoc tac gia phat trien nhu do an tot nghiep. ALOJ ke thua tat ca chuc nang cua DMOJ/VNOJ va bo sung them:
+BKDNOJ (Bách Khoa Đà Nẵng Online Judge) la phien ban fork tu VNOJ, duoc tac gia phat trien nhu do an tot nghiep. BKDNOJ ke thua tat ca chuc nang cua DMOJ/VNOJ va bo sung them:
 - **He thong IDE truc tuyen** (kieu LeetCode)
 - **Tich hop AI da nha cung cap** (OpenAI, Google Gemini, Anthropic Claude, DeepSeek)
 - **AI Code Review** - Phan tich code tu dong
@@ -75,7 +75,7 @@ BKDNOJ (Bach Khoa Da Nang Online Judge) co nhieu han che:
 - Han che ve kha nang mo rong va tuy chinh
 - Khong co he thong goi y, phan tich code tu dong
 
-## 2.2. Muc tieu cua ALOJ
+## 2.2. Muc tieu cua BKDNOJ
 
 1. **Xay dung he thong OJ hien dai** - Giao dien dep, than thien, responsive
 2. **Tich hop AI** - Giup nguoi hoc duoc goi y, phan tich code, tao de tu dong
@@ -170,7 +170,7 @@ BKDNOJ (Bach Khoa Da Nang Online Judge) co nhieu han che:
 
 ## 4.1. Tong quan kien truc Microservice
 
-He thong ALOJ gom **8 container Docker** giao tiep qua **3 mang noi bo**:
+He thong BKDNOJ gom **8 container Docker** giao tiep qua **3 mang noi bo**:
 
 ```
 +------------------------------------------------------------------+
@@ -369,7 +369,7 @@ OLE - Output Limit Exceeded
 | **ProblemGroup** | Nhom bai tap | name |
 | **ProblemType** | Loai bai tap | name, full_name |
 | **ProblemData** | Du lieu test | problem, zipfile, generator, output_prefix, output_limit |
-| **ProblemTestCase** | Test case | dataset, order, type, input_file, output_file, points, is_pretest, **is_sample** (ALOJ moi) |
+| **ProblemTestCase** | Test case | dataset, order, type, input_file, output_file, points, is_pretest, **is_sample** (BKDNOJ moi) |
 | **ProblemTranslation** | Da ngon ngu | problem, language, name, description |
 | **ProblemClarification** | Lam ro de bai | problem, description, date |
 | **Solution** (Editorial) | Loi giai mau | problem, is_public, publish_on, authors, content |
@@ -382,7 +382,7 @@ OLE - Output Limit Exceeded
 | **Submission** | Bai nop | user, problem, date, time, memory, points, language, status, result, source, case_points, case_total, judged_on |
 | **SubmissionSource** | Ma nguon | submission (1:1), source |
 | **SubmissionTestCase** | Ket qua test | submission, case, status, time, memory, points, total, batch, output |
-| **RunSubmission** (ALOJ moi) | IDE Run | user, problem, language, source, status, result, time, memory, case_results (JSON) |
+| **RunSubmission** (BKDNOJ moi) | IDE Run | user, problem, language, source, status, result, time, memory, case_results (JSON) |
 
 ### D. Nhom Contest
 
@@ -410,7 +410,7 @@ OLE - Output Limit Exceeded
 | **Ticket** | Phieu ho tro | title, user, content, object_id, is_open |
 | **TicketMessage** | Nhan tin ticket | ticket, user, body |
 
-### F. Nhom AI (ALOJ MOI - Dong gop cua tac gia)
+### F. Nhom AI (BKDNOJ MOI - Dong gop cua tac gia)
 
 | Model | Mo ta | Truong chinh |
 |-------|-------|-------------|
@@ -458,7 +458,7 @@ AICodeReview <-- N:1 --> Profile
 
 Tong cong **231 migration files** trong `judge/migrations/`, bao gom:
 - Migration goc tu DMOJ/VNOJ: 0001 -> 0224
-- **Migration ALOJ moi:**
+- **Migration BKDNOJ moi:**
   - `0225_problem_enable_new_ide_problemtestcase_is_sample.py` - IDE feature
   - `0226_run_submission.py` - RunSubmission model
   - `0227_aiapikey.py` - AI API Key + Test Log models
@@ -551,18 +551,18 @@ Tong cong **231 migration files** trong `judge/migrations/`, bao gom:
 | `/problems/` | Danh sach bai tap |
 | `/problem/<code>/` | Xem bai tap |
 | `/problem/<code>/submit` | Nop bai |
-| `/problem/<code>/run` | **IDE Run (ALOJ moi)** |
+| `/problem/<code>/run` | **IDE Run (BKDNOJ moi)** |
 | `/submissions/` | Danh sach bai nop |
 | `/submission/<id>/` | Chi tiet bai nop |
 | `/src/<id>/` | Xem source code |
-| `/src/<id>/ai-review/` | **AI Code Review (ALOJ moi)** |
+| `/src/<id>/ai-review/` | **AI Code Review (BKDNOJ moi)** |
 | `/contests/` | Danh sach contest |
 | `/contest/<code>/` | Xem contest |
 | `/users/` | Bang xep hang |
 | `/user/<username>/` | Profile nguoi dung |
 | `/organizations/` | Danh sach to chuc |
-| `/accounts/api-keys/` | **Quan ly AI API Keys (ALOJ moi)** |
-| `/admin/judge/problem/ai-create/` | **AI Problem Creator (ALOJ moi)** |
+| `/accounts/api-keys/` | **Quan ly AI API Keys (BKDNOJ moi)** |
+| `/admin/judge/problem/ai-create/` | **AI Problem Creator (BKDNOJ moi)** |
 | `/runtimes/` | Trang thai ngon ngu |
 | `/status/` | Trang thai judge |
 | `/posts/` | Blog |
@@ -619,7 +619,7 @@ Day la phan QUAN TRONG NHAT cua bao cao - the hien nhung gi tac gia da lam duoc.
 
 ### Migrations moi: 6 files (0225 -> 0231)
 
-### Settings moi: 40+ cau hinh ALOJ_* rieng
+### Settings moi: 40+ cau hinh BKDNOJ_* rieng
 
 ---
 
@@ -777,7 +777,7 @@ Online IDE cho phep nguoi dung viet code va chay thu ngay tren trinh duyet, tuon
 
 ```
 +-----------------------------------------------------------+
-|  ALOJ Navbar                                               |
+|  BKDNOJ Navbar                                               |
 +---------------------------+-------------------------------+
 |                           |                               |
 |  PROBLEM STATEMENT        |  CODE EDITOR (ACE)            |
@@ -886,15 +886,15 @@ Online IDE cho phep nguoi dung viet code va chay thu ngay tren trinh duyet, tuon
 - FR02.4: Upload test data (zip file hoac tung file)
 - FR02.5: Cau hinh scoring mode, time/memory limit
 - FR02.6: Import bai tu Polygon format
-- FR02.7: **Tao de bai tu anh/PDF bang AI (ALOJ moi)**
+- FR02.7: **Tao de bai tu anh/PDF bang AI (BKDNOJ moi)**
 
 ### FR03: Nop bai va cham bai
 - FR03.1: Nop bai giai (chon ngon ngu, paste/upload code)
 - FR03.2: Xem ket qua real-time (WebSocket)
 - FR03.3: Xem chi tiet tung test case
 - FR03.4: Xem source code bai nop
-- FR03.5: **Chay thu code qua IDE (ALOJ moi)**
-- FR03.6: **AI Code Review (ALOJ moi)**
+- FR03.5: **Chay thu code qua IDE (BKDNOJ moi)**
+- FR03.6: **AI Code Review (BKDNOJ moi)**
 
 ### FR04: Contest
 - FR04.1: Xem danh sach contest
@@ -981,10 +981,10 @@ User
   |-- Xem danh sach bai tap
   |-- Xem chi tiet bai tap
   |-- Nop bai giai
-  |-- Chay thu code (IDE) [ALOJ moi]
+  |-- Chay thu code (IDE) [BKDNOJ moi]
   |-- Xem ket qua submission
-  |-- Yeu cau AI Code Review [ALOJ moi]
-  |-- Quan ly AI API Keys [ALOJ moi]
+  |-- Yeu cau AI Code Review [BKDNOJ moi]
+  |-- Quan ly AI API Keys [BKDNOJ moi]
   |-- Tham gia contest
   |-- Xem leaderboard
   |-- Viet blog post
@@ -1000,13 +1000,13 @@ Admin
   |-- Toan quyen cua User
   |-- Quan ly bai tap (CRUD)
   |-- Upload test data
-  |-- Tao de bang AI [ALOJ moi]
+  |-- Tao de bang AI [BKDNOJ moi]
   |-- Quan ly contest
   |-- Quan ly user
   |-- Quan ly judge
   |-- Cau hinh he thong
-  |-- Tuy chinh AI prompts [ALOJ moi]
-  |-- Xem AI code review logs [ALOJ moi]
+  |-- Tuy chinh AI prompts [BKDNOJ moi]
+  |-- Xem AI code review logs [BKDNOJ moi]
   |-- MOSS plagiarism check
 ```
 
@@ -1173,7 +1173,7 @@ User           Frontend        Server          Bridge          Judge
 
 ## 14.1. Bang so sanh chuc nang
 
-| Chuc nang | DMOJ | VNOJ | BKDNOJ | **ALOJ** |
+| Chuc nang | DMOJ | VNOJ | BKDNOJ | **BKDNOJ** |
 |-----------|------|------|--------|----------|
 | Cham bai tu dong | Co | Co | Co | **Co** |
 | Multi-language | 30+ | 30+ | Han che | **30+** |
@@ -1197,7 +1197,7 @@ User           Frontend        Server          Bridge          Judge
 | Ticket system | Co | Co | Khong | **Co** |
 | URL Shortener | Khong | Khong | Khong | **Co** |
 
-## 14.2. Diem noi bat cua ALOJ
+## 14.2. Diem noi bat cua BKDNOJ
 
 1. **AI-first approach:** Tich hop AI xuyen suot (review, tao de, prompt tuy chinh)
 2. **Modern IDE:** Giong LeetCode, khong can IDE ngoai
@@ -1236,7 +1236,7 @@ User           Frontend        Server          Bridge          Judge
 | `dmoj/nginx/conf.d/nginx.conf` | Nginx reverse proxy |
 | `dmoj/environment/site.env` | Environment variables |
 
-## 16.2. AI Features (ALOJ moi)
+## 16.2. AI Features (BKDNOJ moi)
 | File | Dong | Mo ta |
 |------|------|-------|
 | `judge/models/ai_code_review.py` | 31 | Model AI review |
@@ -1249,7 +1249,7 @@ User           Frontend        Server          Bridge          Judge
 | `judge/admin/ai_code_review.py` | - | Admin AI review |
 | `judge/admin/ai_prompt.py` | - | Admin prompt |
 
-## 16.3. IDE Feature (ALOJ moi)
+## 16.3. IDE Feature (BKDNOJ moi)
 | File | Dong | Mo ta |
 |------|------|-------|
 | `judge/models/run_submission.py` | 56 | RunSubmission model |
@@ -1285,39 +1285,39 @@ User           Frontend        Server          Bridge          Judge
 
 # PHU LUC
 
-## A. Cac ALOJ Settings rieng (trong settings.py)
+## A. Cac BKDNOJ Settings rieng (trong settings.py)
 
 ```python
 # Community
-ALOJ_CP_COMMENT = 1              # Diem/comment vote
-ALOJ_CP_TICKET = 10              # Diem/ticket tot
-ALOJ_CP_PROBLEM = 20             # Diem/bai tap goi y
+BKDNOJ_CP_COMMENT = 1              # Diem/comment vote
+BKDNOJ_CP_TICKET = 10              # Diem/ticket tot
+BKDNOJ_CP_PROBLEM = 20             # Diem/bai tap goi y
 
 # Gioi han
-ALOJ_ORGANIZATION_ADMIN_LIMIT = 3
-ALOJ_PROBLEM_TIMELIMIT_LIMIT = 5  # giay
-ALOJ_CONTEST_DURATION_LIMIT = 14  # ngay
-ALOJ_TESTCASE_HARD_LIMIT = 100
-ALOJ_TESTCASE_SOFT_LIMIT = 50
-ALOJ_INTERACT_MIN_PROBLEM_COUNT = 5
-ALOJ_BLOG_MIN_PROBLEM_COUNT = 10
+BKDNOJ_ORGANIZATION_ADMIN_LIMIT = 3
+BKDNOJ_PROBLEM_TIMELIMIT_LIMIT = 5  # giay
+BKDNOJ_CONTEST_DURATION_LIMIT = 14  # ngay
+BKDNOJ_TESTCASE_HARD_LIMIT = 100
+BKDNOJ_TESTCASE_SOFT_LIMIT = 50
+BKDNOJ_INTERACT_MIN_PROBLEM_COUNT = 5
+BKDNOJ_BLOG_MIN_PROBLEM_COUNT = 10
 
 # Comment
-ALOJ_COMMENT_MIN_CONTRIBUTION = -20
-ALOJ_COMMENT_MIN_LENGTH = 10
-ALOJ_COMMENT_MAX_LENGTH = 10000
+BKDNOJ_COMMENT_MIN_CONTRIBUTION = -20
+BKDNOJ_COMMENT_MIN_LENGTH = 10
+BKDNOJ_COMMENT_MAX_LENGTH = 10000
 
 # Chong gian lan
-ALOJ_SHOULD_BAN_FOR_CHEATING_IN_CONTESTS = False
-ALOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING = 3
+BKDNOJ_SHOULD_BAN_FOR_CHEATING_IN_CONTESTS = False
+BKDNOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING = 3
 
 # Organization
-ALOJ_IGNORED_ORGANIZATION_SUBDOMAINS = ['oj', 'www', 'localhost']
-ALOJ_ENABLE_ORGANIZATION_CREDIT_LIMITATION = False
+BKDNOJ_IGNORED_ORGANIZATION_SUBDOMAINS = ['oj', 'www', 'localhost']
+BKDNOJ_ENABLE_ORGANIZATION_CREDIT_LIMITATION = False
 
 # Performance
-ALOJ_LOW_POWER_MODE = False
-ALOJ_LONG_QUEUE_ALERT_THRESHOLD = 10
+BKDNOJ_LOW_POWER_MODE = False
+BKDNOJ_LONG_QUEUE_ALERT_THRESHOLD = 10
 
 # IDE
 DMOJ_IDE_MAX_CUSTOM_TESTCASES = 3

@@ -1,4 +1,4 @@
-# Hướng Dẫn Chi Tiết Thiết Lập Máy Chấm (Judge Server) - ALOJ
+# Hướng Dẫn Chi Tiết Thiết Lập Máy Chấm (Judge Server) - BKDNOJ
 
 ## Mục Lục
 1. [Kiến Trúc Hệ Thống](#kiến-trúc-hệ-thống)
@@ -22,7 +22,7 @@
 ## Kiến Trúc Hệ Thống
 
 ### Tổng Quan
-Hệ thống ALOJ bao gồm 3 thành phần chính:
+Hệ thống BKDNOJ bao gồm 3 thành phần chính:
 - **Site Server**: Máy chủ web chính chứa giao diện và logic quản lý
 - **Bridge**: Daemon trung gian kết nối Judge với Site (chạy trong Docker)
 - **Judge Server**: Máy chấm thực thi bài tập, có thể chạy cục bộ hoặc từ xa
@@ -532,7 +532,7 @@ Một số cấu hình quan trọng đã được thiết lập:
 ```python
 # DMOJ Site Display
 SITE_NAME = 'ALGORIT'
-SITE_LONG_NAME = 'Algorit Online Judge'
+SITE_LONG_NAME = 'Bách Khoa Đà Nẵng Online Judge'
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",

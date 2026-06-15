@@ -50,25 +50,25 @@ DMOJ_PP_STEP = 0.98514
 DMOJ_PP_ENTRIES = 300
 DMOJ_PP_BONUS_FUNCTION = lambda n: 0.05 * n  # 15 * (1 - 0.997 ** n)  # noqa: E731; 100 bai nua diem: 0.9930924
 
-ALOJ_ORG_PP_STEP = 0.95
-ALOJ_ORG_PP_ENTRIES = 100
-ALOJ_ORG_PP_SCALE = 1
+BKDNOJ_ORG_PP_STEP = 0.95
+BKDNOJ_ORG_PP_ENTRIES = 100
+BKDNOJ_ORG_PP_SCALE = 1
 
-ALOJ_ENABLE_API = False
-ALOJ_ENABLE_SYNC_API = True  # need to make this true for testing :sad:
+BKDNOJ_ENABLE_API = False
+BKDNOJ_ENABLE_SYNC_API = True  # need to make this true for testing :sad:
 # GLOBAL_API_KEY = 'test-api-key-123'
 
-ALOJ_OFFICIAL_CONTEST_MODE = False
+BKDNOJ_OFFICIAL_CONTEST_MODE = False
 
 # Contribution points function
 # Both should be int
-ALOJ_CP_COMMENT = 1   # Each comment vote equals 1 CP
-ALOJ_CP_TICKET = 10   # Each good ticket equals CP
-ALOJ_CP_PROBLEM = 20  # Each suggested problem equal 20 CP
+BKDNOJ_CP_COMMENT = 1   # Each comment vote equals 1 CP
+BKDNOJ_CP_TICKET = 10   # Each good ticket equals CP
+BKDNOJ_CP_PROBLEM = 20  # Each suggested problem equal 20 CP
 
-ALOJ_HOMEPAGE_TOP_USERS_COUNT = 10
+BKDNOJ_HOMEPAGE_TOP_USERS_COUNT = 10
 
-ALOJ_DISPLAY_RANKS = (
+BKDNOJ_DISPLAY_RANKS = (
     ('user', _('Normal User')),
     ('setter', _('Problem Setter')),
     ('daor', _('Bedao Team')),
@@ -78,65 +78,65 @@ ALOJ_DISPLAY_RANKS = (
     ('teacher', _('Teacher')),
 )
 # Backward-compatible alias for migrations that reference the old name
-VNOJ_DISPLAY_RANKS = ALOJ_DISPLAY_RANKS
+VNOJ_DISPLAY_RANKS = BKDNOJ_DISPLAY_RANKS
 
 # Maximum number of organization a single user can be admin, to be able to
 # create new organization, without the `spam_organization` permission
-ALOJ_ORGANIZATION_ADMIN_LIMIT = 3
+BKDNOJ_ORGANIZATION_ADMIN_LIMIT = 3
 # Maximum timelimit (second) that a user can set for a problem
 # without the `high_problem_timelimit` permission
-ALOJ_PROBLEM_TIMELIMIT_LIMIT = 5
+BKDNOJ_PROBLEM_TIMELIMIT_LIMIT = 5
 # Maximum contest duration (day) that a user can set for a contest
 # without the `long_contest_duration` permission
-ALOJ_CONTEST_DURATION_LIMIT = 14
+BKDNOJ_CONTEST_DURATION_LIMIT = 14
 # Maximum number of test cases that a user can create for a problem
 # without the `create_mass_testcases` permission
-ALOJ_TESTCASE_HARD_LIMIT = 100
+BKDNOJ_TESTCASE_HARD_LIMIT = 100
 # If a user without the `create_mass_testcases` permission create more than this amount of test
 # they will receive a warning
-ALOJ_TESTCASE_SOFT_LIMIT = 50
+BKDNOJ_TESTCASE_SOFT_LIMIT = 50
 # Minimum problem count required to interact (comment, vote and update profile)
-ALOJ_INTERACT_MIN_PROBLEM_COUNT = 5
+BKDNOJ_INTERACT_MIN_PROBLEM_COUNT = 5
 # Minimum problem count required to create new blogs
-ALOJ_BLOG_MIN_PROBLEM_COUNT = 10
+BKDNOJ_BLOG_MIN_PROBLEM_COUNT = 10
 
 # Comment validation settings
-ALOJ_COMMENT_MIN_CONTRIBUTION = -20
-ALOJ_COMMENT_MIN_LENGTH = 10
-ALOJ_COMMENT_MAX_LENGTH = 10000
-ALOJ_COMMENT_BLACKLIST_TERMS = []
-ALOJ_COMMENT_RATE_LIMIT_COUNT = None  # maximum number of comments allowed within the time window
-ALOJ_COMMENT_RATE_LIMIT_WINDOW = datetime.timedelta(seconds=600)
+BKDNOJ_COMMENT_MIN_CONTRIBUTION = -20
+BKDNOJ_COMMENT_MIN_LENGTH = 10
+BKDNOJ_COMMENT_MAX_LENGTH = 10000
+BKDNOJ_COMMENT_BLACKLIST_TERMS = []
+BKDNOJ_COMMENT_RATE_LIMIT_COUNT = None  # maximum number of comments allowed within the time window
+BKDNOJ_COMMENT_RATE_LIMIT_WINDOW = datetime.timedelta(seconds=600)
 
-ALOJ_TESTCASE_VISIBLE_LENGTH = 60
+BKDNOJ_TESTCASE_VISIBLE_LENGTH = 60
 
-ALOJ_TAG_PROBLEM_MIN_RATING = 1900  # Minimum rating to be able to tag a problem
+BKDNOJ_TAG_PROBLEM_MIN_RATING = 1900  # Minimum rating to be able to tag a problem
 
-ALOJ_SHOULD_BAN_FOR_CHEATING_IN_CONTESTS = False
-ALOJ_CONTEST_CHEATING_BAN_MESSAGE = 'Banned for multiple cheating offenses during contests'
-ALOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING = 3
+BKDNOJ_SHOULD_BAN_FOR_CHEATING_IN_CONTESTS = False
+BKDNOJ_CONTEST_CHEATING_BAN_MESSAGE = 'Banned for multiple cheating offenses during contests'
+BKDNOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING = 3
 
 # List of subdomain that will be ignored in organization subdomain middleware
-ALOJ_IGNORED_ORGANIZATION_SUBDOMAINS = ['oj', 'www', 'localhost']
+BKDNOJ_IGNORED_ORGANIZATION_SUBDOMAINS = ['oj', 'www', 'localhost']
 
 # Enable organization credit system, if true, org will not be able to submit submissions
 # if they run out of credit
-ALOJ_ENABLE_ORGANIZATION_CREDIT_LIMITATION = False
-ALOJ_PRICE_PER_HOUR = 50
+BKDNOJ_ENABLE_ORGANIZATION_CREDIT_LIMITATION = False
+BKDNOJ_PRICE_PER_HOUR = 50
 
 
-ALOJ_LONG_QUEUE_ALERT_THRESHOLD = 10
+BKDNOJ_LONG_QUEUE_ALERT_THRESHOLD = 10
 
 # Low power mode: Optimize queries by limiting data scope for performance
-ALOJ_LOW_POWER_MODE = False
-ALOJ_LOW_POWER_MODE_CONFIG = {
+BKDNOJ_LOW_POWER_MODE = False
+BKDNOJ_LOW_POWER_MODE_CONFIG = {
     # limit the number of submissions pages
     'max_page': 5,
     # avoid drawing heat map for users with too many submissions
     'heat_map_limit': 20_000,
 }
 
-ALOJ_MAGAZINE_TAG_SLUG = None
+BKDNOJ_MAGAZINE_TAG_SLUG = None
 
 CELERY_TIMEZONE = 'UTC'
 
@@ -230,7 +230,7 @@ DMOJ_PROBLEM_HOT_PROBLEM_COUNT = 7
 DMOJ_PROBLEM_STATEMENT_DISALLOWED_CHARACTERS = {'“', '”', '‘', '’', '−', 'ﬀ', 'ﬁ', 'ﬂ', 'ﬃ', 'ﬄ'}
 DMOJ_RATING_COLORS = True
 DMOJ_EMAIL_THROTTLING = (10, 60)
-ALOJ_DISCORD_WEBHOOK_THROTTLING = (10, 60)  # Max 10 messages in 60 seconds
+BKDNOJ_DISCORD_WEBHOOK_THROTTLING = (10, 60)  # Max 10 messages in 60 seconds
 
 # Maximum number of submissions a single user can queue without the `spam_submission` permission
 DMOJ_SUBMISSION_LIMIT = 5

@@ -6,7 +6,7 @@ skinparam participant {
   BackgroundColor #E8F5E9
 }
 
-title Sequence Diagram: Luong chay thu IDE Run (ALOJ moi)
+title Sequence Diagram: Luong chay thu IDE Run (BKDNOJ moi)
 
 actor "Browser\n(IDE Page)" as B
 participant "Django Site\n(RunSubmitView)" as Site

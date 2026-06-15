@@ -21,7 +21,7 @@ User <|-- Setter
 Setter <|-- ContAdmin
 ContAdmin <|-- Admin
 
-rectangle "HE THONG ALOJ - ONLINE JUDGE" {
+rectangle "HE THONG BKDNOJ - ONLINE JUDGE" {
 
   ' === GUEST ===
   package "Xem thong tin" {

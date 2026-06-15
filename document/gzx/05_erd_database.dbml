@@ -1,5 +1,5 @@
 // ==============================================
-// ALOJ - Algorit Online Judge
+// BKDNOJ - Bách Khoa Đà Nẵng Online Judge
 // Entity Relationship Diagram (ERD)
 // Render tai: https://dbdiagram.io
 // ==============================================
@@ -25,7 +25,7 @@ Table Profile {
   language_id int [ref: > Language.id]
   points float [default: 0]
   performance_points float [default: 0]
-  contribution_points int [default: 0, note: 'ALOJ moi']
+  contribution_points int [default: 0, note: 'BKDNOJ moi']
   vnoj_points int [default: 0]
   problem_count int [default: 0]
   ace_theme varchar(30)
@@ -117,7 +117,7 @@ Table Problem {
   submission_source_visibility_mode varchar(1)
   testcase_visibility_mode varchar(1)
   testcase_result_visibility_mode varchar(1)
-  enable_new_ide boolean [note: 'ALOJ moi - bat IDE']
+  enable_new_ide boolean [note: 'BKDNOJ moi - bat IDE']
   suggester_id int [ref: > Profile.id]
 }
 
@@ -159,7 +159,7 @@ Table ProblemTestCase {
   output_file varchar(100)
   points int
   is_pretest boolean
-  is_sample boolean [note: 'ALOJ moi - danh dau sample cho IDE']
+  is_sample boolean [note: 'BKDNOJ moi - danh dau sample cho IDE']
 }
 
 Table ProblemTranslation {
@@ -265,9 +265,9 @@ Table SubmissionTestCase {
   }
 }
 
-// ========== NHOM IDE RUN (ALOJ MOI) ==========
+// ========== NHOM IDE RUN (BKDNOJ MOI) ==========
 
-Table RunSubmission [headercolor: #2E8B57, note: 'ALOJ moi - IDE Run'] {
+Table RunSubmission [headercolor: #2E8B57, note: 'BKDNOJ moi - IDE Run'] {
   id int [pk, increment]
   user_id int [ref: > Profile.id, not null]
   problem_id int [ref: > Problem.id, not null]
@@ -306,7 +306,7 @@ Table Contest {
   organization_id int [ref: > Organization.id]
   format_name varchar(32) [note: 'default/ioi/icpc/atcoder/ecoo/vnoj/legacy_ioi']
   format_config json
-  enable_focus_lock boolean [default: false, note: 'ALOJ moi']
+  enable_focus_lock boolean [default: false, note: 'BKDNOJ moi']
   scoreboard_visibility varchar(1)
   problem_label_style varchar(10)
   user_count int
@@ -337,7 +337,7 @@ Table ContestParticipation {
   cumtime int
   frozen_score float
   is_disqualified boolean
-  focus_violations int [default: 0, note: 'ALOJ moi - dem vi pham']
+  focus_violations int [default: 0, note: 'BKDNOJ moi - dem vi pham']
   virtual int [note: '0=LIVE, -1=SPECTATE']
   format_data json
 
@@ -400,9 +400,9 @@ Table contest_tags {
   contesttag_id int [ref: > ContestTag.id]
 }
 
-// ========== NHOM AI (ALOJ MOI) ==========
+// ========== NHOM AI (BKDNOJ MOI) ==========
 
-Table AIAPIKey [headercolor: #2E8B57, note: 'ALOJ moi'] {
+Table AIAPIKey [headercolor: #2E8B57, note: 'BKDNOJ moi'] {
   id int [pk, increment]
   user_id int [ref: > Profile.id, not null]
   provider varchar(20) [note: 'openai/gemini/claude/deepseek']
@@ -419,7 +419,7 @@ Table AIAPIKey [headercolor: #2E8B57, note: 'ALOJ moi'] {
   }
 }
 
-Table AIAPIKeyTestLog [headercolor: #2E8B57, note: 'ALOJ moi'] {
+Table AIAPIKeyTestLog [headercolor: #2E8B57, note: 'BKDNOJ moi'] {
   id int [pk, increment]
   api_key_id int [ref: > AIAPIKey.id, not null]
   provider varchar(20)
@@ -430,7 +430,7 @@ Table AIAPIKeyTestLog [headercolor: #2E8B57, note: 'ALOJ moi'] {
   tested_at datetime
 }
 
-Table AICodeReview [headercolor: #2E8B57, note: 'ALOJ moi'] {
+Table AICodeReview [headercolor: #2E8B57, note: 'BKDNOJ moi'] {
   id int [pk, increment]
   submission_id int [ref: > Submission.id, not null]
   user_id int [ref: > Profile.id, not null]
@@ -441,7 +441,7 @@ Table AICodeReview [headercolor: #2E8B57, note: 'ALOJ moi'] {
   created_at datetime
 }
 
-Table AIPromptTemplate [headercolor: #2E8B57, note: 'ALOJ moi'] {
+Table AIPromptTemplate [headercolor: #2E8B57, note: 'BKDNOJ moi'] {
   id int [pk, increment]
   key varchar(50) [unique, note: 'ai_code_review / ai_problem_creator / api_key_test']
   name varchar(100)
@@ -450,9 +450,9 @@ Table AIPromptTemplate [headercolor: #2E8B57, note: 'ALOJ moi'] {
   updated_at datetime
 }
 
-// ========== NHOM GENSOL (ALOJ MOI) ==========
+// ========== NHOM GENSOL (BKDNOJ MOI) ==========
 
-Table GensolJob [headercolor: #2E8B57, note: 'ALOJ moi - Generate Testcase'] {
+Table GensolJob [headercolor: #2E8B57, note: 'BKDNOJ moi - Generate Testcase'] {
   id int [pk, increment]
   problem_id int [ref: > Problem.id, not null]
   user_id int [ref: > Profile.id, not null]

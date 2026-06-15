@@ -17,7 +17,7 @@ actor "Judge Server" as Judge
 Setter <|-- ContAdmin
 ContAdmin <|-- Admin
 
-rectangle "HE THONG ALOJ - QUAN TRI" {
+rectangle "HE THONG BKDNOJ - QUAN TRI" {
 
   package "Quan ly bai tap" {
     usecase "Tao/Sua/Xoa bai tap" as UC_ProbCRUD

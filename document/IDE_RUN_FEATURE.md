@@ -1,8 +1,8 @@
-# Tính năng IDE mới cho ALOJ
+# Tính năng IDE mới cho BKDNOJ
 
 ## Tổng quan
 
-Thêm giao diện **IDE kiểu LeetCode** cho từng bài trên ALOJ. Khi admin bật `enable_new_ide`, trang `/problem/<CODE>` chuyển sang layout 2 cột: trái là đề bài, phải là ACE editor + panel kết quả. Tính năng **RUN** dùng model riêng `RunSubmission` (bảng DB mới), gửi qua pipeline `run-request` độc lập với `submission-request`, kết quả trả về realtime qua **WebSocket (wsevent)**.
+Thêm giao diện **IDE kiểu LeetCode** cho từng bài trên BKDNOJ. Khi admin bật `enable_new_ide`, trang `/problem/<CODE>` chuyển sang layout 2 cột: trái là đề bài, phải là ACE editor + panel kết quả. Tính năng **RUN** dùng model riêng `RunSubmission` (bảng DB mới), gửi qua pipeline `run-request` độc lập với `submission-request`, kết quả trả về realtime qua **WebSocket (wsevent)**.
 
 ---
 

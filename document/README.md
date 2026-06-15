@@ -1,4 +1,4 @@
-# ALOJ - Algorit Online Judge
+# BKDNOJ - Bách Khoa Đà Nẵng Online Judge
 
 ## Muc Luc
 

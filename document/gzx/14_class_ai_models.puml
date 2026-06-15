@@ -6,7 +6,7 @@ skinparam class {
   BackgroundColor<<existing>> #F0F8FF
 }
 
-title Class Diagram: Cac Model AI va IDE (ALOJ moi)
+title Class Diagram: Cac Model AI va IDE (BKDNOJ moi)
 
 class Profile <<existing>> {
   +user: OneToOne(User)
@@ -105,7 +105,8 @@ class AIPromptTemplate <<new>> {
   +get_prompt(key, default)
   ..
   Keys: ai_code_review,
-  ai_problem_creator, api_key_test
+  ai_problem_creator, ai_gen_code,
+  api_key_test
 }
 
 class RunSubmission <<new>> {
@@ -157,7 +158,7 @@ class ProblemTestCase <<existing>> {
   +is_pretest: boolean
   +is_sample: boolean
   ..
-  is_sample: ALOJ moi
+  is_sample: BKDNOJ moi
   (danh dau cho IDE Run)
 }
 

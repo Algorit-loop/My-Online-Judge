@@ -6,11 +6,11 @@ Repo hiện có cấu trúc chính gồm `dmoj`, `document`, `judge_update`, `.g
 
 Mình đề xuất tên này:
 
-**“Xây dựng và phát triển hệ thống chấm bài lập trình trực tuyến Algorit Online Judge”**
+**“Xây dựng và phát triển hệ thống chấm bài lập trình trực tuyến Bách Khoa Đà Nẵng Online Judge”**
 
 Tên dài hơn, rõ tính kỹ thuật hơn:
 
-**“Nghiên cứu, xây dựng và mở rộng hệ thống chấm bài lập trình trực tuyến Algorit Online Judge dựa trên nền tảng DMOJ/VNOJ”**
+**“Nghiên cứu, xây dựng và mở rộng hệ thống chấm bài lập trình trực tuyến Bách Khoa Đà Nẵng Online Judge dựa trên nền tảng DMOJ/VNOJ”**
 
 Tên thứ hai hay hơn cho báo cáo vì thể hiện rõ: có nghiên cứu, có xây dựng, có kế thừa, có mở rộng.
 
@@ -35,14 +35,14 @@ Nói về nhu cầu học lập trình, luyện thuật toán, tổ chức conte
 * Online Judge giúp tự động hóa quá trình nộp bài, biên dịch, chạy test, đánh giá kết quả.
 * Các hệ thống như DMOJ/VNOJ đã mạnh, nhưng cần tùy biến cho môi trường sử dụng riêng.
 * Hệ thống BKDNOJ (Bach Khoa Da Nang Online Judge) đang được sử dụng nhưng còn nhiều hạn chế: giao diện cũ, không có IDE trực tuyến, không tích hợp AI hỗ trợ người học, khả năng mở rộng và tùy biến hạn chế.
-* ALOJ được xây dựng để khắc phục các hạn chế trên, phục vụ luyện tập, thi lập trình và mở rộng thêm AI/IDE.
+* BKDNOJ được xây dựng để khắc phục các hạn chế trên, phục vụ luyện tập, thi lập trình và mở rộng thêm AI/IDE.
 
 ### 2. Mục tiêu đề tài
 
 Nên viết theo dạng rõ ràng:
 
 * Nghiên cứu kiến trúc hệ thống Online Judge.
-* Xây dựng hệ thống ALOJ dựa trên DMOJ/VNOJ.
+* Xây dựng hệ thống BKDNOJ dựa trên DMOJ/VNOJ.
 * Triển khai hệ thống bằng Docker Compose.
 * Cấu hình site server, bridge, judge server, WebSocket, Redis, database.
 * Bổ sung các tính năng mới như IDE trực tuyến, AI Code Review, AI Problem Creator, AI Generate Testcase, quản lý API key.
@@ -97,15 +97,15 @@ Có thể đưa bảng:
 | LeetCode   | IDE thân thiện, phù hợp luyện phỏng vấn  |
 | DMOJ       | Mã nguồn mở, kiến trúc judge riêng       |
 | VNOJ       | Fork từ DMOJ, phù hợp cộng đồng Việt Nam |
-| ALOJ       | Fork/tùy biến từ VNOJ, bổ sung AI và IDE |
+| BKDNOJ       | Fork/tùy biến từ VNOJ, bổ sung AI và IDE |
 
 ## 1.4. Tổng quan DMOJ/VNOJ và lý do kế thừa
 
-Trong tài liệu repo, ALOJ được mô tả là fork từ VNOJ, kế thừa DMOJ/VNOJ và bổ sung IDE trực tuyến, AI đa nhà cung cấp, AI Code Review, AI Problem Creator, quản lý API key, contribution points và nhiều cấu hình tùy chỉnh. ([GitHub][3])
+Trong tài liệu repo, BKDNOJ được mô tả là fork từ VNOJ, kế thừa DMOJ/VNOJ và bổ sung IDE trực tuyến, AI đa nhà cung cấp, AI Code Review, AI Problem Creator, quản lý API key, contribution points và nhiều cấu hình tùy chỉnh. ([GitHub][3])
 
 Phần này rất quan trọng vì giúp hội đồng hiểu: **bạn không viết lại toàn bộ từ số 0, mà nghiên cứu, triển khai, tùy biến và mở rộng một hệ thống lớn**.
 
-## 1.5. Bài toán đặt ra cho ALOJ
+## 1.5. Bài toán đặt ra cho BKDNOJ
 
 Nên kết luận chương 1 bằng các vấn đề:
 
@@ -219,9 +219,10 @@ Chia theo actor:
 * Đăng ký, đăng nhập.
 * Xem bài tập.
 * Submit code.
-* Xem kết quả.
+* Xem kết quả (theo chế độ chấm điểm: short circuit / partial by subtask / partial by testcase).
 * Chạy thử bằng IDE.
 * Xem contest.
+* Tham gia contest ở chế độ Focus Lock (khóa tập trung): bắt buộc fullscreen, không chuyển tab/thoát màn hình khi đang thi.
 * Bình luận/blog/ticket nếu có.
 
 ### Admin/Giảng viên
@@ -229,6 +230,8 @@ Chia theo actor:
 * Quản lý problem.
 * Quản lý testcase.
 * Quản lý contest.
+* Chọn chế độ chấm điểm cho problem (`scoring_mode`: short circuit / partial by subtask / partial by testcase).
+* Bật/tắt Contest Focus Lock (khóa tập trung) cho từng contest và theo dõi số lần vi phạm (`focus_violations`).
 * Quản lý user.
 * Cấu hình judge.
 * Tạo đề bằng AI.
@@ -262,7 +265,7 @@ Nên viết:
 
 ## 3.3. Kiến trúc tổng thể
 
-Dựa trên repo, kiến trúc ALOJ gồm nhiều service: Nginx, Site Django, WSEvent Node, Redis, Celery, MariaDB, Bridge Daemon và External Judge Servers. ([GitHub][3])
+Dựa trên repo, kiến trúc BKDNOJ gồm nhiều service: Nginx, Site Django, WSEvent Node, Redis, Celery, MariaDB, Bridge Daemon và External Judge Servers. ([GitHub][3])
 
 Sơ đồ nên vẽ:
 
@@ -312,11 +315,33 @@ Các result:
 | IE     | Internal Error        |
 | OLE    | Output Limit Exceeded |
 
+### 3.4.1. Thiết kế chế độ chấm điểm (Scoring Mode)
+
+Đây là một đóng góp riêng so với cách chấm mặc định của DMOJ/VNOJ. Thay vì chỉ có cờ boolean `partial`, hệ thống bổ sung trường `scoring_mode` trên model `Problem` (migration `0222_problem_scoring_mode`) với 3 chế độ:
+
+| Scoring mode       | Giá trị            | Ý nghĩa                                                                 |
+| ------------------ | ------------------ | ---------------------------------------------------------------------- |
+| Short circuit      | `short_circuit`    | Dừng ngay khi gặp test sai, tính điểm theo kiểu “được tất cả hoặc không gì” (all-or-nothing). |
+| Partial by subtask | `partial_batch`    | Chấm theo subtask/batch: một subtask sai thì subtask đó được 0 điểm, các subtask khác vẫn được tính. |
+| Partial by testcase| `partial_testcase` | Chấm theo từng testcase: mỗi test đúng đều được cộng điểm tương ứng.    |
+
+Nên nhấn mạnh:
+
+* Mặc định là `partial_batch` (chấm theo subtask).
+* Trường boolean `short_circuit` cũ vẫn được giữ lại và tự động tính từ `scoring_mode` trong `Problem.save()` để tương thích ngược với giao thức judge.
+* Logic gom test theo batch/subtask được xử lý ở `judge/views/submission.py` (`group_test_cases`, `make_batch`), hiển thị điểm từng subtask/testcase trên trang submission.
+* Giúp giảng viên linh hoạt thiết kế bài: bài kiểu IOI (subtask) hoặc bài cộng điểm từng test.
+
+File liên quan:
+* Model: `judge/models/problem.py` (`ScoringMode`, `SCORING_MODE_CHOICES`, `scoring_mode`).
+* View: `judge/views/submission.py` (`group_test_cases`, `make_batch`).
+* Migration: `0222_problem_scoring_mode.py`.
+
 ## 3.5. Thiết kế luồng IDE Run
 
 Đây là điểm mới nên viết riêng.
 
-Theo tài liệu IDE, ALOJ thêm giao diện IDE kiểu LeetCode cho từng bài; khi admin bật `enable_new_ide`, trang problem chuyển sang layout 2 cột gồm đề bài và CodeMirror 6 editor + panel kết quả. Tính năng Run dùng model riêng `RunSubmission`, gửi qua pipeline `run-request` độc lập với `submission-request`, kết quả trả realtime qua WebSocket. ([GitHub][5])
+Theo tài liệu IDE, BKDNOJ thêm giao diện IDE kiểu LeetCode cho từng bài; khi admin bật `enable_new_ide`, trang problem chuyển sang layout 2 cột gồm đề bài và CodeMirror 6 editor + panel kết quả. Tính năng Run dùng model riêng `RunSubmission`, gửi qua pipeline `run-request` độc lập với `submission-request`, kết quả trả realtime qua WebSocket. ([GitHub][5])
 
 Nên nhấn mạnh:
 
@@ -338,6 +363,8 @@ Dựa trên repo, nên chia nhóm model:
 * AI: AICodeReview, AIPromptTemplate, AIAPIKey, AIAPIKeyTestLog.
 * RunSubmission.
 * GensolJob (AI Generate Testcase).
+* Problem.scoring_mode (chế độ chấm điểm: short_circuit / partial_batch / partial_testcase).
+* Contest.enable_focus_lock + ContestParticipation.focus_violations (Contest Focus Lock).
 
 Tài liệu repo liệt kê nhóm AI gồm `AICodeReview`, `AIPromptTemplate`, `AIAPIKey`, `AIAPIKeyTestLog`; `RunSubmission` cho IDE Run; `GensolJob` cho Generate Testcase (migration 0232, 0233). ([GitHub][3]) ([GitHub][5])
 
@@ -512,7 +539,7 @@ Chức năng đã có trong master (migration 0228). Nên viết:
 * Admin bật `enable_focus_lock` cho contest → ẩn navbar, yêu cầu fullscreen.
 * Khi user tham gia contest, giao diện chuyển chế độ focus/fullscreen.
 * Phát hiện mất focus/thoát tab → ghi nhận vào `focus_violations` (ContestParticipation).
-* Cơ chế auto-ban: nếu user bị disqualify quá N lần (cấu hình qua `ALOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING`), hệ thống tự động ban user thông qua method `check_ban()`.
+* Cơ chế auto-ban: nếu user bị disqualify quá N lần (cấu hình qua `BKDNOJ_MAX_DISQUALIFICATIONS_BEFORE_BANNING`), hệ thống tự động ban user thông qua method `check_ban()`.
 * Khi bỏ disqualify (số lần giảm dưới ngưỡng) → tự động unban.
 
 Phần này nên đưa như **đóng góp riêng**, vì nó khác hệ thống OJ gốc.
@@ -584,9 +611,10 @@ Nên chia:
 
 ### So sánh trước/sau
 
-| Tiêu chí              | Hệ thống gốc                 | ALOJ              |
+| Tiêu chí              | Hệ thống gốc                 | BKDNOJ              |
 | --------------------- | ---------------------------- | ----------------- |
 | Chấm bài              | Có                           | Có                |
+| Chế độ chấm điểm       | Boolean partial              | 3 chế độ (short circuit / subtask / testcase) |
 | Contest               | Có                           | Có                |
 | IDE trực tuyến        | Hạn chế/không phải trọng tâm | Có                |
 | AI Code Review        | Không                        | Có                |
@@ -608,8 +636,9 @@ Nên viết theo 3 mục:
 ## Kết quả đạt được
 
 * Nghiên cứu kiến trúc DMOJ/VNOJ.
-* Triển khai hệ thống ALOJ bằng Docker Compose.
+* Triển khai hệ thống BKDNOJ bằng Docker Compose.
 * Cấu hình luồng chấm bài Site → Bridge → Judge → WebSocket.
+* Bổ sung chế độ chấm điểm linh hoạt (Scoring Mode: short circuit / partial by subtask / partial by testcase).
 * Xây dựng IDE trực tuyến (CodeMirror 6, layout 2 cột kiểu LeetCode).
 * Bổ sung AI Code Review.
 * Bổ sung AI Problem Creator.
@@ -651,7 +680,7 @@ Phần phụ lục có thể giúp báo cáo dày và chuyên nghiệp hơn:
 * Phụ lục E: Prompt AI Code Review / AI Problem Creator / AI Generate Testcase.
 * Phụ lục F: Log kiểm thử submission.
 * Phụ lục G: Hướng dẫn cài đặt Judge Server.
-* Phụ lục H: Danh sách migration ALOJ mới (0225–0233).
+* Phụ lục H: Danh sách migration BKDNOJ mới (0222–0233), gồm `0222_problem_scoring_mode`, `0225_problem_enable_new_ide`, `0226_run_submission`, `0228` (Contest Focus Lock), `0232_gensol_job`, `0233_seed_ai_gen_code_prompt`.
 
 ---
 
@@ -673,7 +702,7 @@ Với dàn ý này, báo cáo của Jack rất hợp lý ở mức **65–80 tra
 
 Điểm nên nhấn mạnh khi viết là:
 
-> **ALOJ không chỉ là cài đặt lại DMOJ/VNOJ, mà là quá trình nghiên cứu kiến trúc Online Judge, triển khai hệ thống thực tế, tùy biến giao diện, bổ sung IDE trực tuyến (CodeMirror 6), tích hợp AI đa nhà cung cấp (Code Review, Problem Creator, Generate Testcase), xây dựng cơ chế chống gian lận và cải tiến luồng vận hành phù hợp với nhu cầu riêng.**
+> **BKDNOJ không chỉ là cài đặt lại DMOJ/VNOJ, mà là quá trình nghiên cứu kiến trúc Online Judge, triển khai hệ thống thực tế, tùy biến giao diện, bổ sung IDE trực tuyến (CodeMirror 6), tích hợp AI đa nhà cung cấp (Code Review, Problem Creator, Generate Testcase), xây dựng cơ chế chống gian lận và cải tiến luồng vận hành phù hợp với nhu cầu riêng.**
 
 [1]: https://github.com/Algorit-loop/My-Online-Judge "GitHub - Algorit-loop/My-Online-Judge · GitHub"
 [2]: https://github.com/Algorit-loop/My-Online-Judge/tree/master/dmoj "My-Online-Judge/dmoj at master · Algorit-loop/My-Online-Judge · GitHub"

@@ -500,7 +500,7 @@ class SubmissionsListBase(DiggPaginatorMixin, TitleMixin, ListView):
         return context
 
     def is_in_low_power_mode(self):
-        return settings.ALOJ_LOW_POWER_MODE and not self.request.user.is_superuser
+        return settings.BKDNOJ_LOW_POWER_MODE and not self.request.user.is_superuser
 
     def get(self, request, *args, **kwargs):
         check = self.access_check(request)
@@ -508,7 +508,7 @@ class SubmissionsListBase(DiggPaginatorMixin, TitleMixin, ListView):
             return check
 
         if self.is_in_low_power_mode():
-            max_page = settings.ALOJ_LOW_POWER_MODE_CONFIG.get('max_page', 5)
+            max_page = settings.BKDNOJ_LOW_POWER_MODE_CONFIG.get('max_page', 5)
             page_kwarg = self.page_kwarg
             page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
             try:

@@ -48,7 +48,7 @@ class InfinitePage(collections.abc.Sequence):
         return len(queryset)
 
     def has_next(self):
-        if settings.ALOJ_LOW_POWER_MODE:
+        if settings.BKDNOJ_LOW_POWER_MODE:
             # Optimized: assume there's a next page if current page is full
             # Trade-off: will show next button on last page when total items is multiple of page_size
             return len(self.object_list) >= self.page_size
@@ -79,7 +79,7 @@ class InfinitePage(collections.abc.Sequence):
     @cached_property
     def main_range(self):
         start = max(1, self.number - self.pad_pages)
-        if settings.ALOJ_LOW_POWER_MODE:
+        if settings.BKDNOJ_LOW_POWER_MODE:
             if self.has_next():
                 end = self.number + self.pad_pages
             else:
@@ -94,7 +94,7 @@ class InfinitePage(collections.abc.Sequence):
 
     @cached_property
     def has_trailing(self):
-        if settings.ALOJ_LOW_POWER_MODE:
+        if settings.BKDNOJ_LOW_POWER_MODE:
             return self.has_next()
         return self._after_up_to_pad > self.pad_pages * self.page_size
 
@@ -139,7 +139,7 @@ class InfinitePaginationMixin:
         return True
 
     def get_pad_pages(self):
-        if settings.ALOJ_LOW_POWER_MODE:
+        if settings.BKDNOJ_LOW_POWER_MODE:
             return 1
         return self.pad_pages
 

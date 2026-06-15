@@ -42,7 +42,7 @@ def vote_blog(request, delta):
 
     if request.profile.is_new_user:
         return HttpResponseBadRequest(_('You must solve at least %d problems before you can vote.')
-                                      % settings.ALOJ_INTERACT_MIN_PROBLEM_COUNT,
+                                      % settings.BKDNOJ_INTERACT_MIN_PROBLEM_COUNT,
                                       content_type='text/plain')
 
     if request.profile.mute:
@@ -116,8 +116,8 @@ class PostListBase(ListView):
                              orphans=orphans, allow_empty_first_page=allow_empty_first_page, **kwargs)
 
     def ignore_magazine_tag(self, queryset):
-        if settings.ALOJ_MAGAZINE_TAG_SLUG:
-            queryset = queryset.exclude(tags__slug=settings.ALOJ_MAGAZINE_TAG_SLUG)
+        if settings.BKDNOJ_MAGAZINE_TAG_SLUG:
+            queryset = queryset.exclude(tags__slug=settings.BKDNOJ_MAGAZINE_TAG_SLUG)
         return queryset
 
     def get_queryset(self):
@@ -167,8 +167,8 @@ class ModernBlogList(PostListBase):
 
         # Tag filter
         tag_slug = self.request.GET.get('tag', '').strip()
-        if not tag_slug and settings.ALOJ_MAGAZINE_TAG_SLUG:
-            tag_slug = settings.ALOJ_MAGAZINE_TAG_SLUG
+        if not tag_slug and settings.BKDNOJ_MAGAZINE_TAG_SLUG:
+            tag_slug = settings.BKDNOJ_MAGAZINE_TAG_SLUG
         queryset = queryset.filter(tags__slug=tag_slug).distinct()
 
         # Sort functionality
@@ -207,8 +207,8 @@ class ModernBlogList(PostListBase):
         context['current_sort'] = self.request.GET.get('sort', 'latest')
         context['current_tag'] = self.request.GET.get('tag', '')
 
-        if settings.ALOJ_MAGAZINE_TAG_SLUG:
-            context['tags'] = BlogPostTag.objects.exclude(slug=settings.ALOJ_MAGAZINE_TAG_SLUG)
+        if settings.BKDNOJ_MAGAZINE_TAG_SLUG:
+            context['tags'] = BlogPostTag.objects.exclude(slug=settings.BKDNOJ_MAGAZINE_TAG_SLUG)
         else:
             context['tags'] = []
 
@@ -310,7 +310,7 @@ class PostList(PostListBase):
                 .order_by('-rating')
                 .only('user', 'rating', 'display_rank', 'display_badge', 'username_display_override')
                 .select_related('user', 'display_badge')
-                [:settings.ALOJ_HOMEPAGE_TOP_USERS_COUNT])
+                [:settings.BKDNOJ_HOMEPAGE_TOP_USERS_COUNT])
 
     def get_top_contributors(self):
         return (Profile.objects.order_by('-contribution_points')
@@ -318,7 +318,7 @@ class PostList(PostListBase):
                 .only('user', 'contribution_points', 'display_rank', 'display_badge', 'rating',
                       'username_display_override')
                 .select_related('user', 'display_badge')
-                [:settings.ALOJ_HOMEPAGE_TOP_USERS_COUNT])
+                [:settings.BKDNOJ_HOMEPAGE_TOP_USERS_COUNT])
 
 
 class PostView(TitleMixin, CommentedDetailView):
@@ -403,12 +403,12 @@ class BlogPostCreate(TitleMixin, CreateView):
             raise PermissionDenied()
 
         # Check if user has permission to create blog posts
-        if request.official_contest_mode or request.user.profile.problem_count < settings.ALOJ_BLOG_MIN_PROBLEM_COUNT \
+        if request.official_contest_mode or request.user.profile.problem_count < settings.BKDNOJ_BLOG_MIN_PROBLEM_COUNT \
                 and not request.user.is_superuser and not hasattr(self, 'organization'):
             return generic_message(request, _('Permission denied'),
                                    _('You cannot create blog post.\n'
                                      'Note: You need to solve at least %d problems to create new blog post.')
-                                   % settings.ALOJ_BLOG_MIN_PROBLEM_COUNT)
+                                   % settings.BKDNOJ_BLOG_MIN_PROBLEM_COUNT)
 
         return super().dispatch(request, *args, **kwargs)
 
