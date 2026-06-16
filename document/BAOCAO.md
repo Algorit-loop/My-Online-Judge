@@ -127,88 +127,157 @@ Tổng hợp các vấn đề cần giải quyết: hệ thống chấm bài ổ
 
 ---
 
-# CHƯƠNG 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ SỬ DỤNG — 12 đến 16 trang
+# CHƯƠNG 2: CƠ SỞ LÝ THUYẾT — 14 đến 18 trang
 
-Chương này trình bày nền tảng lý thuyết của các thành phần cốt lõi, sau đó tổng hợp các công nghệ thực tế được dùng trong hệ thống (Python 3.11, Django 4.2+, uWSGI, Celery, MariaDB, Redis, Node.js WebSocket, jQuery, SCSS, ACE Editor, CodeMirror 6, Chart.js, MathJax, Docker, Nginx, giao thức TCP + Zlib và các nhà cung cấp AI).
+Chương này trình bày nền tảng lý thuyết của hệ thống chấm bài trực tuyến, các công nghệ nền tảng được sử dụng (Python 3.11, Django 4.2+, uWSGI, Celery, MariaDB, Redis, Node.js WebSocket, ACE Editor, CodeMirror 6, Docker, Nginx, giao thức TCP + Zlib) và cơ sở lý thuyết của các chức năng trí tuệ nhân tạo tích hợp trong hệ thống.
 
-## 2.1. Mô hình chấm bài trong hệ thống Online Judge
+## 2.1. Tổng quan về hệ thống chấm bài trực tuyến
 
-### 2.1.1. Quy trình chấm tự động
+### 2.1.1. Khái niệm hệ thống Online Judge
 
-Trình bày nguyên lý: *người dùng nộp mã → biên dịch trong môi trường cô lập → chạy lần lượt từng testcase với giới hạn thời gian/bộ nhớ → so khớp output với đáp án (hoặc qua checker) → tổng hợp điểm và trạng thái*.
+* **Online Judge (OJ)** là hệ thống tự động tiếp nhận mã nguồn của người dùng, biên dịch và thực thi trong môi trường có kiểm soát, sau đó so khớp kết quả với đáp án chuẩn để chấm điểm một cách khách quan.
+* OJ ra đời nhằm thay thế việc chấm bài lập trình thủ công, bảo đảm tính nhất quán, công bằng và khả năng phục vụ số lượng lớn người dùng đồng thời.
+* Hệ thống BKDNOJ trong đề tài kế thừa kiến trúc OJ mã nguồn mở DMOJ/VNOJ.
 
-### 2.1.2. Các trạng thái và kết quả chấm
+### 2.1.2. Vai trò của Online Judge trong học tập và thi lập trình
 
-Trình bày tập trạng thái và kết quả (sẽ chi tiết hóa ở mục 3.4): QU/P/G/D và AC/WA/TLE/MLE/RTE/CE/IE/OLE; ý nghĩa của checker (so khớp tuyệt đối, bỏ qua khoảng trắng, checker tùy biến).
+* **Đối với người học/thí sinh:** môi trường luyện tập thuật toán liên tục, phản hồi tức thì, tự đánh giá năng lực.
+* **Đối với giảng viên/người ra đề:** công cụ tạo bài tập, quản lý bộ test, tổ chức kỳ thi và theo dõi kết quả tự động.
+* **Đối với tổ chức/CLB:** nền tảng tổ chức contest, xếp hạng (rating) và quản lý cộng đồng người dùng.
 
-### 2.1.3. Mô hình chấm điểm (scoring model)
+### 2.1.3. Quy trình hoạt động cơ bản của hệ thống chấm bài trực tuyến
 
-Cơ sở lý thuyết cho ba chiến lược tính điểm — đây là nền tảng cho đóng góp "Scoring Mode" ở Chương 3:
+Trình bày nguyên lý tổng quát: *người dùng nộp mã → hệ thống lưu bài nộp → biên dịch trong môi trường cô lập → chạy lần lượt từng test case với giới hạn thời gian/bộ nhớ → so khớp output với đáp án (hoặc qua checker) → tổng hợp điểm và trạng thái → trả kết quả realtime về trình duyệt*. Đây là khung tham chiếu cho các mục chi tiết tiếp theo.
 
-* **All-or-nothing (short circuit):** dừng tại test sai đầu tiên, "được tất cả hoặc không gì".
-* **Partial theo subtask/batch (kiểu IOI):** mỗi subtask độc lập, một test sai làm subtask đó 0 điểm.
-* **Partial theo từng testcase:** cộng dồn điểm theo từng test đúng.
+## 2.2. Quy trình chấm bài tự động
 
-## 2.2. Cô lập và bảo mật môi trường thực thi (Sandbox)
+### 2.2.1. Quy trình nộp bài và xử lý bài nộp
+
+* Người dùng chọn ngôn ngữ, nhập/upload mã và gửi; hệ thống tạo bản ghi `Submission` với trạng thái khởi tạo **QU (Queued)**.
+* Site đóng gói yêu cầu chấm và gửi đến **Bridge** thông qua giao thức nội bộ: `json.dumps` → nén `zlib` → đóng khung bằng **4 byte độ dài** (header) trên kết nối TCP.
+* Bridge điều phối bài nộp tới một Judge server đang rảnh.
+
+### 2.2.2. Biên dịch và thực thi mã nguồn
+
+* Judge biên dịch mã nguồn; nếu lỗi biên dịch trả về **CE (Compile Error)**.
+* Mã được thực thi trong **sandbox** với từng test case, áp các giới hạn: thời gian (Time Limit), bộ nhớ (Memory Limit), kích thước output (Output Limit), số tiến trình.
+* Trạng thái bài nộp chuyển dần **P (Processing) → G (Grading)** trong quá trình chấm.
+
+### 2.2.3. So sánh kết quả và xác định trạng thái chấm
+
+* Output của chương trình được so khớp với đáp án qua **checker**: so khớp tuyệt đối, so khớp bỏ qua khoảng trắng/dòng trống, hoặc **checker tùy biến** (cho bài có nhiều đáp án đúng, bài tương tác).
+* Điểm được tổng hợp theo **mô hình chấm điểm** (cơ sở cho đóng góp "Scoring Mode" ở Chương 3):
+  * **All-or-nothing (short circuit):** dừng tại test sai đầu tiên, "được tất cả hoặc không gì".
+  * **Partial theo subtask/batch (kiểu IOI):** mỗi subtask độc lập, một test sai làm subtask đó 0 điểm.
+  * **Partial theo từng test case:** cộng dồn điểm theo từng test đúng.
+* Khi hoàn tất, trạng thái chuyển **D (Done)**.
+
+### 2.2.4. Các kết quả chấm
+
+Tập kết quả chuẩn của hệ thống:
+
+| Kết quả | Ý nghĩa |
+| --- | --- |
+| AC | Accepted — đúng toàn bộ |
+| WA | Wrong Answer — sai đáp án |
+| TLE | Time Limit Exceeded — quá thời gian |
+| MLE | Memory Limit Exceeded — quá bộ nhớ |
+| RTE | Runtime Error — lỗi khi chạy |
+| CE | Compile Error — lỗi biên dịch |
+| OLE | Output Limit Exceeded — output quá lớn |
+| IE | Internal Error — lỗi nội bộ hệ thống |
+
+## 2.3. Kiến trúc và công nghệ nền tảng của hệ thống
+
+### 2.3.1. Kiến trúc web nhiều thành phần
+
+* **Nginx:** reverse proxy, định tuyến `/` → site, `/event/` → WebSocket, `/channels/` → HTTP polling fallback, phục vụ `/static/` và `/media/`.
+* **Django + uWSGI:** ứng dụng web chính (8 worker trong cấu hình mặc định) xử lý user, problem, contest, submission, view/template/admin.
+* **Bridge daemon:** trung gian giữa site và các Judge server, điều phối bài chấm.
+* **Judge server:** biên dịch và thực thi mã trong sandbox, có thể mở rộng theo chiều ngang.
+
+### 2.3.2. Cơ sở dữ liệu, bộ nhớ đệm và tác vụ nền
+
+* **MariaDB (UTF8MB4/InnoDB):** lưu user, profile, problem, contest, submission, test case, API key… với hỗ trợ Unicode đầy đủ và quan hệ toàn vẹn.
+* **Redis:** cache, session và message broker.
+* **Celery (concurrency 2):** xử lý tác vụ nền bất đồng bộ (rejudge, export dữ liệu, gửi email, sinh PDF) để không chặn luồng HTTP. Cơ chế Generate Testcase (GenSol) tận dụng pipeline Bridge/Judge để xử lý nền.
+
+### 2.3.3. WebSocket và cập nhật kết quả theo thời gian thực
+
+* Vấn đề: trạng thái chấm bài thay đổi liên tục, nếu dùng polling sẽ tốn tài nguyên và phản hồi chậm.
+* Giải pháp: dịch vụ **WSEvent (Node.js)** đẩy sự kiện realtime; kết quả đi theo luồng *Judge → Bridge → DB/WSEvent → Browser*; trình duyệt cập nhật mà không cần reload, có **HTTP polling fallback** cho client không hỗ trợ WebSocket.
+
+### 2.3.4. Docker và triển khai hệ thống nhiều dịch vụ
+
+* **Docker/Docker Compose:** đóng gói môi trường, chạy nhiều dịch vụ tách biệt (mysql, redis, site, celery, bridged, wsevent, nginx), dễ tái tạo và triển khai.
+* Cô lập tài nguyên giữa các container; định nghĩa network nội bộ và volume bền vững cho database, media, problems.
+
+## 2.4. Môi trường chạy thử và chấm bài
+
+### 2.4.1. Máy chấm và môi trường thực thi mã nguồn
+
+* Judge server của DMOJ hỗ trợ hơn 60 ngôn ngữ lập trình thông qua các executor cấu hình sẵn.
+* Mỗi bài nộp được thực thi trong môi trường có kiểm soát tài nguyên (CPU time, address space, output, process), bảo đảm đo lường công bằng và ổn định.
+
+### 2.4.2. Test case trong đánh giá lời giải
+
+* Lời giải được đánh giá qua bộ **test case** (cặp input/đáp án), có thể tổ chức theo **subtask/batch** để chấm điểm thành phần.
+* Chất lượng bộ test (độ phủ, biên, trường hợp đặc biệt) quyết định độ tin cậy của kết quả chấm — là động lực cho chức năng AI Generate Testcase.
+
+### 2.4.3. IDE trực tuyến và luồng chạy thử chương trình
+
+* Nhu cầu **chạy thử nhanh** trước khi nộp chính thức: kiểm tra mã trên sample test mà không tạo bài nộp được tính điểm.
+* BKDNOJ cung cấp giao diện **IDE trực tuyến** (CodeMirror 6) với pipeline `run-request` độc lập với `submission-request`, dùng model riêng `RunSubmission`, không ảnh hưởng dữ liệu chấm chính thức và bảng xếp hạng (chi tiết ở Chương 3, 4).
+
+### 2.4.4. Vấn đề an toàn khi thực thi mã nguồn người dùng
 
 Mã người dùng là **mã không tin cậy**, cần chạy trong môi trường cô lập:
 
-* **`cptbox` (ptrace-based sandbox của DMOJ):** lọc system call, kiểm soát truy cập file/mạng, ngăn mã độc thoát khỏi sandbox.
-* **Giới hạn tài nguyên:** thời gian CPU/thực thi, bộ nhớ (address space), kích thước output, số tiến trình.
+* **`cptbox` (ptrace-based sandbox của DMOJ):** lọc system call, kiểm soát truy cập file/mạng, ngăn mã thoát khỏi sandbox.
+* **Giới hạn tài nguyên:** thời gian CPU/thực thi, bộ nhớ, kích thước output, số tiến trình.
 * Nền tảng lý thuyết: namespace/cgroup của Linux, nguyên tắc least-privilege.
 
-## 2.3. Kiến trúc bất đồng bộ và hàng đợi tác vụ
+## 2.5. Trí tuệ nhân tạo trong hỗ trợ lập trình
 
-### 2.3.1. Mô hình xử lý bất đồng bộ với message broker
+### 2.5.1. Khái quát về AI và mô hình ngôn ngữ lớn
 
-Lý do tách tác vụ nặng (chấm bài, rejudge, export, gửi email, sinh PDF) khỏi luồng request HTTP để bảo đảm độ phản hồi của web.
+* **Mô hình ngôn ngữ lớn (LLM)** là mô hình học sâu huấn luyện trên khối lượng văn bản/mã nguồn lớn, có khả năng hiểu và sinh ngôn ngữ tự nhiên lẫn mã nguồn.
+* Nguyên lý sử dụng qua API: **prompt template + ngữ cảnh** (mã nguồn/đề bài/bộ tag) → mô hình trả về phân tích/đề bài/lời giải/nhãn phân loại.
+* Hệ thống hỗ trợ **4 nhà cung cấp**: OpenAI, Gemini, Claude, DeepSeek (`AI_PROVIDER_CONFIGS`, `AI_PROVIDER_MODELS`); API key của người dùng được **mã hóa Fernet** (khóa dẫn xuất từ SHA-256 của `SECRET_KEY`), chỉ lưu **last4** để nhận diện. Prompt cho từng chức năng được admin cấu hình qua `AIPromptTemplate`.
 
-### 2.3.2. Redis và Celery
+### 2.5.2. AI trong phân tích mã nguồn (AI Code Review)
 
-* **Redis:** cache, session, message broker.
-* **Celery:** xử lý tác vụ nền bất đồng bộ (concurrency 2 worker trong cấu hình mặc định).
-* Cơ chế Generate Testcase (GenSol) cũng tận dụng pipeline Bridge/Judge để xử lý nền.
+* Lấy mã nguồn của một bài nộp, gửi kèm prompt đến nhà cung cấp AI; mô hình phân tích **thuật toán/cấu trúc dữ liệu, luồng thực thi, độ phức tạp thời gian, độ phức tạp bộ nhớ, chất lượng code** và gợi ý cải thiện; kết quả được lưu lại (`AICodeReview`).
+* File liên quan: `judge/views/ai_code_review.py`, `judge/models/ai_code_review.py`.
 
-## 2.4. Giao tiếp realtime với WebSocket
+### 2.5.3. AI trong hỗ trợ tạo đề bài (AI Problem Creator)
 
-* Vấn đề: trạng thái chấm bài thay đổi liên tục, polling tốn tài nguyên.
-* Giải pháp: dịch vụ **WSEvent (Node.js)** đẩy sự kiện realtime; trình duyệt không cần reload; có HTTP polling fallback cho client không hỗ trợ WebSocket.
+* Người ra đề cung cấp ảnh/PDF/văn bản; AI trích xuất hoặc sinh nội dung đề (tên, mô tả, ràng buộc…) và điền vào form problem, giúp rút ngắn thời gian soạn đề.
+* File liên quan: `judge/views/ai_problem_creator.py`.
 
-## 2.5. Giao thức Judge (Bridge protocol)
+### 2.5.4. AI trong sinh test case (AI Generate Testcase — GenSol)
 
-* Site gửi request → **Bridge** (trung gian) → **Judge** biên dịch và chạy test → kết quả về Bridge.
-* Đóng gói gói tin: `json.dumps` → nén `zlib` → đóng khung bằng **4 byte độ dài** (header) trên kết nối TCP.
-* Kết quả đi: Judge → Bridge → DB/WSEvent → Browser.
+* Người ra đề nhập **generator** (sinh input) và **solution** (sinh output) cùng ngôn ngữ và số lượng test; hệ thống gửi job qua Bridge/Judge pipeline: biên dịch generator → sinh input → biên dịch solution → sinh output → upload test vào `ProblemData`.
+* Trạng thái job realtime: PENDING → GENERATING_INPUT → GENERATING_OUTPUT → UPLOADING → DONE/ERROR; prompt dùng khóa `ai_gen_code`.
+* File liên quan: `judge/models/gensol_job.py`, `judge/views/gensol.py`, `judge/utils/gensol.py`.
 
-## 2.6. Containerization với Docker và Docker Compose
+### 2.5.5. AI trong hỗ trợ đánh giá năng lực người dùng
 
-* Đóng gói môi trường, chạy nhiều dịch vụ tách biệt, dễ tái tạo và triển khai.
-* Cô lập tài nguyên giữa các container; định nghĩa network nội bộ và volume bền vững.
+Đây là chức năng mở rộng (commit *"Suggest tags and assess user capabilities"*). Cơ sở ý tưởng:
 
-## 2.7. Mã hóa và bảo mật dữ liệu nhạy cảm
+* Khi người dùng yêu cầu **AI Code Review** cho một bài nộp đã AC, AI được yêu cầu trả về thêm **dòng `TAGS:`** ở cuối, liệt kê 2–8 nhãn chủ đề (thuật toán/cấu trúc dữ liệu) phù hợp, chọn từ danh sách `ProblemType` của hệ thống.
+* Các nhãn này được lưu **theo từng người dùng** vào bảng `UserProblemTag` (gắn user–problem–tag–submission), khử trùng lặp theo problem.
+* Trang **tiến độ người dùng** (`UserProgressPage`) tổng hợp số **bài phân biệt theo từng chủ đề** để dựng nên **hồ sơ năng lực** của người dùng (điểm mạnh/yếu theo dạng bài), trực quan hóa bằng biểu đồ.
+* File liên quan: `judge/models/user_problem_tag.py`, `judge/views/user.py` (`UserProgressPage`), `judge/views/ai_code_review.py` (`_parse_tags_from_review`, `_save_user_problem_tags`), template `user/user-progress.html`; migration `0236_add_user_problem_tag`, `0237_update_user_problem_tag_unique`.
 
-* **Fernet (symmetric encryption):** dùng để mã hóa **API key của người dùng** trước khi lưu DB; khóa Fernet dẫn xuất từ **SHA-256 của `SECRET_KEY`**.
-* Chỉ lưu **last4** của key để nhận diện; không lưu khóa ở dạng rõ.
+### 2.5.6. AI trong dự đoán dạng đề dựa trên bài nộp đúng (AI Suggest Tags)
 
-## 2.8. Tích hợp mô hình ngôn ngữ lớn (LLM)
+Cũng thuộc commit mở rộng nói trên, hướng tới **người ra đề/quản trị**:
 
-* Nguyên lý gọi LLM qua API: prompt template + ngữ cảnh (mã nguồn/đề bài) → mô hình trả về phân tích/đề bài/lời giải.
-* Hệ thống hỗ trợ **4 nhà cung cấp**: OpenAI, Gemini, Claude, DeepSeek; prompt template cấu hình được từ admin (gồm khóa `ai_gen_code` cho GenSol).
-
-## 2.9. Thuật toán xếp hạng Elo-MMR
-
-* Mô hình rating người chơi như **phân phối xác suất** (mean $\mu$, variance $\sigma^2$), cập nhật theo Bayesian sau mỗi contest `is_rated = True`.
-* Dùng hàm **tanh** mô hình hóa phi tuyến kết quả đối đầu; rating hiển thị $= \mu - (\sigma - \sigma_{lim})$.
-* Tệp mã nguồn: `judge/ratings.py`. (Chi tiết ở mục 3.8 và Phụ lục.)
-
-## 2.10. Các code editor: ACE và CodeMirror 6
-
-* **ACE Editor (1.4.14):** editor truyền thống cho trang submit/admin.
-* **CodeMirror 6:** editor hiện đại cho giao diện IDE mới (`problem-ide.html`), hỗ trợ 30+ ngôn ngữ syntax highlighting, layout 2 cột co giãn.
-
-## 2.11. Tổng hợp lựa chọn công nghệ
-
-Đưa **một bảng tổng hợp** ánh xạ *yêu cầu → công nghệ → lý do lựa chọn* (ví dụ: web backend → Django; broker → Redis; realtime → WSEvent; sandbox → cptbox; container → Docker; mã hóa → Fernet…), kèm nhận xét ngắn về sự phù hợp.
+* Với một problem, hệ thống lấy **3 bài nộp AC có thời gian chạy ngắn nhất**, gửi kèm **mô tả đề** và **danh sách tag khả dụng** đến AI; mô hình trả về **mảng JSON các tag ID** mô tả thuật toán/kỹ thuật cần dùng để giải.
+* Hệ thống **kiểm định** các tag trả về với CSDL (`ProblemType`) trước khi gợi ý gắn vào problem; yêu cầu tối thiểu 3 bài AC để có đủ dữ liệu dự đoán.
+* Đây là cơ chế **phân loại/dự đoán dạng đề tự động** dựa trên lời giải thực tế, hỗ trợ gắn nhãn nhất quán cho kho đề.
+* File liên quan: `judge/views/ai_tag_suggest.py` (`call_ai_suggest_tags`), tích hợp trong trang admin problem (`templates/admin/judge/problem/change_form.html`); prompt khóa `ai_tag_suggest`.
 
 ---
 
@@ -391,6 +460,7 @@ Dựa trên repo, các model được chia nhóm:
 * AI: AICodeReview, AIPromptTemplate, AIAPIKey, AIAPIKeyTestLog.
 * RunSubmission.
 * GensolJob (AI Generate Testcase).
+* UserProblemTag (nãn năng lực người dùng theo tag, sinh từ AI Code Review).
 * Problem.scoring_mode (chế độ chấm điểm: short_circuit / partial_batch / partial_testcase).
 * Contest.enable_focus_lock + ContestParticipation.focus_violations (Contest Focus Lock).
 
@@ -405,7 +475,7 @@ Tài liệu repo liệt kê nhóm AI gồm `AICodeReview`, `AIPromptTemplate`, `
 
 ## 3.7. Thiết kế chức năng AI
 
-Chia làm 5 phần:
+Chia làm 6 phần:
 
 ### AI API Key Management
 
@@ -450,6 +520,20 @@ File liên quan:
 * Bridge: `judge/bridge/django_handler.py`, `judge/bridge/judge_handler.py`
 * Migration: `0232_gensol_job.py`, `0233_seed_ai_gen_code_prompt.py`
 * Cleanup: `judge/management/commands/cleanup_gensol_jobs.py`
+
+### AI Đánh giá Năng lực & Dự đoán Dạng đề (Tag)
+
+Hai chức năng mới (commit *"Suggest tags and assess user capabilities"*):
+
+* **Đánh giá năng lực người dùng:** AI Code Review trả thêm dòng `TAGS:` gắn nhãn chủ đề cho bài nộp; lưu vào `UserProblemTag` theo từng người dùng; trang `UserProgressPage` tổng hợp số bài theo chủ đề để dựng hồ sơ điểm mạnh/yếu.
+* **Dự đoán dạng đề:** lấy 3 bài AC chạy nhanh nhất + mô tả đề → AI trả mảng tag ID → kiểm định với `ProblemType` → gợi ý gắn cho problem trong trang admin.
+
+File liên quan:
+* Model: `judge/models/user_problem_tag.py`
+* View: `judge/views/ai_tag_suggest.py` (`call_ai_suggest_tags`), `judge/views/ai_code_review.py` (`_parse_tags_from_review`, `_save_user_problem_tags`), `judge/views/user.py` (`UserProgressPage`)
+* Template: `user/user-progress.html`, `admin/judge/problem/change_form.html`, `submission/source.html`
+* Migration: `0236_add_user_problem_tag.py`, `0237_update_user_problem_tag_unique.py`
+* Prompt: khóa `ai_tag_suggest`
 
 ## 3.8. Thiết kế cơ chế chống gian lận (Contest Focus Lock)
 
@@ -714,6 +798,8 @@ Ví dụ:
 | AI Code Review        | Không                        | Có                |
 | AI Problem Creator    | Không                        | Có                |
 | AI Generate Testcase  | Không                        | Có                |
+| AI đánh giá năng lực    | Không                        | Có (UserProblemTag) |
+| AI dự đoán dạng đề     | Không                        | Có (suggest tags) |
 | API key theo user     | Không                        | Có                |
 | Contest Focus Lock    | Không                        | Có                |
 | Auto-ban gian lận     | Không                        | Có                |
@@ -738,6 +824,7 @@ Nên viết theo 3 mục:
 * Bổ sung AI Code Review.
 * Bổ sung AI Problem Creator.
 * Xây dựng AI Generate Testcase (GensolJob + Bridge/Judge pipeline).
+* Xây dựng AI đánh giá năng lực người dùng và dự đoán dạng đề theo tag (UserProblemTag, suggest tags).
 * Xây dựng quản lý API key (mã hóa Fernet, hỗ trợ 4 provider).
 * Xây dựng Contest Focus Lock và cơ chế auto-ban gian lận.
 * Xây dựng hệ thống rating Elo-MMR và bảng xếp hạng.
@@ -776,7 +863,7 @@ Phần phụ lục có thể giúp báo cáo dày và chuyên nghiệp hơn:
 * Phụ lục E: Prompt AI Code Review / AI Problem Creator / AI Generate Testcase.
 * Phụ lục F: Log kiểm thử submission.
 * Phụ lục G: Hướng dẫn cài đặt Judge Server.
-* Phụ lục H: Danh sách migration BKDNOJ mới (0222–0233), gồm `0222_problem_scoring_mode`, `0225_problem_enable_new_ide`, `0226_run_submission`, `0228` (Contest Focus Lock), `0232_gensol_job`, `0233_seed_ai_gen_code_prompt`.
+* Phụ lục H: Danh sách migration BKDNOJ mới (0222–0237), gồm `0222_problem_scoring_mode`, `0225_problem_enable_new_ide`, `0226_run_submission`, `0228` (Contest Focus Lock), `0232_gensol_job`, `0233_seed_ai_gen_code_prompt`, `0236_add_user_problem_tag`, `0237_update_user_problem_tag_unique`.
 
 ---
 

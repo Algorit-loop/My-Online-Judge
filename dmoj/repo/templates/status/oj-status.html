@@ -3,7 +3,7 @@
 {% block js_media %}
     {% compress js %}
         {% include "stats/media-js.html" %}
-        <script type="text/javascript" src="{{ static('vnoj/daterangepicker/daterangepicker.min.js') }}"></script>
+        <script type="text/javascript" src="{{ static('aloj/daterangepicker/daterangepicker.min.js') }}"></script>
         <script type="text/javascript">
             var by_day_chart = null;
             var by_language_chart = null;
@@ -101,7 +101,7 @@
 {% block media %}
     {% include "status/media-css.html" %}
     {% block content_media %}{% endblock %}
-    <link rel="stylesheet" type="text/css" href="{{ static('vnoj/daterangepicker/daterangepicker.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ static('aloj/daterangepicker/daterangepicker.css') }}">
 {% endblock %}
 
 {% block title_ruler %}{% endblock %}
