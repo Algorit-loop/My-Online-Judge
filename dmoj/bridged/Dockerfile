@@ -1,4 +1,4 @@
-FROM aloj/aloj-base:latest
+FROM bkdnoj/bkdnoj-base:latest
 
 EXPOSE 9999
 EXPOSE 9998

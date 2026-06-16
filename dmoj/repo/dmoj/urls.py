@@ -234,6 +234,7 @@ urlpatterns = [
         path('/unban', user.UserUnban.as_view(), name='user_unban'),
         path('/blog/', paged_list_view(user.UserBlogPage, 'user_blog')),
         path('/comment/', paged_list_view(user.UserCommentPage, 'user_comment')),
+        path('/progress/', user.UserProgressPage.as_view(), name='user_progress'),
         path('/solved/', include([
             path('', user.UserProblemsPage.as_view(), name='user_problems'),
             path('ajax', user.UserPerformancePointsAjax.as_view(), name='user_pp_ajax'),

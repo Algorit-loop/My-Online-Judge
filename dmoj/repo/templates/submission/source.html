@@ -153,6 +153,27 @@
         }
         .air-no-key.active { display: block; }
         .air-no-key a { color: #417690; }
+        .air-tags {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .air-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .air-tags-label {
+            font-size: 0.82em;
+            color: #888;
+            margin-top: 10px;
+            margin-bottom: 4px;
+        }
         {% endif %}
     </style>
 {% endblock %}
@@ -239,6 +260,16 @@
                 errorSection.className = 'air-error active';
             }
 
+            function tagColor(name) {
+                var hash = 0;
+                for (var i = 0; i < name.length; i++) {
+                    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                    hash = hash & hash;
+                }
+                var hue = ((hash % 360) + 360) % 360;
+                return 'hsl(' + hue + ', 60%, 45%)';
+            }
+
             function showResult(data) {
                 resultText.textContent = data.review_text;
                 var meta = data.provider + ' / ' + data.model;
@@ -246,6 +277,23 @@
                     meta += ' — ' + new Date(data.created_at).toLocaleString();
                 }
                 resultMeta.textContent = meta;
+
+                var tagsSection = document.getElementById('air-tags-section');
+                var tagsContainer = document.getElementById('air-tags');
+                tagsContainer.innerHTML = '';
+                if (data.tags && data.tags.length > 0) {
+                    data.tags.forEach(function(t) {
+                        var badge = document.createElement('span');
+                        badge.className = 'air-tag';
+                        badge.textContent = t;
+                        badge.style.backgroundColor = tagColor(t);
+                        tagsContainer.appendChild(badge);
+                    });
+                    tagsSection.style.display = '';
+                } else {
+                    tagsSection.style.display = 'none';
+                }
+
                 resultSection.className = 'air-result active';
             }
 
@@ -414,7 +462,8 @@
                             provider: data.provider,
                             model: data.model,
                             output_language: data.output_language,
-                            created_at: data.created_at
+                            created_at: data.created_at,
+                            tags: data.tags || []
                         };
                         showResult(cachedReview);
                         againBtn.style.display = '';
@@ -532,6 +581,10 @@
                 <div id="air-result" class="air-result">
                     <div id="air-result-meta" class="air-result-meta"></div>
                     <pre id="air-result-text" class="air-result-text"></pre>
+                    <div id="air-tags-section" style="display:none;">
+                        <div class="air-tags-label"><i class="fa fa-tags"></i> {{ _('Tags') }}:</div>
+                        <div id="air-tags" class="air-tags"></div>
+                    </div>
                     <div style="margin-top: 10px;">
                         <button type="button" class="air-btn-secondary" id="air-again">
                             <i class="fa fa-refresh"></i> {{ _('Analyze again') }}

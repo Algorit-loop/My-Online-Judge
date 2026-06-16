@@ -1,4 +1,5 @@
 import json
+import re
 import urllib.error
 import urllib.request
 
@@ -6,13 +7,16 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.translation import gettext as _
+
 from judge.models.ai_code_review import AICodeReview
 from judge.models.ai_prompt import AIPromptTemplate
 from judge.models.api_key import (
     AIAPIKey,
     AI_PROVIDER_CONFIGS, AI_PROVIDER_MODELS,
 )
+from judge.models.problem import ProblemType
 from judge.models.submission import Submission
+from judge.models.user_problem_tag import UserProblemTag
 from judge.views.ai_problem_creator import _extract_text_from_response
 from judge.views.api_key import _parse_http_error
 
@@ -41,7 +45,7 @@ Output language: {output_language}"""
 def _get_review_prompt(submission, output_language='Vietnamese'):
     result_display = submission.get_result_display() or submission.get_status_display()
     template = AIPromptTemplate.get_prompt('ai_code_review', _DEFAULT_REVIEW_PROMPT)
-    return template.format(
+    prompt = template.format(
         problem_name=submission.problem.name,
         language_name=submission.language.name,
         result=result_display,
@@ -49,6 +53,63 @@ def _get_review_prompt(submission, output_language='Vietnamese'):
         total_points=submission.problem.points or 0,
         output_language=output_language,
     )
+
+    # Always append tags instruction AFTER template formatting
+    # so it works regardless of DB template content
+    all_tags = list(ProblemType.objects.values_list('name', flat=True).order_by('name'))
+    if all_tags:
+        prompt += '\n\n'
+        prompt += 'MANDATORY - You MUST end your response with this exact format on the LAST LINE:\n'
+        prompt += 'TAGS: tag1, tag2, tag3\n'
+        prompt += 'Choose 2-8 tag IDs from this list: ' + ', '.join(all_tags) + '\n'
+        prompt += 'This TAGS line is REQUIRED. Do NOT omit it.'
+
+    return prompt
+
+
+def _parse_tags_from_review(text):
+    """Extract TAGS line from the end of AI review text.
+
+    Returns (review_text_without_tags, list_of_tag_names).
+    """
+    lines = text.strip().split('\n')
+
+    # Search the last 3 lines for a TAGS: line
+    for i in range(len(lines) - 1, max(len(lines) - 4, -1), -1):
+        line = lines[i].strip()
+        match = re.match(r'^TAGS:\s*(.+)$', line, re.IGNORECASE)
+        if match:
+            tag_str = match.group(1)
+            tag_names = [t.strip() for t in tag_str.split(',') if t.strip()]
+            review_text = '\n'.join(lines[:i]).rstrip()
+            return review_text, tag_names
+
+    return text, []
+
+
+def _save_user_problem_tags(user, problem, submission, tag_names):
+    """Save validated tags to UserProblemTag.
+
+    Replaces all tags for this user+submission, then inserts new ones.
+    Returns list of saved tag names.
+    """
+    # Delete old tags from previous reviews of this submission
+    UserProblemTag.objects.filter(user=user, submission=submission).delete()
+
+    if not tag_names:
+        return []
+
+    valid_tags = ProblemType.objects.filter(name__in=tag_names)
+    saved = []
+    for tag in valid_tags:
+        UserProblemTag.objects.create(
+            user=user,
+            problem=problem,
+            tag=tag,
+            submission=submission,
+        )
+        saved.append(tag.name)
+    return saved
 
 
 def _build_review_payload(provider, model, system_prompt, source_code):
@@ -204,13 +265,19 @@ def _ai_code_review_post(request, submission):
     api_key_obj.last_used_at = timezone.now()
     api_key_obj.save(update_fields=['last_used_at'])
 
-    # Save review to DB
+    # Parse tags from AI response
+    review_text, tag_names = _parse_tags_from_review(result)
+
+    # Save tags to UserProblemTag (per-problem deduplication)
+    saved_tags = _save_user_problem_tags(request.profile, sub.problem, sub, tag_names)
+
+    # Save review to DB (without TAGS line)
     review = AICodeReview.objects.create(
         submission=sub,
         user=request.profile,
         provider=provider,
         model=model,
-        review_text=result,
+        review_text=review_text,
         output_language=output_language,
     )
 
@@ -221,6 +288,7 @@ def _ai_code_review_post(request, submission):
         'model': review.model,
         'output_language': review.output_language,
         'created_at': review.created_at.isoformat(),
+        'tags': saved_tags,
     })
 
 
@@ -236,6 +304,12 @@ def _ai_code_review_get(request, submission):
               .first())
 
     if review:
+        # Also return tags for this problem
+        tags = list(
+            UserProblemTag.objects
+            .filter(user=request.profile, problem=sub.problem)
+            .values_list('tag__name', flat=True)
+        )
         return JsonResponse({
             'exists': True,
             'review_text': review.review_text,
@@ -243,6 +317,7 @@ def _ai_code_review_get(request, submission):
             'model': review.model,
             'output_language': review.output_language,
             'created_at': review.created_at.isoformat(),
+            'tags': tags,
         })
 
     return JsonResponse({'exists': False})

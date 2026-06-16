@@ -1,0 +1,180 @@
+{% extends "user/user-base.html" %}
+
+{% block user_media %}
+    <style>
+        .progress-header {
+            margin-bottom: 6px;
+        }
+        .progress-summary {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+        .progress-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+        .progress-empty i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+            color: #ccc;
+        }
+        .tag-chart {
+            width: 100%;
+        }
+        .tag-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 10px;
+        }
+        .tag-label {
+            min-width: 200px;
+            max-width: 200px;
+            text-align: right;
+            font-size: 0.85em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tag-bar-wrapper {
+            flex: 1;
+            background: #f0f0f0;
+            border-radius: 4px;
+            height: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .tag-bar {
+            height: 100%;
+            border-radius: 4px;
+            min-width: 2px;
+            transition: width 0.6s ease;
+        }
+        .tag-count {
+            min-width: 40px;
+            text-align: left;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #555;
+        }
+        .tag-bar-label {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75em;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+            .tag-label {
+                min-width: 100px;
+                max-width: 100px;
+                font-size: 0.75em;
+            }
+            .tag-count {
+                min-width: 30px;
+                font-size: 0.75em;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block title_ruler %}{% endblock %}
+
+{% block title_row %}
+    {% set tab = 'progress' %}
+    {% include "user/user-tabs.html" %}
+{% endblock %}
+
+{% block user_content %}
+    {% if tag_data %}
+        <h3 class="progress-header">{{ _('Skills Progress') }} / {{ _('Ti\u1ebfn \u0111\u1ed9 n\u0103ng l\u1ef1c') }}</h3>
+        <div class="progress-summary">
+            {{ _('Based on AI code reviews across %(count)d problems.', count=total_problems) }}
+        </div>
+        <div class="tag-chart" id="tag-chart"></div>
+    {% else %}
+        <div class="progress-empty">
+            <i class="fa fa-bar-chart"></i>
+            <p>{{ _('No progress data yet.') }}</p>
+            <p>{{ _('Use "Review with AI" on your submissions to start tracking your skills.') }}</p>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block user_js_media %}
+    {% if tag_data %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tagData = {{ tag_data_json }};
+        var maxCount = tagData.length > 0 ? tagData[0].count : 1;
+        var chart = document.getElementById('tag-chart');
+
+        // Generate a vibrant color from tag name (deterministic, avoids black/white)
+        function tagColor(name) {
+            var hash = 0;
+            for (var i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                hash = hash & hash;
+            }
+            var hue = ((hash % 360) + 360) % 360;
+            return 'hsl(' + hue + ', 60%, 50%)';
+        }
+
+        tagData.forEach(function(tag) {
+            var pct = Math.max((tag.count / maxCount) * 100, 3);
+            var color = tagColor(tag.name);
+
+            var row = document.createElement('div');
+            row.className = 'tag-row';
+
+            var label = document.createElement('div');
+            label.className = 'tag-label';
+            label.title = tag.full_name;
+            label.textContent = tag.full_name;
+
+            var barWrapper = document.createElement('div');
+            barWrapper.className = 'tag-bar-wrapper';
+
+            var bar = document.createElement('div');
+            bar.className = 'tag-bar';
+            bar.style.width = '0%';
+            bar.style.backgroundColor = color;
+
+            var barLabel = document.createElement('span');
+            barLabel.className = 'tag-bar-label';
+            if (pct > 15) {
+                barLabel.textContent = tag.count + (tag.count === 1 ? ' problem' : ' problems');
+            }
+
+            barWrapper.appendChild(bar);
+            barWrapper.appendChild(barLabel);
+
+            var count = document.createElement('div');
+            count.className = 'tag-count';
+            count.textContent = tag.count;
+
+            row.appendChild(label);
+            row.appendChild(barWrapper);
+            row.appendChild(count);
+
+            chart.appendChild(row);
+
+            // Animate bar width
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    bar.style.width = pct + '%';
+                });
+            });
+        });
+    });
+    </script>
+    {% endif %}
+{% endblock %}

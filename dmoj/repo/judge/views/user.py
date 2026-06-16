@@ -51,8 +51,8 @@ from judge.utils.views import DiggPaginatorMixin, QueryStringSortMixin, SingleOb
 from judge.views.blog import PostListBase
 from .contests import ContestRanking
 
-__all__ = ['UserPage', 'UserAboutPage', 'UserProblemsPage', 'UserCommentPage', 'UserDownloadData', 'UserPrepareData',
-           'users', 'edit_profile']
+__all__ = ['UserPage', 'UserAboutPage', 'UserProgressPage', 'UserProblemsPage', 'UserCommentPage',
+           'UserDownloadData', 'UserPrepareData', 'users', 'edit_profile']
 
 
 def remap_keys(iterable, mapping):
@@ -326,6 +326,43 @@ class UserCommentPage(CustomUserMixin, DiggPaginatorMixin, ListView):
         if request.method == 'POST':
             return self.delete_comments(request, *args, **kwargs)
         return super().dispatch(request, *args, **kwargs)
+
+
+class UserProgressPage(UserPage):
+    template_name = 'user/user-progress.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(UserProgressPage, self).get_context_data(**kwargs)
+
+        from judge.models.user_problem_tag import UserProblemTag
+
+        # Aggregate tags: count distinct problems per tag
+        tag_stats = (
+            UserProblemTag.objects
+            .filter(user=self.object)
+            .values('tag__name', 'tag__full_name')
+            .annotate(problem_count=Count('problem', distinct=True))
+            .order_by('-problem_count')
+        )
+
+        tag_data = []
+        for entry in tag_stats:
+            tag_data.append({
+                'name': entry['tag__name'],
+                'full_name': entry['tag__full_name'],
+                'count': entry['problem_count'],
+            })
+
+        context['tag_data'] = tag_data
+        context['tag_data_json'] = mark_safe(json.dumps(tag_data))
+        context['total_problems'] = (
+            UserProblemTag.objects
+            .filter(user=self.object)
+            .values('problem')
+            .distinct()
+            .count()
+        )
+        return context
 
 
 class UserProblemsPage(UserPage):

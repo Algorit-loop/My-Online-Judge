@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   db:
-    container_name: aloj_mysql
+    container_name: bkdnoj_mysql
     image: mariadb
     restart: unless-stopped
     volumes:
@@ -11,7 +11,7 @@ services:
     #ports:
     #  - 3306:3306
   redis:
-    container_name: aloj_redis
+    container_name: bkdnoj_redis
     image: redis:alpine
     restart: unless-stopped
     # # Limit Redis memory and use LRU eviction.
@@ -31,14 +31,14 @@ services:
     build:
       context: .
       dockerfile: ./base/Dockerfile
-    image: aloj/aloj-base
+    image: bkdnoj/bkdnoj-base
     network_mode: none
   site:
-    container_name: aloj_site
+    container_name: bkdnoj_site
     build:
       context: .
       dockerfile: ./site/Dockerfile
-    image: aloj/aloj-site
+    image: bkdnoj/bkdnoj-site
     init: true
     restart: unless-stopped
     volumes:
@@ -55,11 +55,11 @@ services:
     networks: [site, nginx, db]
     depends_on: [base, db, redis]
   celery:
-    container_name: aloj_celery
+    container_name: bkdnoj_celery
     build:
       context: .
       dockerfile: ./celery/Dockerfile
-    image: aloj/aloj-celery
+    image: bkdnoj/bkdnoj-celery
     init: true
     restart: unless-stopped
     volumes:
@@ -72,11 +72,11 @@ services:
     networks: [site, db]
     depends_on: [base, db, redis]
   bridged:
-    container_name: aloj_bridged
+    container_name: bkdnoj_bridged
     build:
       context: .
       dockerfile: ./bridged/Dockerfile
-    image: aloj/aloj-bridged
+    image: bkdnoj/bkdnoj-bridged
     init: true
     restart: unless-stopped
     volumes:
@@ -91,11 +91,11 @@ services:
       - 9998:9998
       - 9999:9999
   wsevent:
-    container_name: aloj_wsevent
+    container_name: bkdnoj_wsevent
     build:
       context: .
       dockerfile: ./wsevent/Dockerfile
-    image: aloj/aloj-wsevent
+    image: bkdnoj/bkdnoj-wsevent
     init: true
     restart: unless-stopped
     volumes:
@@ -115,7 +115,7 @@ services:
   #   depends_on: [redis]
   #   command: sh -c "while true; do redis-cli -h redis FLUSHDB && sleep 28800; done"
   nginx:
-    container_name: aloj_nginx
+    container_name: bkdnoj_nginx
     image: nginx:alpine
     restart: unless-stopped
     ports:

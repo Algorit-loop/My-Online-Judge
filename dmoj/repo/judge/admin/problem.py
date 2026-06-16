@@ -8,6 +8,7 @@ from django.core.validators import FileExtensionValidator
 from django.db import transaction
 from django.forms import ModelForm
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import filesizeformat
 from django.template.response import TemplateResponse
 from django.urls import path, reverse_lazy
@@ -18,6 +19,7 @@ from reversion.admin import VersionAdmin
 
 from judge.models import LanguageLimit, Problem, ProblemClarification, ProblemTranslation, Profile, Solution
 from judge.models.api_key import AIAPIKey, AI_PROVIDER_MODELS, VISION_PROVIDERS
+from judge.views.ai_tag_suggest import call_ai_suggest_tags
 from judge.utils.views import NoBatchDeleteMixin
 from judge.views.widgets import pdf_statement_uploader
 from judge.widgets import AdminHeavySelect2MultipleWidget, AdminHeavySelect2Widget, AdminMartorWidget, \
@@ -266,8 +268,16 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
             return form.cleaned_data['change_message']
         return super(ProblemAdmin, self).construct_change_message(request, form, *args, **kwargs)
 
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['ai_provider_models_json'] = json.dumps(AI_PROVIDER_MODELS)
+        return super().changeform_view(request, object_id, form_url, extra_context)
+
     def get_urls(self):
         return [
+            path('<path:object_id>/ai-suggest-tags/',
+                 self.admin_site.admin_view(self.ai_suggest_tags_view),
+                 name='judge_problem_ai_suggest_tags'),
             path('ai-create/', self.admin_site.admin_view(self.ai_create_problem_view),
                  name='judge_problem_ai_create'),
             path('ai-create/process/', self.admin_site.admin_view(self.ai_create_problem_process),
@@ -335,3 +345,50 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
         api_key_obj.save(update_fields=['last_used_at'])
 
         return JsonResponse({'success': True, 'description': result})
+
+    def ai_suggest_tags_view(self, request, object_id):
+        if request.method != 'POST':
+            return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+        problem = get_object_or_404(Problem, pk=object_id)
+        if not problem.is_editable_by(request.user):
+            raise PermissionDenied()
+
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': _('Invalid request data')}, status=400)
+
+        provider = body.get('provider', '').strip()
+        model = body.get('model', '').strip()
+
+        if provider not in AI_PROVIDER_MODELS:
+            return JsonResponse({'error': _('Invalid provider')}, status=400)
+        if model not in AI_PROVIDER_MODELS.get(provider, []):
+            return JsonResponse({'error': _('Invalid model for this provider')}, status=400)
+
+        try:
+            api_key_obj = AIAPIKey.objects.get(
+                user=request.user.profile, provider=provider, status='verified',
+            )
+        except AIAPIKey.DoesNotExist:
+            return JsonResponse({
+                'error': _('No verified API key for %s. Add one in Settings > AI API Keys.') % provider,
+            }, status=400)
+
+        plaintext_key = api_key_obj.decrypt_key()
+        if not plaintext_key:
+            return JsonResponse({'error': _('Failed to decrypt API key')}, status=500)
+
+        try:
+            success, result = call_ai_suggest_tags(problem, provider, model, plaintext_key)
+        finally:
+            plaintext_key = None  # noqa: F841
+
+        if not success:
+            return JsonResponse({'error': result}, status=400)
+
+        api_key_obj.last_used_at = timezone.now()
+        api_key_obj.save(update_fields=['last_used_at'])
+
+        return JsonResponse({'success': True, 'tags': result})
