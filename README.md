@@ -44,13 +44,13 @@
 
 | Container | Image | Port | Chức năng |
 |-----------|-------|------|-----------|
-| `aloj_mysql` | mariadb | 3306 (internal) | Database |
-| `aloj_redis` | redis:alpine | 6379 (internal) | Cache + Celery broker |
-| `aloj_site` | aloj/aloj-site | 8000 (internal) | Django web app |
-| `aloj_celery` | aloj/aloj-celery | - | Background tasks |
-| `aloj_bridged` | aloj/aloj-bridged | 9998, 9999 | Judge connection bridge |
-| `aloj_wsevent` | aloj/aloj-wsevent | 15100-15102 (internal) | WebSocket live updates |
-| `aloj_nginx` | nginx:alpine | **80** | Reverse proxy + static |
+| `bkdnoj_mysql` | mariadb | 3306 (internal) | Database |
+| `bkdnoj_redis` | redis:alpine | 6379 (internal) | Cache + Celery broker |
+| `bkdnoj_site` | bkdnoj/bkdnoj-site | 8000 (internal) | Django web app (uWSGI) |
+| `bkdnoj_celery` | bkdnoj/bkdnoj-celery | - | Background tasks |
+| `bkdnoj_bridged` | bkdnoj/bkdnoj-bridged | 9998, 9999 | Judge connection bridge |
+| `bkdnoj_wsevent` | bkdnoj/bkdnoj-wsevent | 15100-15102 (internal) | WebSocket live updates |
+| `bkdnoj_nginx` | nginx:alpine | **80** | Reverse proxy + static |
 
 **Luồng chấm bài:**
 ```
@@ -107,17 +107,17 @@ docker compose version
 ### Bước 1: Clone Repository
 
 ```bash
-git clone --recursive <repo-url> aloj-docker
-cd aloj-docker/dmoj
+git clone --recursive <repo-url> bkdnoj-docker
+cd bkdnoj-docker/dmoj
 ```
 
 ### Bước 2: Cấu hình môi trường
 
 ```bash
-# Khởi tạo config
+# Khởi tạo config (copy local_settings.py, uwsgi.ini, config.js vào repo/)
 ./scripts/initialize
 
-# Tạo file environment
+# Tạo file environment từ example
 cp environment/mysql.env.example environment/mysql.env
 cp environment/mysql-admin.env.example environment/mysql-admin.env
 cp environment/site.env.example environment/site.env
@@ -125,7 +125,7 @@ cp environment/site.env.example environment/site.env
 
 Chỉnh sửa các file:
 
-**`environment/mysql.env`**
+**`environment/mysql.env`** - đổi `<password>` thành mật khẩu thật:
 ```env
 MYSQL_HOST=db
 MYSQL_DATABASE=dmoj
@@ -133,29 +133,37 @@ MYSQL_USER=dmoj
 MYSQL_PASSWORD=<mat-khau-manh>
 ```
 
-**`environment/mysql-admin.env`**
+**`environment/mysql-admin.env`** - đổi `<password>` thành mật khẩu root:
 ```env
 MYSQL_ROOT_PASSWORD=<mat-khau-root>
 ```
 
-**`environment/site.env`**
+**`environment/site.env`** - đổi `localhost` thành IP/domain thật, đổi `<secret key>`:
 ```env
 HOST=<ip-hoac-domain>
 SITE_FULL_URL=http://<ip-hoac-domain>/
 MEDIA_URL=http://<ip-hoac-domain>/
 DEBUG=0
 SECRET_KEY=<tao-key-ngau-nhien>
+
+# Các dòng còn lại giữ nguyên giá trị mặc định
+EVENT_DAEMON_POST=ws://wsevent:15101/
+REDIS_CACHING_URL=redis://redis:6379/0
+CELERY_BROKER_URL=redis://redis:6379/1
+CELERY_RESULT_BACKEND=redis://redis:6379/1
+BRIDGED_HOST=bridged
 ```
 
-Tạo Secret Key:
+Tạo Secret Key (chọn 1 trong 2 cách):
 ```bash
-python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+# Cách 1: Dùng Python có sẵn trên máy
+python3 -c "import secrets; print(secrets.token_urlsafe(50))"
+
+# Cách 2: Dùng openssl
+openssl rand -base64 50
 ```
 
-**`nginx/conf.d/nginx.conf`** - đổi `server_name`:
-```nginx
-server_name <ip-hoac-domain>;
-```
+> **Ghi chú:** Nginx config mặc định (`nginx/conf.d/nginx.conf`) dùng `server_name _;` (chấp nhận mọi domain/IP), nên **không cần sửa** nếu chỉ truy cập qua IP. Nếu muốn giới hạn cho domain cụ thể, đổi `_` thành tên domain.
 
 ### Bước 3: Build Docker images
 
@@ -168,16 +176,25 @@ docker compose build
 ### Bước 4: Khởi động Database + Migrate
 
 ```bash
-# Khởi động DB và Redis trước
+# Khởi động DB và Redis trước, đợi DB sẵn sàng
 docker compose up -d db redis
-sleep 10
+
+# Đợi MariaDB khởi động xong (lần đầu có thể mất 15-30 giây)
+# Kiểm tra bằng: docker compose logs db | tail -5
+# Khi thấy "ready for connections" là được
+sleep 15
 
 # Khởi động Site
 docker compose up -d site
 
+# Đợi site container khởi động
+sleep 5
+
 # Chạy migration để tạo bảng trong database
 ./scripts/migrate
 ```
+
+> **Lưu ý:** Nếu `migrate` báo lỗi kết nối DB, đợi thêm vài giây rồi chạy lại. MariaDB lần đầu cần thời gian khởi tạo.
 
 ### Bước 5: Build Static Files
 
@@ -185,11 +202,11 @@ docker compose up -d site
 ./scripts/copy_static
 ```
 
-> Bước này sẽ:
-> 1. Compile Sass thành CSS (`make_style.sh`)
-> 2. `collectstatic` - thu thập tất cả static files, bao gồm CodeMirror 6, Ace, jQuery, v.v. vào `/assets/static/`
-> 3. Compile i18n messages
-> 4. Copy resources vào `/assets/`
+> Bước này chạy bên trong site container và thực hiện:
+> 1. `make_style.sh` - Compile Sass thành CSS
+> 2. `collectstatic` - Thu thập tất cả static files (CodeMirror 6, Ace, jQuery, v.v.) vào `/assets/static/`
+> 3. `compilemessages` + `compilejsi18n` - Compile file đa ngôn ngữ (i18n)
+> 4. Copy `resources/`, `502.html`, `logo.png`, `robots.txt` vào `/assets/`
 
 ### Bước 6: Load dữ liệu khởi tạo
 
@@ -219,9 +236,18 @@ docker compose up -d
 # Kiểm tra trạng thái containers
 docker compose ps
 
-# Tất cả 7 container phải ở trạng thái "Up"
+# Phải thấy 7 container ở trạng thái "Up":
+#   bkdnoj_mysql, bkdnoj_redis, bkdnoj_site, bkdnoj_celery,
+#   bkdnoj_bridged, bkdnoj_wsevent, bkdnoj_nginx
+# (base chỉ là build image, sẽ hiện "Exited" - đây là bình thường)
+
 # Truy cập: http://<ip-hoac-domain>/
 ```
+
+> **Xử lý lỗi thường gặp:**
+> - **502 Bad Gateway**: Site container chưa khởi động xong, đợi 10-20 giây rồi refresh.
+> - **Trang trắng / thiếu CSS**: Chưa chạy `./scripts/copy_static`, chạy lại bước 5.
+> - **Lỗi DB connection**: MariaDB chưa sẵn sàng, kiểm tra `docker compose logs db`.
 
 ---
 
@@ -231,7 +257,7 @@ docker compose ps
 ### Khởi động bình thường sau khi đã build
 
 ```bash
-cd aloj-docker/dmoj
+cd bkdnoj-docker/dmoj
 docker compose up -d
 ```
 
@@ -300,17 +326,17 @@ cd ~
 git clone https://github.com/VNOI-Admin/judge-server.git
 
 # Copy 3 file custom (judge.py, packet.py, result.py) vào judge-server
-cp ~/aloj-docker/judge_update/judge.py  ~/judge-server/dmoj/
-cp ~/aloj-docker/judge_update/packet.py ~/judge-server/dmoj/
-cp ~/aloj-docker/judge_update/result.py ~/judge-server/dmoj/
+cp ~/bkdnoj-docker/judge_update/judge.py  ~/judge-server/dmoj/
+cp ~/bkdnoj-docker/judge_update/packet.py ~/judge-server/dmoj/
+cp ~/bkdnoj-docker/judge_update/result.py ~/judge-server/dmoj/
 ```
 
-> **Ghi chú:** 3 file trong `aloj-docker/judge_update/` chứa các bản custom như partial testcase scoring, v.v.
-> Các file này sẽ được mount read-only vào Judge container ở bước 4.
+> **Ghi chú:** 3 file trong `bkdnoj-docker/judge_update/` chứa tính năng custom như partial testcase scoring.
+> Sau khi copy vào `judge-server/`, các file này sẽ được mount read-only vào Judge container ở bước 4.
 
 ### Bước 3: Tạo file config judge
 
-**`problems/judge01.yml`**
+Tạo file `bkdnoj-docker/dmoj/problems/judge01.yml`:
 ```yaml
 id: 'judge01'
 key: '<key-tu-admin-panel>'
@@ -324,21 +350,22 @@ problem_storage_globs:
 sudo docker run \
     --name judge01 \
     --network="host" \
-    -v /path/to/aloj-docker/dmoj/problems:/problems \
-    -v /path/to/judge-server/dmoj/judge.py:/judge/dmoj/judge.py:ro \
-    -v /path/to/judge-server/dmoj/packet.py:/judge/dmoj/packet.py:ro \
-    -v /path/to/judge-server/dmoj/result.py:/judge/dmoj/result.py:ro \
+    -v ~/bkdnoj-docker/dmoj/problems:/problems \
+    -v ~/judge-server/dmoj/judge.py:/judge/dmoj/judge.py:ro \
+    -v ~/judge-server/dmoj/packet.py:/judge/dmoj/packet.py:ro \
+    -v ~/judge-server/dmoj/result.py:/judge/dmoj/result.py:ro \
     --cap-add=SYS_PTRACE \
     -d \
     --restart=unless-stopped \
     vnoj/judge-tiervnoj:latest \
-    run -p 9999 -c /problems/judge01.yml <site-ip> -A 0.0.0.0 -a 9111
+    run -p 9999 -c /problems/judge01.yml localhost -A 0.0.0.0 -a 9111
 ```
 
 > **Tham số:**
-> - `-p 9999`: Port kết nối tới Bridge
-> - `-c /problems/judge01.yml`: File config
-> - `<site-ip>`: IP của site server, dùng `localhost` nếu cùng máy
+> - `-p 9999`: Port kết nối tới Bridge (phải khớp với bridge port trong docker-compose)
+> - `-c /problems/judge01.yml`: File config (đường dẫn bên trong container)
+> - `localhost`: IP của site server, dùng `localhost` nếu judge cùng máy với site
+> - `-A 0.0.0.0`: Bind API trên mọi interface
 > - `-a 9111`: API port, đổi cho mỗi judge: `9111`, `9112`, v.v.
 
 ### Bước 5: Kiểm tra Judge
@@ -364,14 +391,29 @@ sudo docker logs -f judge01
 ### Judge Từ Xa (Remote)
 
 ```bash
-# Trên máy remote:
+# Trên máy remote, cài sshfs:
 sudo apt-get install -y sshfs
 
 # Mount thư mục problems từ site server
+sudo mkdir -p /mnt/problems
 sudo sshfs -o allow_other,IdentityFile=~/.ssh/id_rsa \
-    user@<site-ip>:/path/to/dmoj/problems /mnt/problems
+    user@<site-ip>:~/bkdnoj-docker/dmoj/problems /mnt/problems
 
-# Chạy judge với -v /mnt/problems:/problems
+# Copy 3 file custom judge vào máy remote
+scp user@<site-ip>:~/bkdnoj-docker/judge_update/{judge.py,packet.py,result.py} ~/
+
+# Chạy judge với mount path tương ứng
+sudo docker run \
+    --name judge01 \
+    --network="host" \
+    -v /mnt/problems:/problems \
+    -v ~/judge.py:/judge/dmoj/judge.py:ro \
+    -v ~/packet.py:/judge/dmoj/packet.py:ro \
+    -v ~/result.py:/judge/dmoj/result.py:ro \
+    --cap-add=SYS_PTRACE \
+    -d --restart=unless-stopped \
+    vnoj/judge-tiervnoj:latest \
+    run -p 9999 -c /problems/judge01.yml <site-ip> -A 0.0.0.0 -a 9111
 ```
 
 ---
@@ -382,7 +424,7 @@ sudo sshfs -o allow_other,IdentityFile=~/.ssh/id_rsa \
 ### Khi thay đổi source code: templates, Python, CSS, JS
 
 ```bash
-cd aloj-docker/dmoj
+cd bkdnoj-docker/dmoj
 
 # Rebuild static files
 ./scripts/copy_static
@@ -431,7 +473,7 @@ Chỉ rebuild khi cần **thêm ngôn ngữ, cập nhật phiên bản CM6, ho�
 
 ```bash
 # Cần Node.js >= 18
-cd aloj-docker/dmoj/repo/_build/codemirror6
+cd bkdnoj-docker/dmoj/repo/_build/codemirror6
 
 # Cài dependencies
 npm install
@@ -468,9 +510,9 @@ repo/
 ## Cấu Trúc Thư Mục
 
 ```
-aloj-docker/
+bkdnoj-docker/
   dmoj/
-    base/                # Dockerfile base image
+    base/                # Dockerfile base image (Python 3.11, Node 18)
     site/                # Dockerfile site (uWSGI)
     celery/              # Dockerfile celery worker
     bridged/             # Dockerfile bridge daemon
@@ -479,7 +521,7 @@ aloj-docker/
     config/              # Template configs (local_settings.py, uwsgi.ini, config.js)
     environment/         # Environment files (.env)
     scripts/             # Management scripts
-      initialize         # Khởi tạo config lần đầu
+      initialize         # Copy config files lần đầu
       migrate            # Chạy Django migrations
       copy_static        # Build CSS + collect static files
       manage.py          # Django management wrapper
@@ -487,23 +529,28 @@ aloj-docker/
     repo/                # Django source code
       dmoj/              # Django settings
       judge/             # Models, views, forms
+        fixtures/        # Dữ liệu khởi tạo (navbar, language, demo)
       templates/         # HTML templates
       resources/         # Static files (JS, CSS, images)
         aloj/ace/        # Ace Editor cho trang submit thường
         aloj/codemirror6/# CodeMirror 6 cho IDE
         aloj/jquery/     # jQuery
         aloj/select2/    # Select2
-      _build/            # Build tools, gitignored
-    problems/            # Judge problem data + judge configs
+      _build/            # Build tools (codemirror6)
+    problems/            # Judge problem data + judge config (.yml)
     media/               # User uploads
+    database/            # MariaDB data (auto-generated)
+    generate_testcase/   # Test case generation
     docker-compose.yml   # Docker orchestration
+  judge_update/          # Custom judge files (judge.py, packet.py, result.py)
   document/              # Documentation
-  judge_partial_testcase.patch  # Custom judge patch
 ```
 
 ---
 
 ## Lệnh Nhanh
+
+Tất cả lệnh chạy từ thư mục `bkdnoj-docker/dmoj/`:
 
 | Mục đích | Lệnh |
 |----------|------|
