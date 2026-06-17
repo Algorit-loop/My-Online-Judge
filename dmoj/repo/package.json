@@ -1,5 +1,5 @@
 {
-  "name": "@vnoi-admin/oj",
+  "name": "@algorit-loop/bkdnoj",
   "type": "module",
   "scripts": {
     "format": "prettier --write websocket",

@@ -99,6 +99,18 @@ docker --version
 docker compose version
 ```
 
+> **Ghi chú về lệnh Docker Compose:**
+> - **Docker mới (v2+):** dùng `docker compose` (có khoảng trắng, tích hợp sẵn vào Docker CLI)
+>   ```bash
+>   docker compose up -d
+>   ```
+> - **Docker cũ (v1, cài riêng `docker-compose`):** dùng `docker-compose` (có dấu gạch ngang)
+>   ```bash
+>   docker-compose up -d
+>   ```
+> Kiểm tra phiên bản: `docker compose version` (bản mới) hoặc `docker-compose --version` (bản cũ).  
+> Tài liệu này sử dụng cú pháp bản mới (`docker compose`). Nếu bạn dùng bản cũ, thay `docker compose` thành `docker-compose` trong tất cả các lệnh.
+
 ---
 
 <a id="build-du-an-tu-dau"></a>
