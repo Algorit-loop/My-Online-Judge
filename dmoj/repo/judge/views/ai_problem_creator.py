@@ -11,7 +11,7 @@ from judge.models.api_key import AI_PROVIDER_CONFIGS, VISION_PROVIDERS
 
 _AI_CREATE_TIMEOUT = 120
 
-_DEFAULT_SYSTEM_PROMPT = """You are an expert at reading competitive programming problem statements from images or PDFs.
+_DEFAULT_SYSTEM_PROMPT = """You are an expert at reading competitive programming problem statements from images.
 
 Extract the problem content and return it as clean Markdown suitable for an Online Judge website.
 
@@ -72,7 +72,7 @@ def validate_file(uploaded_file):
         return False, _('No file uploaded')
 
     ext = uploaded_file.name.rsplit('.', 1)[-1].lower() if '.' in uploaded_file.name else ''
-    allowed_exts = getattr(settings, 'AI_PROBLEM_CREATOR_ALLOWED_EXTS', {'pdf', 'png', 'jpg', 'jpeg', 'webp'})
+    allowed_exts = getattr(settings, 'AI_PROBLEM_CREATOR_ALLOWED_EXTS', {'png', 'jpg', 'jpeg', 'webp'})
     if ext not in allowed_exts:
         return False, _('Invalid file type. Allowed: %s') % ', '.join(sorted(allowed_exts))
 
@@ -87,7 +87,6 @@ def _get_mime_type(filename):
     """Get MIME type from filename."""
     ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
     mime_map = {
-        'pdf': 'application/pdf',
         'png': 'image/png',
         'jpg': 'image/jpeg',
         'jpeg': 'image/jpeg',
@@ -97,16 +96,10 @@ def _get_mime_type(filename):
 
 
 def _build_openai_payload(file_data_b64, mime_type, model, system_prompt):
-    if mime_type == 'application/pdf':
-        content = [
-            {'type': 'input_text', 'text': system_prompt},
-            {'type': 'input_file', 'file_data': f'data:{mime_type};base64,{file_data_b64}'},
-        ]
-    else:
-        content = [
-            {'type': 'input_text', 'text': system_prompt},
-            {'type': 'input_image', 'image_url': f'data:{mime_type};base64,{file_data_b64}'},
-        ]
+    content = [
+        {'type': 'input_text', 'text': system_prompt},
+        {'type': 'input_image', 'image_url': f'data:{mime_type};base64,{file_data_b64}'},
+    ]
     return {
         'model': model,
         'input': [{'role': 'user', 'content': content}],
@@ -125,16 +118,10 @@ def _build_gemini_payload(file_data_b64, mime_type, model, system_prompt):
 
 
 def _build_claude_payload(file_data_b64, mime_type, model, system_prompt):
-    if mime_type == 'application/pdf':
-        file_block = {
-            'type': 'document',
-            'source': {'type': 'base64', 'media_type': mime_type, 'data': file_data_b64},
-        }
-    else:
-        file_block = {
-            'type': 'image',
-            'source': {'type': 'base64', 'media_type': mime_type, 'data': file_data_b64},
-        }
+    file_block = {
+        'type': 'image',
+        'source': {'type': 'base64', 'media_type': mime_type, 'data': file_data_b64},
+    }
     return {
         'model': model,
         'max_tokens': 16384,
@@ -186,7 +173,7 @@ def call_ai_provider(provider, model, api_key, uploaded_file, output_language='E
         - (False, str) error message on failure
     """
     if provider not in VISION_PROVIDERS:
-        return False, _('Provider "%s" does not support image/PDF input') % provider
+        return False, _('Provider "%s" does not support image input') % provider
 
     builder = _PAYLOAD_BUILDERS.get(provider)
     if not builder:

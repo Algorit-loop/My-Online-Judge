@@ -39,7 +39,7 @@
                     <th>{{ _('Provider') }}</th>
                     <th>{{ _('API Key') }}</th>
                     <th>{{ _('Status') }}</th>
-                    <th>{{ _('Test') }}</th>
+                    <th>{{ _('Model') }}</th>
                     <th>{{ _('Actions') }}</th>
                 </tr>
             </thead>
@@ -121,25 +121,25 @@ $(function() {
                 $tr.append($('<td>').html('<code>****' + esc(k.key_last4) + '</code>'));
                 $tr.append($('<td>').html(statusHtml(k)));
 
-                // Model select + test btn
-                var $td = $('<td style="white-space:nowrap;">');
+                // Model select
+                var $tdModel = $('<td>');
                 var models = MODELS[k.provider] || [];
                 var $sel = $('<select class="mdl-sel">');
                 models.forEach(function(m) {
                     $sel.append($('<option>').val(m).text(m).prop('selected', m === k.default_model));
                 });
-                var $test = $('<button type="button" class="button" style="padding:4px 12px; font-size:0.85em; margin-left:12px;">')
+                $tdModel.append($sel);
+                $tr.append($tdModel);
+
+                // Actions — test + delete
+                var $acts = $('<td style="white-space:nowrap;">');
+                var $test = $('<button type="button" class="button" style="padding:4px 12px; font-size:0.85em;">')
                     .html('<i class="fa fa-plug"></i> Test');
                 $test.click(function() { doTest(k.id, $sel.val(), $(this)); });
-                $td.append($sel).append($test);
-                $tr.append($td);
-
-                // Actions — only delete
-                var $acts = $('<td>');
-                var $del = $('<button type="button" class="button" style="padding:4px 10px; font-size:0.85em; background:linear-gradient(to bottom,#d9534f,#c9302c);">')
+                var $del = $('<button type="button" class="button" style="padding:4px 10px; font-size:0.85em; margin-left:8px; background:linear-gradient(to bottom,#d9534f,#c9302c);">')
                     .html('<i class="fa fa-trash"></i>').attr('title', '{{ _("Delete") }}');
                 $del.click(function() { doDelete(k.id); });
-                $acts.append($del);
+                $acts.append($test).append($del);
                 $tr.append($acts);
                 $tb.append($tr);
             });
