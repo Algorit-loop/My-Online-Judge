@@ -180,6 +180,7 @@ openssl rand -base64 50
 ### Bước 3: Build Docker images
 
 ```bash
+docker compose build base
 docker compose build
 ```
 
