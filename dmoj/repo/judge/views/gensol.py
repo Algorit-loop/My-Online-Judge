@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils.translation import gettext as _
 
 from judge.models import Problem, Language
+from judge.models.ai_gen_code import AIGenCode
 from judge.models.api_key import AI_PROVIDER_MODELS
 from judge.models.gensol_job import GensolJob, GENSOL_IN_PROGRESS_STATUSES
 from judge.models.problem_data import ProblemTestCase
@@ -39,6 +40,19 @@ def generate_testcase_view(request, problem):
         problem=problem_obj,
     ).select_related('solution_language', 'generator_language').order_by('-created_date').first()
 
+    # Get latest AI-generated code for this problem (from AIGenCode table)
+    latest_gen_code = AIGenCode.objects.filter(
+        problem=problem_obj,
+    ).order_by('-created_at').first()
+
+    # Generator source: prefer AIGenCode (most recent AI generation), fall back to GensolJob
+    if latest_gen_code and (not latest_job or latest_gen_code.created_at > latest_job.created_date):
+        saved_generator = latest_gen_code.generated_code
+    elif latest_job:
+        saved_generator = latest_job.generator_source
+    else:
+        saved_generator = None
+
     ctx = {
         'problem': problem_obj,
         'title': _('Generate Testcase for %s') % problem_obj.name,
@@ -46,7 +60,7 @@ def generate_testcase_view(request, problem):
         'languages': languages,
         'provider_models_json': _safe_json(json.dumps(AI_PROVIDER_MODELS)),
         'gensol_job': latest_job,
-        'saved_generator_source': _safe_json(json.dumps(latest_job.generator_source)) if latest_job else 'null',
+        'saved_generator_source': _safe_json(json.dumps(saved_generator)) if saved_generator else 'null',
         'saved_solution_source': _safe_json(json.dumps(latest_job.solution_source)) if latest_job else 'null',
         'saved_solution_language': latest_job.solution_language.key if latest_job else '',
         'saved_num_cases': latest_job.num_cases if latest_job else 20,

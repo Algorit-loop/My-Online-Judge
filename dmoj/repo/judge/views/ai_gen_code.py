@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from judge.models import Problem
+from judge.models.ai_gen_code import AIGenCode
 from judge.models.ai_prompt import AIPromptTemplate
 from judge.models.api_key import (
     AIAPIKey,
@@ -228,6 +229,16 @@ def ai_gen_code_view(request, problem):
     # Update last_used_at
     api_key_obj.last_used_at = timezone.now()
     api_key_obj.save(update_fields=['last_used_at'])
+
+    # Save to database
+    AIGenCode.objects.create(
+        problem=problem_obj,
+        user=request.profile,
+        provider=provider,
+        model=model,
+        num_cases=num_cases,
+        generated_code=result,
+    )
 
     return JsonResponse({
         'success': True,
