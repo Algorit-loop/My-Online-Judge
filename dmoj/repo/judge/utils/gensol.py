@@ -78,6 +78,7 @@ def on_gensol_grading_end(job_id, gensol_step):
         job = GensolJob.objects.get(id=job_id)
     except GensolJob.DoesNotExist:
         logger.error('GensolJob %d not found in grading end', job_id)
+        _post_event(job_id, {'type': 'internal-error', 'message': 'Job record not found'})
         return
 
     # If job is already in ERROR state (from on_gensol_error), skip

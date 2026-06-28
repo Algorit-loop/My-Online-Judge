@@ -4,6 +4,9 @@ import logging
 from django.conf import settings
 from django.db import transaction
 from django.http import Http404, JsonResponse
+from django.urls import reverse
+from django.utils.html import escape, format_html
+from django.utils.safestring import mark_safe
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_GET
@@ -56,6 +59,9 @@ def generate_testcase_view(request, problem):
     ctx = {
         'problem': problem_obj,
         'title': _('Generate Testcase for %s') % problem_obj.name,
+        'content_title': mark_safe(escape(_('Generate Testcase for %s')) % format_html(
+            '<a href="{1}">{0}</a>', problem_obj.name,
+            reverse('problem_detail', args=[problem_obj.code]))),
         'ACE_URL': settings.ACE_URL,
         'languages': languages,
         'provider_models_json': _safe_json(json.dumps(AI_PROVIDER_MODELS)),
@@ -140,6 +146,13 @@ class GensolStartView(LoginRequiredMixin, View):
         # Start the job (creates virtual testcases and dispatches to judge)
         from judge.utils.gensol import start_gensol_job
         start_gensol_job(job)
+
+        # Check if job failed during startup (e.g. bridge down, zip error)
+        job.refresh_from_db()
+        if job.status == 'ERROR':
+            return JsonResponse({
+                'error': job.error_message or 'Failed to start generation job',
+            }, status=500)
 
         return JsonResponse({
             'job_id': job.id,
