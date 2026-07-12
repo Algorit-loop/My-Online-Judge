@@ -288,7 +288,6 @@
     var AI_MODELS      = {{ provider_models_json|safe }};
     var AI_GEN_URL     = "{{ url('ai_gen_code', problem.code) }}";
     var GENSOL_START   = "{{ url('gensol_start', problem.code) }}";
-    var GENSOL_STATUS  = "{{ url('gensol_status', problem.code) }}";
     var KEYS_URL       = "{{ url('api_key_list') }}";
     var CSRF_TOKEN     = "{{ csrf_token }}";
     var PROVIDER_NAMES = {openai:'OpenAI', gemini:'Google Gemini', claude:'Anthropic Claude', deepseek:'DeepSeek'};
@@ -432,72 +431,23 @@
                 markAllBeforeDone(cs);
                 setStepState(cs, 'active', '{{ _("Compiling...") }}');
             } else if (data.type === 'done') {
-                stopPolling();
                 showStepperDone();
             } else if (data.type === 'error') {
-                stopPolling();
                 var es = mapStep(gensolState.currentStep);
                 markAllBeforeDone(es);
                 setStepState(es, 'error', '');
                 showStepperError(data.message || '{{ _("Unknown error") }}');
             } else if (data.type === 'compile-error') {
-                stopPolling();
                 var ce = gensolState.currentStep === 'generator' ? 'compile-generator' : 'compile-solution';
                 markAllBeforeDone(ce);
                 setStepState(ce, 'error', '{{ _("Compile error") }}');
                 showStepperError('{{ _("Compile error") }}', (data.log || '').substring(0, 2000));
             } else if (data.type === 'internal-error') {
-                stopPolling();
                 showStepperError('{{ _("Internal error") }}: ' + (data.message || ''));
             } else if (data.type === 'aborted') {
-                stopPolling();
                 showStepperError('{{ _("Job was terminated") }}');
             }
         });
-    }
-
-    /* ── Polling fallback (catches missed WS events) ── */
-    var _pollTimer = null;
-
-    function startPolling() {
-        stopPolling();
-        _pollTimer = setInterval(pollStatus, 10000);
-    }
-
-    function stopPolling() {
-        if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
-    }
-
-    function pollStatus() {
-        fetch(GENSOL_STATUS, {credentials: 'same-origin'})
-        .then(function(r) { return r.json(); })
-        .then(function(res) {
-            if (!res.job) return;
-            var job = res.job;
-            // Only process if this is the job we're tracking
-            if (gensolState.jobId && job.id !== gensolState.jobId) return;
-
-            if (job.status === 'DONE') {
-                stopPolling();
-                showStepperDone();
-            } else if (job.status === 'ERROR') {
-                stopPolling();
-                var es = mapStep(job.current_step || gensolState.currentStep);
-                markAllBeforeDone(es);
-                setStepState(es, 'error', '');
-                showStepperError(job.error_message || '{{ _("Unknown error") }}');
-            } else if (job.status === 'GENERATING_INPUT' || job.status === 'GENERATING_OUTPUT') {
-                // Update progress from poll data
-                gensolState.currentStep = job.current_step;
-                gensolState.currentTestcase = job.current_testcase;
-                gensolState.numCases = job.num_cases;
-                var step = mapStep(job.current_step);
-                markAllBeforeDone(step);
-                var pct = job.num_cases > 0 ? Math.round(job.current_testcase / job.num_cases * 100) : 0;
-                setStepState(step, 'active', job.current_testcase + '/' + job.num_cases, pct);
-            }
-        })
-        .catch(function() { /* network error, will retry next interval */ });
     }
 
     /* ── Restore state on page load ── */
@@ -511,7 +461,6 @@
             var p = gensolState.numCases > 0 ? Math.round(gensolState.currentTestcase / gensolState.numCases * 100) : 0;
             setStepState(as, 'active', gensolState.currentTestcase + '/' + gensolState.numCases, p);
             subscribeEvents(gensolState.idSecret);
-            startPolling();
         } else if (s === 'DONE') {
             showProgress();
             showStepperDone();
@@ -676,7 +625,6 @@
             resetStepper();
             setStepState('compile-generator', 'active', '{{ _("Waiting for judge...") }}');
             subscribeEvents(res.d.id_secret);
-            startPolling();
         })
         .catch(function(err) {
             btn.disabled = false;

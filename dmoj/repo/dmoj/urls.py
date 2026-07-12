@@ -21,7 +21,7 @@ from judge.views.run import RunSubmitView, RunPollView, SampleTestCaseView
 from judge.views.magazine import MagazinePage
 from judge.views.misc_config import MiscConfigEdit
 from judge.views.ai_gen_code import ai_gen_code_view
-from judge.views.gensol import GensolStartView, gensol_status_view, generate_testcase_view
+from judge.views.gensol import GensolStartView, generate_testcase_view
 from judge.views.problem_data import ProblemDataView, ProblemSubmissionDiff, \
     problem_data_file, problem_init_view
 from judge.views.register import ActivationView, RegistrationView
@@ -166,7 +166,6 @@ urlpatterns = [
         path('/test_data/diff', ProblemSubmissionDiff.as_view(), name='problem_submission_diff'),
         path('/test_data/generate', generate_testcase_view, name='problem_generate_testcase'),
         path('/test_data/generate/start', GensolStartView.as_view(), name='gensol_start'),
-        path('/test_data/generate/status', gensol_status_view, name='gensol_status'),
         path('/test_data/generate/ai_gen_code', ai_gen_code_view, name='ai_gen_code'),
         path('/data/<path:path>', problem_data_file, name='problem_data_file'),
 

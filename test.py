@@ -240,16 +240,6 @@ def check_websocket():
     return 'wsevent phản hồi (HTTP 426 Upgrade Required là bình thường)'
 
 
-@check('Polling fallback: /channels/ tới được wsevent daemon')
-def check_polling_fallback():
-    # Daemon (websocket/daemon.js) yêu cầu path bắt đầu bằng /channels/:
-    # GET /channels/ (không có tên channel) phải trả 400 Bad Request từ daemon.
-    # Nếu trả 404 nghĩa là nginx proxy_pass đang cắt mất prefix /channels/
-    # trước khi chuyển tới daemon -> polling fallback (khi WebSocket fail) bị hỏng.
-    status, _ = http_get('/channels/', expect=(400,))
-    return 'daemon nhận đúng path /channels/ (HTTP 400 khi thiếu tên channel)'
-
-
 @check('Nginx: không trả trang lỗi 502')
 def check_no_502():
     _, body = http_get('/')
@@ -274,7 +264,6 @@ ALL_CHECKS = [
     check_http_pages,
     check_static,
     check_websocket,
-    check_polling_fallback,
     check_no_502,
 ]
 

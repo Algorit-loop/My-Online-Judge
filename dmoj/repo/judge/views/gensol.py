@@ -9,7 +9,6 @@ from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 from django.utils.translation import gettext as _
@@ -160,27 +159,3 @@ class GensolStartView(LoginRequiredMixin, View):
         })
 
 
-@login_required
-@require_GET
-def gensol_status_view(request, problem):
-    problem_obj = get_object_or_404(Problem, code=problem)
-    if not (request.user.is_superuser or problem_obj.is_editable_by(request.user)):
-        return JsonResponse({'error': 'Permission denied'}, status=403)
-
-    job = GensolJob.objects.filter(problem=problem_obj).order_by('-created_date').first()
-    if not job:
-        return JsonResponse({'job': None})
-
-    return JsonResponse({
-        'job': {
-            'id': job.id,
-            'id_secret': job.id_secret,
-            'status': job.status,
-            'current_step': job.current_step,
-            'current_testcase': job.current_testcase,
-            'num_cases': job.num_cases,
-            'error_message': job.error_message,
-            'error_testcase': job.error_testcase,
-            'created_date': job.created_date.isoformat(),
-        },
-    })
