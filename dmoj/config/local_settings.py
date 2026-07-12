@@ -15,10 +15,10 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'algoritxxx-secret-key')
 DEBUG = os.environ.get('DEBUG', '0') == '1'
 HOST = os.environ.get('HOST', 'localhost')
 
-# Uncomment and set to the domain names this site is intended to serve.
-# You must do this once you set DEBUG to False.
-# ALLOWED_HOSTS = [HOST]
-ALLOWED_HOSTS = ['*']
+# The domain names this site is intended to serve — HOST above (the real production
+# domain) plus 'localhost' for local access/testing. DEBUG=False makes Django enforce
+# this and reject any other Host header.
+ALLOWED_HOSTS = [HOST, 'localhost']
 
 # Optional apps that DMOJ can make use of.
 INSTALLED_APPS += ()
