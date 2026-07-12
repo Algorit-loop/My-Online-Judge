@@ -17,7 +17,7 @@ from judge.models import Judge, Language, LanguageLimit, Problem, Profile, \
     RuntimeVersion, Submission, SubmissionTestCase
 from judge.models.problem import ProblemTestcaseResultAccess
 from judge.models.run_submission import RunSubmission
-from judge.models.gensol_job import GensolJob
+from judge.models.gensol_job import GENSOL_IN_PROGRESS_STATUSES, GensolJob
 from judge.utils.url import get_absolute_submission_file_url
 
 logger = logging.getLogger('judge.bridge')
@@ -346,7 +346,9 @@ class JudgeHandler(ZlibPacketHandler):
             'time-limit': data.time,
             'memory-limit': data.memory,
             'short-circuit': False,
-            'scoring-mode': 'partial_testcase',
+            # Continue grading on AC/WA, but stop as soon as a testcase crashes/times out/etc. — a broken solution
+            # on one input means the rest of the run is wasted judge time.
+            'scoring-mode': 'gensol_strict',
             'meta': {
                 'pretests-only': False,
                 'in-contest': None,
@@ -999,15 +1001,27 @@ class JudgeHandler(ZlibPacketHandler):
         """Handle test case results for a gensol job."""
         from judge.utils.gensol import save_testcase_output, on_gensol_error
 
+        # If the job already left an in-progress state (e.g. gensol_strict stopped grading after an earlier fatal
+        # testcase, or the working dir was already cleaned up by on_gensol_error), these are stragglers: testcases
+        # the judge marked SC (skipped) on its way to shutting down. Nothing to save, nothing new to report.
         # Positions are 1-indexed, so max_position itself is the count of testcases completed.
-        GensolJob.objects.filter(id=job_id).update(current_testcase=max_position)
+        updated = GensolJob.objects.filter(id=job_id, status__in=GENSOL_IN_PROGRESS_STATUSES).update(
+            current_testcase=max_position)
+        if not updated:
+            return
 
         # Fatal error status flags: RTE(2), TLE(4), MLE(8), IR(16), OLE(64)
         FATAL_FLAGS = 2 | 4 | 8 | 16 | 64
+        # Short-circuit flag(32): the judge skipped this testcase (gensol_strict already stopped after an earlier
+        # fatal one). Nothing was actually run, so there's no output to save and no new error to report.
+        SC_FLAG = 32
         STATUS_MAP = {4: 'TLE', 8: 'MLE', 64: 'OLE', 2: 'RTE', 16: 'IR'}
 
         for result in updates:
             status = result['status']
+            if status & SC_FLAG:
+                continue
+
             if status & FATAL_FLAGS:
                 # Determine the specific error
                 for flag, code in STATUS_MAP.items():
