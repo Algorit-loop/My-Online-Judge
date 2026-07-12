@@ -10,7 +10,9 @@ from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db import transaction
-from django.db.models import BooleanField, Case, F, Prefetch, Q, When
+from django.db.models import BooleanField, Case, F, Prefetch, Q, Sum, When
+from django.db.models.expressions import Value
+from django.db.models.functions import Coalesce
 from django.db.utils import ProgrammingError
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -29,10 +31,11 @@ from reversion import revisions
 from judge.comments import CommentedDetailView
 from judge.forms import LanguageLimitFormSet, ProblemCloneForm, ProblemEditForm, ProblemEditTypeGroupForm, \
     ProblemImportPolygonForm, ProblemImportPolygonStatementFormSet, ProblemSubmitForm, ProposeProblemSolutionFormSet
-from judge.models import ContestSubmission, Judge, Language, Problem, ProblemGroup, \
+from judge.models import ContestSubmission, Judge, Language, Problem, ProblemData, ProblemGroup, \
     ProblemTranslation, ProblemType, RuntimeVersion, Solution, Submission, SubmissionSource
 from judge.tasks import on_new_problem
 from judge.template_context import misc_config
+from judge.utils import cache_helper
 from judge.utils.codeforces_polygon import ImportPolygonError, PolygonImporter
 from judge.utils.infinite_paginator import InfinitePaginationMixin
 from judge.utils.opengraph import generate_opengraph
@@ -41,7 +44,8 @@ from judge.utils.problems import hot_problems, user_attempted_ids, \
     user_completed_ids
 from judge.utils.strings import safe_float_or_none, safe_int_or_none
 from judge.utils.tickets import own_ticket_filter
-from judge.utils.views import QueryStringSortMixin, SingleObjectFormView, TitleMixin, add_file_response, generic_message
+from judge.utils.views import QueryStringSortMixin, SingleObjectFormView, TitleMixin, add_file_response, generic_message, \
+    paginate_query_context
 from judge.views.widgets import pdf_statement_uploader, submission_uploader
 
 recjk = re.compile(r'[\u2E80-\u2E99\u2E9B-\u2EF3\u2F00-\u2FD5\u3005\u3007\u3021-\u3029\u3038-\u303A\u303B\u3400-\u4DB5'
@@ -1150,3 +1154,48 @@ class ProblemEditTypeGroup(PermissionRequiredMixin, ProblemMixin, TitleMixin, Up
             return HttpResponseRedirect(reverse('problem_detail', args=[self.object.code]))
 
         return self.render_to_response(self.get_context_data(object=self.object))
+
+
+class ProblemStorageDashboard(LoginRequiredMixin, TitleMixin, InfinitePaginationMixin, ListView):
+    template_name = 'problem/storage.html'
+    context_object_name = 'problems'
+    paginate_by = 100
+    title = gettext_lazy('Storage Summary')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return Problem.objects.annotate(
+            data_size=Coalesce(F('data_files__zipfile_size'), Value(0)),
+        ).only(
+            'code', 'name',
+        ).order_by('-data_size')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        cache_factory = cache_helper.global_storage_cache_factory()
+        cached_data = cache_factory.get_cache()
+
+        if cached_data is None:
+            storage_totals = ProblemData.objects.aggregate(
+                test_data=Sum('zipfile_size'),
+            )
+
+            test_data_total = storage_totals['test_data'] or 0
+
+            cached_data = {
+                'test_data': test_data_total,
+            }
+
+            cache_factory.set_cache(cached_data)
+
+        context['test_data_storage'] = cached_data['test_data']
+        context['tab'] = 'storage'
+
+        context.update(paginate_query_context(self.request))
+
+        return context

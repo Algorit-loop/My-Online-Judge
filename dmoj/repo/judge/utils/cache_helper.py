@@ -21,3 +21,7 @@ class CacheFactory:
 
 def organization_storage_cache_factory(organization_id):
     return CacheFactory(f'org_storage_total_{organization_id}')
+
+
+def global_storage_cache_factory():
+    return CacheFactory('global_storage_total')

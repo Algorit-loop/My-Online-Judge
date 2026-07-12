@@ -138,7 +138,8 @@ BKDNOJ_LOW_POWER_MODE_CONFIG = {
 
 BKDNOJ_MAGAZINE_TAG_SLUG = None
 
-CELERY_TIMEZONE = 'UTC'
+# CELERY_TIMEZONE = 'UTC'
+CELERY_TIMEZONE = 'Asia/Ho_Chi_Minh'
 
 # Some problems have a lot of testcases, and each testcase
 # has about 5~6 fields, so we need to raise this
@@ -325,7 +326,7 @@ INLINE_JQUERY = True
 INLINE_FONTAWESOME = True
 JQUERY_JS = '/static/aloj/jquery/3.4.1/jquery.min.js'
 FONTAWESOME_CSS = '/static/aloj/font-awesome/4.3.0/css/font-awesome.min.css'
-DMOJ_CANONICAL = 'oj.vnoi.info'
+DMOJ_CANONICAL = 'bkdnoj.yourdomain.com'
 
 # Application definition
 
@@ -742,8 +743,11 @@ GENSOL_OUTPUT_LIMIT = 12 * 1024 * 1024
 
 # Whatever you do, this better be one of the entries in `LANGUAGES`.
 LANGUAGE_CODE = 'en'
-TIME_ZONE = 'UTC'
-DEFAULT_USER_TIME_ZONE = 'America/Toronto'
+# TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
+# DEFAULT_USER_TIME_ZONE = 'America/Toronto'
+DEFAULT_USER_TIME_ZONE = 'Asia/Ho_Chi_Minh'
+CELERY_TIMEZONE = 'Asia/Ho_Chi_Minh'
 USE_I18N = True
 USE_TZ = True
 

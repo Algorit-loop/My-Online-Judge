@@ -12,6 +12,7 @@
         {{ make_tab('suggest', 'fa-list', url('problem_suggest_list'), _('Suggest')) }}
     {% endif %}
     {% if request.user.is_superuser %}
+        {{ make_tab('storage', 'fa-database', url('problem_storage'), _('Storage')) }}
         {{ make_tab('admin', 'fa-edit', url('admin:judge_problem_changelist'), _('Admin')) }}
     {% endif %}
 {% endblock %}

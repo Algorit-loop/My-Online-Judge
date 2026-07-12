@@ -4,3 +4,5 @@ dmoj/media/
 dmoj/problems/
 dmoj/environment/*.env
 dmoj/generate_testcase
+judge_update/set_unless_stopped.sh
+judge_update/judges.sh
