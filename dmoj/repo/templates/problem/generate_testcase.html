@@ -69,67 +69,11 @@
         border: 1px solid #ccc; border-radius: 4px; max-width: 200px;
     }
 
-    /* Error / success */
+    /* Error (form validation only — the progress panel below has its own .gt-result styling) */
     .gt-error {
         display: none; background: #fdd; border: 1px solid #c00;
         border-radius: 4px; padding: 0.8em 1em; color: #900; margin-top: 1em;
         white-space: pre-wrap; word-break: break-word;
-    }
-    .gt-success-msg {
-        display: none; background: #d4edda; border: 1px solid #28a745;
-        border-radius: 4px; padding: 1em 1.2em; color: #155724; margin-top: 1em;
-        font-weight: 600; font-size: 1.05em;
-    }
-    .gt-success-msg i { margin-right: 0.4em; }
-
-    /* Stepper */
-    .gt-stepper { list-style: none; padding: 0; margin: 1em 0 0.5em 0; }
-    .gt-stepper li {
-        display: flex; align-items: flex-start; gap: 0.8em;
-        padding: 0.5em 0; border-left: 3px solid #ddd;
-        margin-left: 0.8em; padding-left: 1.2em;
-        position: relative; transition: all 0.3s;
-    }
-    .gt-stepper li.done   { border-left-color: #00a65a; }
-    .gt-stepper li.active { border-left-color: #3c8dbc; }
-    .gt-stepper li.error  { border-left-color: #e74c3c; }
-
-    .gt-step-icon {
-        width: 26px; height: 26px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.75em; flex-shrink: 0;
-        background: #eee; color: #999;
-        position: relative; left: -2.05em;
-        margin-right: -1.2em;
-        transition: all 0.3s;
-    }
-    .gt-stepper li.done .gt-step-icon   { background: #00a65a; color: #fff; }
-    .gt-stepper li.active .gt-step-icon { background: #3c8dbc; color: #fff; }
-    .gt-stepper li.error .gt-step-icon  { background: #e74c3c; color: #fff; }
-
-    .gt-step-text { flex: 1; }
-    .gt-step-label { font-weight: 600; font-size: 0.93em; }
-    .gt-step-detail { font-size: 0.82em; color: #777; margin-top: 0.1em; }
-
-    .gt-step-bar {
-        height: 6px; background: #e0e0e0; border-radius: 3px;
-        margin-top: 0.35em; overflow: hidden; display: none;
-    }
-    .gt-step-bar .bar {
-        height: 100%; background: #3c8dbc; border-radius: 3px;
-        transition: width 0.3s;
-    }
-    .gt-stepper li.active .gt-step-bar,
-    .gt-stepper li.done .gt-step-bar { display: block; }
-    .gt-stepper li.done .gt-step-bar .bar { background: #00a65a; }
-
-    /* Error log box */
-    .gt-error-log {
-        display: none; background: #2d2d2d; color: #f8f8f2;
-        font-family: 'Courier New', monospace; font-size: 0.82em;
-        padding: 0.8em 1em; border-radius: 4px; margin-top: 0.8em;
-        max-height: 250px; overflow-y: auto; white-space: pre-wrap;
-        word-break: break-all;
     }
 
     /* AI messages */
@@ -143,9 +87,118 @@
         margin-bottom: 0.5em; flex-wrap: wrap;
     }
 
+    /* ══════════════════════════════════════════════════════════════
+       Progress panel
+       ══════════════════════════════════════════════════════════════ */
+    .gt-progress-card {
+        background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+        padding: 1.6em 1.8em 1.9em; margin-bottom: 1.2em;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 6px rgba(16, 24, 40, 0.06);
+    }
+    .gt-progress-head { display: flex; align-items: center; gap: 0.65em; margin-bottom: 1.5em; }
+    .gt-progress-head-icon {
+        width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+        background: linear-gradient(135deg, #3c8dbc, #2a6d94); color: #fff;
+        display: flex; align-items: center; justify-content: center; font-size: 0.85em;
+    }
+    .gt-progress-head h3 { margin: 0; border: none; padding: 0; font-size: 1.1em; color: #263238; }
+
+    /* Stepper — horizontal timeline with connecting rail */
+    .gt-stepper {
+        list-style: none; padding: 0; margin: 0 0 1.6em; display: flex; align-items: flex-start;
+    }
+    .gt-stepper li {
+        flex: 1; position: relative; text-align: center; padding: 0 0.4em; min-width: 0;
+    }
+    .gt-stepper li::before, .gt-stepper li::after {
+        content: ''; position: absolute; top: 18px; height: 3px; background: #e5e7eb;
+        transition: background 0.4s ease; z-index: 0;
+    }
+    .gt-stepper li::before { left: 0; width: 50%; }
+    .gt-stepper li::after  { right: 0; width: 50%; }
+    .gt-stepper li:first-child::before, .gt-stepper li:last-child::after { display: none; }
+    .gt-stepper li.done::before, .gt-stepper li.done::after,
+    .gt-stepper li.active::before, .gt-stepper li.error::before { background: #00a65a; }
+
+    .gt-step-icon {
+        position: relative; z-index: 1; margin: 0 auto;
+        width: 38px; height: 38px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.85em; font-weight: 700;
+        background: #fff; border: 3px solid #e2e5e9; color: #aab2bc;
+        transition: all 0.35s cubic-bezier(.4,0,.2,1);
+    }
+    .gt-stepper li.done .gt-step-icon   { border-color: #00a65a; background: #00a65a; color: #fff; }
+    .gt-stepper li.active .gt-step-icon {
+        border-color: #3c8dbc; color: #3c8dbc;
+        box-shadow: 0 0 0 5px rgba(60, 141, 188, 0.14);
+        animation: gt-pulse 1.6s ease-in-out infinite;
+    }
+    .gt-stepper li.error .gt-step-icon  {
+        border-color: #e74c3c; background: #e74c3c; color: #fff;
+        box-shadow: 0 0 0 5px rgba(231, 76, 60, 0.14);
+    }
+    @keyframes gt-pulse {
+        0%, 100% { box-shadow: 0 0 0 5px rgba(60, 141, 188, 0.14); }
+        50%      { box-shadow: 0 0 0 9px rgba(60, 141, 188, 0.04); }
+    }
+
+    .gt-step-text { margin-top: 0.55em; }
+    .gt-step-label { font-weight: 600; font-size: 0.85em; color: #667085; transition: color 0.3s; }
+    .gt-stepper li.active .gt-step-label { color: #3c8dbc; }
+    .gt-stepper li.done .gt-step-label   { color: #00a65a; }
+    .gt-stepper li.error .gt-step-label  { color: #e74c3c; }
+    .gt-step-detail { font-size: 0.76em; color: #98a2b3; margin-top: 0.2em; min-height: 1.1em; }
+
+    .gt-step-bar {
+        height: 4px; background: #eef0f3; border-radius: 2px;
+        margin: 0.5em auto 0; max-width: 110px; overflow: hidden; display: none;
+    }
+    .gt-step-bar .bar { height: 100%; width: 0%; border-radius: 2px; transition: width 0.3s; background: #3c8dbc; }
+    .gt-stepper li.active .gt-step-bar, .gt-stepper li.done .gt-step-bar { display: block; }
+    .gt-stepper li.active .gt-step-bar .bar {
+        background: linear-gradient(90deg, #3c8dbc 25%, #7ec1e8 50%, #3c8dbc 75%);
+        background-size: 200% 100%; animation: gt-shimmer 1.3s linear infinite;
+    }
+    .gt-stepper li.done .gt-step-bar .bar { width: 100% !important; background: #00a65a; }
+    @keyframes gt-shimmer { from { background-position: 0 0; } to { background-position: -200% 0; } }
+
+    @media (max-width: 700px) {
+        .gt-stepper { flex-direction: column; gap: 1.1em; }
+        .gt-stepper li { display: flex; align-items: center; gap: 0.9em; text-align: left; padding: 0; }
+        .gt-stepper li::before, .gt-stepper li::after { display: none; }
+        .gt-step-text { margin-top: 0; flex: 1; }
+        .gt-step-bar { margin: 0.4em 0 0; max-width: none; }
+    }
+
+    /* Result cards (success / error) */
+    .gt-result {
+        display: none; border-radius: 8px; padding: 1em 1.2em; margin-top: 0.4em;
+        gap: 0.7em; align-items: flex-start;
+    }
+    .gt-result.show { display: flex; }
+    .gt-result-icon { font-size: 1.35em; line-height: 1.2; margin-top: 0.05em; flex-shrink: 0; }
+    .gt-result-body { flex: 1; min-width: 0; }
+    .gt-result-title { font-weight: 700; font-size: 1.02em; }
+    .gt-result-sub { font-size: 0.86em; margin-top: 0.25em; opacity: 0.9; }
+    .gt-result-msg { white-space: pre-wrap; word-break: break-word; }
+    .gt-result-success { background: #eafaf1; border: 1px solid #a6e4bd; color: #146c2e; }
+    .gt-result-success .gt-result-icon { color: #00a65a; }
+    .gt-result-error { background: #fdedec; border: 1px solid #f3b3ac; color: #7a241a; }
+    .gt-result-error .gt-result-icon { color: #e74c3c; }
+
+    /* Error log box */
+    .gt-error-log {
+        display: none; background: #1e2530; color: #e8eaed;
+        font-family: 'Courier New', monospace; font-size: 0.82em;
+        padding: 0.9em 1.1em; border-radius: 8px; margin-top: 0.8em;
+        max-height: 260px; overflow-y: auto; white-space: pre-wrap;
+        word-break: break-all;
+    }
+
     /* Progress actions */
     .gt-progress-actions {
-        margin-top: 1em; gap: 0.8em; align-items: center; flex-wrap: wrap;
+        margin-top: 1.4em; gap: 0.8em; align-items: center; flex-wrap: wrap;
     }
 </style>
 {% endblock %}
@@ -226,18 +279,21 @@
     <div id="gt-form-error" class="gt-error"></div>
 
     {# ── Progress (always in DOM, shown/hidden via JS) ── #}
-    <div id="gt-progress-section" class="gt-section" style="display: none;">
-        <h3><i class="fa fa-tasks"></i> {{ _('Progress') }}</h3>
+    <div id="gt-progress-section" class="gt-progress-card" style="display: none;">
+        <div class="gt-progress-head">
+            <span class="gt-progress-head-icon"><i class="fa fa-bolt"></i></span>
+            <h3>{{ _('Progress') }}</h3>
+        </div>
         <ul class="gt-stepper" id="gt-stepper">
             <li id="gt-step-cg" data-step="compile-generator">
-                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <span class="gt-step-icon">1</span>
                 <div class="gt-step-text">
                     <div class="gt-step-label">{{ _('Compile generator') }}</div>
                     <div class="gt-step-detail"></div>
                 </div>
             </li>
             <li id="gt-step-rg" data-step="run-generator">
-                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <span class="gt-step-icon">2</span>
                 <div class="gt-step-text">
                     <div class="gt-step-label">{{ _('Generate input files') }}</div>
                     <div class="gt-step-detail"></div>
@@ -245,14 +301,14 @@
                 </div>
             </li>
             <li id="gt-step-cs" data-step="compile-solution">
-                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <span class="gt-step-icon">3</span>
                 <div class="gt-step-text">
                     <div class="gt-step-label">{{ _('Compile solution') }}</div>
                     <div class="gt-step-detail"></div>
                 </div>
             </li>
             <li id="gt-step-rs" data-step="run-solution">
-                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <span class="gt-step-icon">4</span>
                 <div class="gt-step-text">
                     <div class="gt-step-label">{{ _('Generate output files') }}</div>
                     <div class="gt-step-detail"></div>
@@ -260,7 +316,7 @@
                 </div>
             </li>
             <li id="gt-step-up" data-step="uploading">
-                <span class="gt-step-icon"><i class="fa fa-circle-o"></i></span>
+                <span class="gt-step-icon">5</span>
                 <div class="gt-step-text">
                     <div class="gt-step-label">{{ _('Upload & import testcases') }}</div>
                     <div class="gt-step-detail"></div>
@@ -268,8 +324,8 @@
             </li>
         </ul>
 
-        <div id="gt-done-msg" class="gt-success-msg"></div>
-        <div id="gt-error-msg" class="gt-error"></div>
+        <div id="gt-done-msg" class="gt-result gt-result-success"></div>
+        <div id="gt-error-msg" class="gt-result gt-result-error"></div>
         <div id="gt-error-log" class="gt-error-log"></div>
 
         <div id="gt-progress-actions" class="gt-progress-actions" style="display: none;">
@@ -294,6 +350,8 @@
 
     var SAVED_GENERATOR = {{ saved_generator_source|safe }};
     var SAVED_SOLUTION  = {{ saved_solution_source|safe }};
+    var SAVED_ERROR_MESSAGE = {{ saved_error_message|safe }};
+    var ZIP_SIZE_MB = {{ zip_size_mb_json|safe }};
 
     var gensolState = {
         jobId: {{ gensol_job.id if gensol_job else 'null' }},
@@ -347,7 +405,7 @@
         if (state === 'done') icon.innerHTML = '<i class="fa fa-check"></i>';
         else if (state === 'active') icon.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
         else if (state === 'error') icon.innerHTML = '<i class="fa fa-times"></i>';
-        else icon.innerHTML = '<i class="fa fa-circle-o"></i>';
+        else icon.textContent = STEP_ORDER.indexOf(stepType) + 1;
         if (detail !== undefined) li.querySelector('.gt-step-detail').textContent = detail;
         var bar = li.querySelector('.gt-step-bar .bar');
         if (bar) {
@@ -368,9 +426,10 @@
 
     function resetStepper() {
         STEP_ORDER.forEach(function(s) { setStepState(s, '', '', 0); });
-        ['gt-done-msg','gt-error-msg','gt-error-log'].forEach(function(id) {
-            document.getElementById(id).style.display = 'none';
+        ['gt-done-msg', 'gt-error-msg'].forEach(function(id) {
+            document.getElementById(id).classList.remove('show');
         });
+        document.getElementById('gt-error-log').style.display = 'none';
         document.getElementById('gt-progress-actions').style.display = 'none';
         document.getElementById('gt-start-btn').disabled = true;
     }
@@ -381,7 +440,16 @@
         return step;
     }
 
-    function showStepperDone() {
+    /* current_step only tells us WHICH submission (generator/solution) errored, not whether it failed to
+       compile or failed while running — infer that from the message prefix set in judge_handler.py. */
+    function mapFailedStep(step, msg) {
+        var isCompile = (msg || '').indexOf('Compile error') === 0;
+        if (step === 'generator') return isCompile ? 'compile-generator' : 'run-generator';
+        if (step === 'solution') return isCompile ? 'compile-solution' : 'run-solution';
+        return 'compile-generator';
+    }
+
+    function showStepperDone(zipSizeMb) {
         for (var i = 0; i < STEP_ORDER.length; i++) {
             var s = STEP_ORDER[i];
             var detail = (s === 'run-generator' || s === 'run-solution')
@@ -389,16 +457,23 @@
             setStepState(s, 'done', detail);
         }
         var el = document.getElementById('gt-done-msg');
-        el.innerHTML = '<i class="fa fa-check-circle"></i> {{ _("Test cases generated successfully!") }}';
-        el.style.display = 'block';
+        var sub = (zipSizeMb || zipSizeMb === 0)
+            ? '<div class="gt-result-sub">' + '{{ _("Testcase package") }}' + ': ' + zipSizeMb + ' MB</div>'
+            : '';
+        el.innerHTML = '<i class="fa fa-check-circle gt-result-icon"></i>' +
+            '<div class="gt-result-body"><div class="gt-result-title">{{ _("Test cases generated successfully!") }}</div>' + sub + '</div>';
+        el.classList.add('show');
         document.getElementById('gt-progress-actions').style.display = 'flex';
         document.getElementById('gt-start-btn').disabled = false;
     }
 
     function showStepperError(msg, log) {
         var el = document.getElementById('gt-error-msg');
-        el.textContent = msg;
-        el.style.display = 'block';
+        el.innerHTML = '<i class="fa fa-exclamation-triangle gt-result-icon"></i>' +
+            '<div class="gt-result-body"><div class="gt-result-title">{{ _("Generation failed") }}</div>' +
+            '<div class="gt-result-sub gt-result-msg"></div></div>';
+        el.querySelector('.gt-result-msg').textContent = msg;
+        el.classList.add('show');
         if (log) {
             var logEl = document.getElementById('gt-error-log');
             logEl.textContent = log;
@@ -431,7 +506,7 @@
                 markAllBeforeDone(cs);
                 setStepState(cs, 'active', '{{ _("Compiling...") }}');
             } else if (data.type === 'done') {
-                showStepperDone();
+                showStepperDone(data.zip_size_mb);
             } else if (data.type === 'error') {
                 var es = mapStep(gensolState.currentStep);
                 markAllBeforeDone(es);
@@ -463,10 +538,13 @@
             subscribeEvents(gensolState.idSecret);
         } else if (s === 'DONE') {
             showProgress();
-            showStepperDone();
+            showStepperDone(ZIP_SIZE_MB);
         } else if (s === 'ERROR') {
             showProgress();
-            showStepperError('{{ gensol_job.error_message if gensol_job else "" }}');
+            var errStep = mapFailedStep(gensolState.currentStep, SAVED_ERROR_MESSAGE);
+            markAllBeforeDone(errStep);
+            setStepState(errStep, 'error', '');
+            showStepperError(SAVED_ERROR_MESSAGE || '{{ _("Unknown error") }}');
         }
     }
 

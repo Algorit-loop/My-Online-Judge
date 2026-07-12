@@ -55,6 +55,12 @@ def generate_testcase_view(request, problem):
     else:
         saved_generator = None
 
+    # Zip size for a completed job, so a page reload can still show it (see gensol.py _finalize_job
+    # for the live value posted over the websocket during an active run).
+    zip_size_mb = None
+    if latest_job and latest_job.status == 'DONE' and hasattr(problem_obj, 'data_files'):
+        zip_size_mb = round(problem_obj.data_files.zipfile_size / 1024 / 1024, 2)
+
     ctx = {
         'problem': problem_obj,
         'title': _('Generate Testcase for %s') % problem_obj.name,
@@ -69,6 +75,10 @@ def generate_testcase_view(request, problem):
         'saved_solution_source': _safe_json(json.dumps(latest_job.solution_source)) if latest_job else 'null',
         'saved_solution_language': latest_job.solution_language.key if latest_job else '',
         'saved_num_cases': latest_job.num_cases if latest_job else 20,
+        # JSON-encoded (not raw-interpolated) because this is free-form text that can contain a compiler
+        # log — quotes/newlines/backslashes would otherwise break the inline <script> below.
+        'saved_error_message': _safe_json(json.dumps(latest_job.error_message)) if latest_job else 'null',
+        'zip_size_mb_json': json.dumps(zip_size_mb),
     }
 
     return render(request, 'problem/generate_testcase.html', ctx)
