@@ -1,31 +1,37 @@
-@import "vars";
+@use "vars" as *;
 
 .accordion {
     padding: 0;
 }
 
 .accordion .card {
-    margin-bottom: 0.25em;
+    margin-bottom: 0.4em;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-2);
+    overflow: hidden;
+    background: var(--panel);
 }
 
 .accordion .card-body {
     display: none;
-    border: 1px solid #ccc;
+    border: none;
+    border-top: 1px solid var(--line);
     overflow: hidden;
     padding: 1em;
 }
 
 .accordion .card-toggle {
-    color: $color_primary0;
-    background: $color_primary75;
-    border-radius: 4px 4px 0 0;
+    color: var(--ink);
+    background: var(--panel-2);
+    border-radius: 0;
     display: block;
-    font-size: 1.1em;
-    padding: 0.5em;
+    font-size: 1em;
+    font-weight: 600;
+    padding: 0.6em 0.8em;
     text-decoration: none;
-    transition: background 0.3s ease;
+    transition: background-color var(--t-fast) var(--ease);
 }
 
 .accordion .card-toggle:hover {
-    background: rgba($color_primary75, 0.7);
+    background: var(--line);
 }

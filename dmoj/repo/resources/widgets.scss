@@ -22,34 +22,40 @@
     float: right;
 }
 
-// Bootstrap-y buttons
+// Buttons
 .button, button, input[type=submit] {
     color: white !important;
     text-decoration: none !important;
     cursor: pointer;
     vertical-align: middle;
     white-space: nowrap;
-    font-weight: 400;
+    font-weight: 500;
+    font-family: var(--font-ui);
     line-height: 1.4;
-    background: rgb(51, 122, 183) none repeat scroll 0 (0% / auto) padding-box border-box;
-    background: -webkit-linear-gradient(top, #337ab7 0, #265a88 100%) repeat-x;
-    background: linear-gradient(to bottom, #337ab7 0, #265a88 100%) repeat-x;
-    border-radius: $widget_border_radius;
-    padding: 6px 12px;
+    background: var(--accent);
+    border-radius: var(--radius-1);
+    padding: 6px 14px;
     display: block;
-    border: 0;
+    border: 1px solid transparent;
     text-align: center;
+    transition: background-color var(--t-fast) var(--ease),
+                border-color var(--t-fast) var(--ease),
+                color var(--t-fast) var(--ease);
 
     // 4k hack
     font-size: $base_font_size;
 
     &:hover {
-        background: #265a88;
+        background: var(--accent-strong);
     }
 
     &:active {
-        border-color: #245580;
-        background: #265a88;
+        background: var(--accent-strong);
+    }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     &.full {
@@ -57,102 +63,135 @@
     }
 
     &.disabled {
-        background: linear-gradient(to bottom, darkgray 0, gray 100%) repeat-x !important;
-        border-color: grey !important;
+        background: var(--faint) !important;
+        border-color: transparent !important;
         cursor: not-allowed;
+    }
+}
+
+// Quiet secondary button — opt-in via class
+.button.btn-quiet {
+    color: var(--ink) !important;
+    background: var(--panel);
+    border-color: var(--line);
+
+    &:hover {
+        background: var(--panel-2);
+        border-color: var(--line-strong);
     }
 }
 
 .inline-button {
     display: inline;
     vertical-align: top;
-    padding: 3px 6px;
+    padding: 3px 10px;
 }
 
 input {
     &[type=text], &[type=password], &[type=email], &[type=number], &[type=url] {
-        padding: 4px 8px;
-        color: $color_primary75;
-        background: $color_primary0 none;
-        border: 1px solid $color_primary25;
-        border-radius: $widget_border_radius;
-        box-shadow: 0 1px 1px rgba($color_primary100, 0.075) inset;
-        transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+        padding: 6px 10px;
+        color: var(--ink);
+        background: var(--panel) none;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-1);
+        font-family: var(--font-ui);
+        transition: border-color var(--t-fast) var(--ease),
+                    box-shadow var(--t-fast) var(--ease);
         box-sizing: border-box;
 
         // Need this explicitly because UA stylesheet for Chrome on 4k makes
         // everything look bad otherwise (forces it to 9.3px)
         font-size: $base_font_size;
 
+        &::placeholder {
+            color: var(--faint);
+        }
+
         &:hover {
-            border-color: rgba(82, 168, 236, 0.8);
-            box-shadow: inset 0 1px 1px rgba($color_primary100, 0.075), 0 0 4px rgba(82, 168, 236, 0.6);
+            border-color: var(--line-strong);
         }
 
         &:focus {
-            border-color: rgba(82, 168, 236, 0.8);
-            box-shadow: inset 0 1px 1px rgba($color_primary100, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus-ring);
             outline: 0;
         }
     }
 
     &[type=number] {
-        padding: 2px 0 2px 5px;
+        padding: 4px 0 4px 8px;
     }
 
     &[type=checkbox] {
         appearance: none;
         vertical-align: middle;
-        border: 1px solid $color_primary50;
-        background: $color_primary0;
-        border-radius: 2px;
+        border: 1px solid var(--line-strong);
+        background: var(--panel);
+        border-radius: 3px;
         width: 0.95em;
         height: 0.95em;
         cursor: pointer;
 
         &:checked {
             appearance: auto;
-            accent-color: $highlight_blue;
+            accent-color: var(--accent);
         }
     }
 }
 
 textarea {
-    padding: 4px 8px;
-    color: $color_primary75;
-    background: $color_primary0 none;
-    border: 1px solid $color_primary25;
-    border-radius: $widget_border_radius;
-    box-shadow: 0 1px 1px rgba($color_primary100, 0.075) inset;
-    transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+    padding: 6px 10px;
+    color: var(--ink);
+    background: var(--panel) none;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-1);
+    font-family: var(--font-ui);
+    transition: border-color var(--t-fast) var(--ease),
+                box-shadow var(--t-fast) var(--ease);
     box-sizing: border-box;
 }
 
 textarea:hover {
-    border-color: rgba(82, 168, 236, 0.8);
-    box-shadow: inset 0 1px 1px rgba($color_primary100, 0.075), 0 0 4px rgba(82, 168, 236, 0.6);
+    border-color: var(--line-strong);
 }
 
 textarea:focus {
-    border-color: rgba(82, 168, 236, 0.8);
-    box-shadow: inset 0 1px 1px rgba($color_primary100, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--focus-ring);
     outline: 0;
 }
 
-// Bootstrap-y copy button
+select {
+    padding: 5px 8px;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-1);
+    font-family: var(--font-ui);
+    font-size: $base_font_size;
+}
+
+// Copy button on code blocks
 .btn-clipboard {
     top: 0;
     right: 0;
     display: block;
-    font-size: 12px;
-    font-weight: bold;
-    color: $color_primary50;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--muted);
     cursor: pointer;
-    background-color: $color_pageBg;
-    border: 1px solid $color_primary25;
-    border-radius: 0 $widget_border_radius;
+    background-color: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 0 var(--radius-1);
     position: absolute;
-    padding: 5px 8px;
+    padding: 5px 9px;
+    transition: color var(--t-fast) var(--ease),
+                background-color var(--t-fast) var(--ease);
+
+    &:hover {
+        color: var(--ink);
+        background: var(--panel-2);
+    }
 }
 
 .copy-clipboard {
@@ -160,20 +199,10 @@ textarea:focus {
     margin-top: 1.5em;
 }
 
-// Bootstrap-y tabs
-.ul_tab_a_active {
-    color: $color_primary100;
-    // Cover up the bottom border of active tabs with this color
-    background: $color_pageBg;
-    cursor: default;
-    border: 1px solid $color_primary25;
-    border-bottom-color: $color_pageBg;
-    border-image: none;
-}
-
+// Tabs — flat, bottom-border style
 .tabs {
-    border-bottom: 1px solid $color_primary25;
-    margin: 0 0 8px;
+    border-bottom: 1px solid var(--line);
+    margin: 0 0 12px;
     width: 100%;
     display: flex;
     justify-content: space-between;
@@ -181,31 +210,23 @@ textarea:focus {
 
     .tab {
         .tab-icon {
-            padding-right: 0.3em;
-            color: $color_primary50;
+            padding-right: 0.35em;
+            color: var(--faint);
 
             &.fa-plus {
-                color: green !important;
+                color: var(--v-ac-ink) !important;
             }
-        }
-
-        a, span {
-            border-top-width: 3px !important;
         }
 
         &.active {
-            a, span {
-                border-top-color: $highlight_blue !important;
-            }
-
             .tab-icon {
-                color: $color_primary100;
+                color: var(--accent-strong);
             }
         }
     }
 
     h2 {
-        color: $color_primary75;
+        color: var(--ink);
     }
 
     > ul {
@@ -221,81 +242,85 @@ textarea:focus {
             position: relative;
             display: block;
 
-            &.active > a, &.active > span {
-                @extend .ul_tab_a_active;
-
-                &:hover {
-                    @extend .ul_tab_a_active;
-                }
-
-                &:focus {
-                    @extend .ul_tab_a_active;
-                }
-            }
-
             > a, > span {
                 margin-right: 2px;
                 line-height: 1.42857;
-                border: 1px solid transparent;
-                border-radius: $widget_border_radius $widget_border_radius 0 0;
+                border: none;
+                border-bottom: 2px solid transparent;
                 position: relative;
                 display: block;
-                padding: 10px 15px;
-                color: $color_primary66;
+                padding: 9px 14px;
+                color: var(--muted);
+                font-weight: 500;
                 text-decoration: none;
                 white-space: nowrap;
+                transition: color var(--t-fast) var(--ease),
+                            border-color var(--t-fast) var(--ease);
+
+                &:hover {
+                    color: var(--ink);
+                    border-bottom-color: var(--line-strong);
+                }
+            }
+
+            &.active > a, &.active > span {
+                color: var(--accent-strong);
+                border-bottom-color: var(--accent);
+                cursor: default;
+
+                &:hover, &:focus {
+                    color: var(--accent-strong);
+                    border-bottom-color: var(--accent);
+                }
             }
         }
     }
 }
 
-// Bootstrap-y pagination
-ul.pagination a:hover {
-    background: rgba($color_primary100, 0.55);
-}
-
+// Pagination
 ul.pagination {
-    display: inline-block;
+    display: inline-flex;
     padding-left: 0;
     margin: 0;
+    gap: 4px;
 
     > {
         li {
             display: inline;
 
-            &:first-child > {
-                a, span {
-                    margin-left: 0;
-                    border-top-left-radius: $widget_border_radius;
-                    border-bottom-left-radius: $widget_border_radius;
-                }
-            }
-
-            &:last-child > {
-                a, span {
-                    border-top-right-radius: $widget_border_radius;
-                    border-bottom-right-radius: $widget_border_radius;
-                }
-            }
-
             > {
                 a, span {
                     position: relative;
                     float: left;
-                    padding: 4px 12px;
+                    min-width: 1.2em;
+                    padding: 5px 10px;
                     line-height: 1.42857;
+                    text-align: center;
                     text-decoration: none;
-                    color: $color_primary0;
-                    background-color: $color_primary75;
-                    border: 1px solid $color_primary50;
-                    margin-left: -1px;
+                    color: var(--muted);
+                    font-weight: 500;
+                    font-variant-numeric: tabular-nums;
+                    background-color: var(--panel);
+                    border: 1px solid var(--line);
+                    border-radius: var(--radius-1);
+                    transition: background-color var(--t-fast) var(--ease),
+                                border-color var(--t-fast) var(--ease),
+                                color var(--t-fast) var(--ease);
+                }
+
+                a:hover {
+                    background: var(--panel-2);
+                    border-color: var(--line-strong);
+                    color: var(--ink);
                 }
             }
         }
 
         .disabled-page > {
             a, span {
-                color: $color_primary50;
+                color: var(--faint);
+                background: var(--panel-2);
+                cursor: default;
             }
         }
 
@@ -303,8 +328,8 @@ ul.pagination {
             a, span {
                 z-index: 2;
                 color: #FFF;
-                background-color: $highlight_blue;
-                border-color: transparent;
+                background-color: var(--accent);
+                border-color: var(--accent);
                 cursor: default;
             }
         }
@@ -322,11 +347,12 @@ ul.pagination {
     margin-top: 10px;
 }
 
+// Alerts
 .alert {
-    padding: 15px;
+    padding: 12px 16px;
     margin-bottom: 20px;
     border: 1px solid transparent;
-    border-radius: $widget_border_radius;
+    border-radius: var(--radius-1);
 }
 
 .alert-info {
@@ -363,9 +389,8 @@ ul.pagination {
     font-size: 21px;
     font-weight: 700;
     line-height: 1;
-    color: $color_primary100;
-    filter: alpha(opacity=20);
-    opacity: 0.2;
+    color: var(--ink);
+    opacity: 0.35;
 }
 
 a.close {
@@ -374,7 +399,7 @@ a.close {
     line-height: 1;
 
     &:hover {
-        color: $color_primary100;
+        color: var(--ink);
     }
 }
 
@@ -383,55 +408,63 @@ a.close {
         color: #000;
         text-decoration: none;
         cursor: pointer;
-        filter: alpha(opacity=50);
-        opacity: 0.5;
+        opacity: 0.6;
     }
 }
 
 .badge {
     min-width: 10px;
-    padding: 0 7px;
-    font-size: 12px;
+    padding: 1px 7px;
+    font-size: var(--fs-xs);
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.3;
     color: #fff;
     text-align: center;
     white-space: nowrap;
     vertical-align: middle;
-    background-color: #e84848;
-    border-radius: 10px;
+    background-color: var(--v-wa);
+    border-radius: var(--radius-round);
     box-sizing: border-box;
 }
 
 .form-submit-group {
-    border-top: 1px solid rgba($color_primary100, 0.1);
+    border-top: 1px solid var(--line);
     margin-top: 0.8em;
-    padding-top: 0.5em;
+    padding-top: 0.7em;
     text-align: right;
 }
 
+// Sidebox — card
+.sidebox {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-2);
+    overflow: hidden;
+    padding: 0 !important;
+    margin-bottom: 1.5em;
+}
+
 .sidebox h3 {
-    margin: 0 -5px;
-    background: $color_primary75;
-    border-radius: $widget_border_radius $widget_border_radius 0 0;
-    color: $color_primary0;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    padding-left: 7px;
-    font-size: 1.3em;
+    margin: 0;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    color: var(--ink);
+    padding: 8px 12px;
+    font-size: 1em;
+    font-weight: 600;
 }
 
 .sidebox h3 .fa {
-    color: $color_primary0;
+    color: var(--faint);
     float: right;
-    margin: 0.2em 0.4em 0 0;
+    margin: 0.2em 0.1em 0 0;
 }
 
 .sidebox-content {
-    border: 1px solid $color_primary25;
-    border-top: none;
-    margin: 0 -5px;
-    padding: 1px 0.5em 3px;
+    border: none;
+    margin: 0;
+    padding: 6px 12px 10px;
 
     &.sidebox-table {
         border: none;
@@ -443,19 +476,13 @@ a.close {
     }
 }
 
-.sidebox {
-    border-top-left-radius: $widget_border_radius;
-    border-top-right-radius: $widget_border_radius;
-    padding: 0 5px !important;
-    padding-bottom: 1.5em !important;
-}
-
 .ws-closed {
     position: sticky;
-    top: 42px;
+    top: 54px;
     background: $announcement_red;
-    border-radius: 5px 5px 0 0;
+    border-radius: var(--radius-1);
     display: none;
+    z-index: 90;
 }
 
 .ws-closed a {
@@ -475,15 +502,15 @@ a.close {
     padding: 0;
 
     li {
-        padding: 1em 1.5em;
+        padding: 0.9em 1.4em;
         margin-bottom: 1em;
         border: 1px solid transparent;
-        border-radius: 5px;
+        border-radius: var(--radius-1);
 
         &.debug {
-            color: $color_primary75;
-            background-color: $color_primary10;
-            border-color: $color_primary25;
+            color: var(--muted);
+            background-color: var(--panel-2);
+            border-color: var(--line);
         }
 
         &.info {
@@ -513,8 +540,101 @@ a.close {
 }
 
 details {
-    border: 1px solid $color_primary25;
-    background: $color_primary5;
+    border: 1px solid var(--line);
+    background: var(--panel);
     padding: 5px 10px;
-    border-radius: 4px;
+    border-radius: var(--radius-1);
+}
+
+// ============================================================
+// New primitives
+// ============================================================
+
+// Card — generic panel
+.card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-2);
+}
+
+// Chip — pill filter / small toggle
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-round);
+    padding: 4px 12px;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color var(--t-fast) var(--ease),
+                border-color var(--t-fast) var(--ease),
+                color var(--t-fast) var(--ease);
+
+    &:hover {
+        border-color: var(--line-strong);
+        color: var(--ink);
+    }
+
+    &.active, &.on {
+        color: var(--accent-strong);
+        background: var(--accent-soft);
+        border-color: var(--accent-line);
+    }
+}
+
+// Toolbar — horizontal control strip
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+// kbd hint
+.kbd, kbd {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 6px;
+}
+
+// Skeleton shimmer — initial loads only
+.skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--panel-2);
+    border-radius: var(--radius-1);
+    min-height: 0.9em;
+
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+        animation: skeleton-sweep 1.4s infinite;
+    }
+}
+
+@keyframes skeleton-sweep {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+// Monospace data cell helper
+.mono, td.mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-sm);
 }

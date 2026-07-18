@@ -84,18 +84,9 @@ def site_name(request):
 
 
 def site_theme(request):
-    # Middleware populating `profile` may not have loaded at this point if we're called from an error context.
-    if hasattr(request.user, 'profile'):
-        site_theme = request.profile.site_theme
-        preferred_css = settings.DMOJ_THEME_CSS.get(site_theme)
-    else:
-        site_theme = 'auto'
-        preferred_css = None
+    # The site ships a single light theme; profile.site_theme only affects the Ace editor now.
     return {
-        'DARK_STYLE_CSS': settings.DMOJ_THEME_CSS['dark'],
         'LIGHT_STYLE_CSS': settings.DMOJ_THEME_CSS['light'],
-        'PREFERRED_STYLE_CSS': preferred_css,
-        'SITE_THEME_NAME': site_theme,
     }
 
 

@@ -1,9 +1,10 @@
 @use "vars" as *;
 
 @mixin content-description {
-    line-height: 1.5em;
-    font-size: 1em;
-    font-family: "Segoe UI", "Lucida Grande", Arial, sans-serif;
+    line-height: 1.65;
+    font-size: var(--fs-content);
+    font-family: var(--font-content);
+    color: var(--ink);
 
     p {
         margin: 1em 0 !important;
@@ -16,32 +17,29 @@
     }
 
     h1, h2, h3, h4, h5, h6 {
-        font-weight: normal;
-        color: $color_primary90;
+        font-weight: 600;
+        color: var(--ink);
         margin-bottom: 0.75em;
         padding: 0;
         background: 0;
-    }
-
-    h3, h4, h5, h6 {
-        font-weight: bold;
+        letter-spacing: -0.01em;
     }
 
     h1 {
-        font-size: 2.5em;
-    }
-
-    h2 {
         font-size: 2em;
     }
 
-    h3 {
+    h2 {
         font-size: 1.6em;
     }
 
+    h3 {
+        font-size: 1.35em;
+    }
+
     h4 {
-        font-size: 1.4em;
-        border-bottom: 1px solid rgba($color_primary100, 0.1);
+        font-size: 1.2em;
+        border-bottom: 1px solid var(--line);
         line-height: 1.225;
         padding-bottom: 0.3em;
         padding-top: 0.5em;
@@ -57,19 +55,19 @@
     }
 
     blockquote {
-        color: $color_primary50;
-        border-left: 0.5em rgba($color_primary100, 0.1) solid;
+        color: var(--muted);
+        border-left: 3px solid var(--line-strong);
         margin: 1em 1em;
         padding: 1px 1px 1px 1.5em;
     }
 
     blockquote.spoiler {
         position: relative;
-        background: $color_primary5;
-        border-radius: 5px;
+        background: var(--panel-2);
+        border-radius: var(--radius-1);
         cursor: pointer;
         min-height: 48px;
-        border: solid 1px $color_primary25;
+        border: solid 1px var(--line);
     }
 
     blockquote.spoiler > * {
@@ -85,7 +83,7 @@
         left: 0;
         width: 4px;
         border-radius: 8px;
-        background: $color_primary25;
+        background: var(--accent-line);
     }
 
     blockquote.spoiler::after {
@@ -93,7 +91,7 @@
         background-repeat: no-repeat;
         background-position: center right;
         font-size: 13px;
-        color: $color_primary33;
+        color: var(--faint);
         padding-right: 22px;
         position: absolute;
         top: 1em;
@@ -118,48 +116,48 @@
         height: 0;
         border: 0;
         font-style: italic;
-        border-bottom: 1px solid $color_primary25;
+        border-bottom: 1px solid var(--line);
         margin: 25px 0 20px 0;
         padding: 0;
     }
 
     pre, code, kbd, samp, span.code {
-        color: $color_primary100;
+        color: var(--ink);
         page-break-inside: avoid;
         font-family: $monospace-fonts;
-        font-size: 0.98em;
+        font-size: 0.92em;
     }
 
     code, span.code {
         font-family: $monospace-fonts !important;
         margin: 0 2px;
-        padding: 0 5px;
-        border: 1px solid $color_primary25;
-        background-color: $color_primary5;
-        border-radius: $widget_border_radius;
-        font-size: 0.95em;
-        color: $color_primary75;
+        padding: 1px 5px;
+        border: 1px solid var(--line);
+        background-color: var(--panel-2);
+        border-radius: 5px;
+        font-size: 0.88em;
+        color: var(--ink);
     }
 
     pre {
         code, div.code {
             border: 0;
-            line-height: 1em;
+            line-height: 1.45;
             margin: 0;
             padding: 0;
             background: transparent;
             font-size: 1em;
-            color: $color_primary100;
+            color: var(--ink);
         }
 
         white-space: pre-wrap;
         word-wrap: break-word;
         margin: 1.5em 0 1.5em 0;
         padding: 1em;
-        border: 1px solid $color_primary25;
-        background-color: $color_primary5;
-        color: $color_primary100;
-        border-radius: $widget_border_radius;
+        border: 1px solid var(--line);
+        background-color: var(--panel-2);
+        color: var(--ink);
+        border-radius: var(--radius-2);
     }
 
     b, strong {

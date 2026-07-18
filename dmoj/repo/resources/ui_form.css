@@ -1,6 +1,6 @@
 .helptext {
-    font-size: 15px;
-    color: #999;
+    font-size: 12.5px;
+    color: var(--faint, #8b93a3);
     border-width: 0 0 1px 0;
 }
 .helptext::before {
@@ -10,7 +10,7 @@
     line-height: 1;
     content: "\f05a";
     padding-right: 5px;
-    font-size: 15px;
+    font-size: 12.5px;
 }
 .django-as-table {
     border-collapse:collapse;
@@ -28,22 +28,27 @@
 }
 
 .errorlist {
-    background: rgba(255, 0, 0, 0.3);
-    border: 3px dashed red;
-    border-right: none;
-    border-left: solid red;
-    padding: 0 1em 0.1em 2em;
+    list-style: none;
+    color: var(--v-wa-ink, #b91c1c);
+    background: var(--v-wa-soft, #fdeeee);
+    border: 1px solid #f2c2c2;
+    border-left: 3px solid var(--v-wa, #dc2626);
+    border-radius: 7px;
+    padding: 0.4em 1em;
     margin: 0.3em 0 0.5em 0;
 }
 .errornote {
-    border: 3px dashed #ffc000;
-    border-left: solid #ffc000;
-    padding: 0.7em 2em;
+    color: var(--v-tle-ink, #b45309);
+    background: var(--v-tle-soft, #fdf3e2);
+    border: 1px solid #f5d9a8;
+    border-left: 3px solid var(--v-tle, #d97706);
+    border-radius: 7px;
+    padding: 0.7em 1.5em;
     margin: 0 0 8px;
     font-size: 13px !important;
     font-weight: 400;
 }
 .required th::after {
     content: "*";
-    color: red;
+    color: var(--v-wa, #dc2626);
 }

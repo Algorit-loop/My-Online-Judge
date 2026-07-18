@@ -24,10 +24,10 @@
     }
 
     tr {
-        transition: background-color linear 0.2s;
+        transition: background-color var(--t-fast) var(--ease);
 
         &:hover {
-            background: rgba($color_primary100, 0.05);
+            background: rgba(28, 33, 48, 0.025);
         }
     }
 }
@@ -39,7 +39,7 @@
         text-align: right;
 
         &, a {
-            color: grey !important;
+            color: var(--faint) !important;
         }
     }
 }
@@ -63,15 +63,27 @@
         }
     }
 
+    td {
+        &.points, &.ac-rate, &.users {
+            font-family: var(--font-mono);
+            font-variant-numeric: tabular-nums;
+            font-size: var(--fs-sm);
+        }
+    }
+
+    .problem-name a {
+        font-weight: 600;
+    }
+
     th a {
         color: inherit;
     }
 
     tr {
-        transition: background-color linear 0.2s;
+        transition: background-color var(--t-fast) var(--ease);
 
         &:hover {
-            background: rgba($color_primary100, 0.05);
+            background: rgba(28, 33, 48, 0.025);
         }
     }
 }
@@ -134,10 +146,6 @@ label[for="category"], label[for="type"] {
     width: 100%;
 }
 
-// span.type-tag {
-//     white-space: nowrap;
-// }
-
 ul.problem-list {
     list-style: none;
     padding-left: 1em;
@@ -149,7 +157,8 @@ ul.problem-list {
 }
 
 .pi-name {
-    font-weight: bold;
+    font-weight: 600;
+    color: var(--muted);
 }
 
 .pi-name:after {
@@ -170,34 +179,34 @@ ul.problem-list {
 }
 
 .solved-problem-color {
-    color: #44AD41;
+    color: var(--v-ac);
 }
 
 .unsolved-problem-color {
-    color: #DE2121;
+    color: var(--v-wa);
 }
 
 .attempted-problem-color {
-    color: orange;
+    color: var(--v-tle);
 }
 
 .has-editorial-color {
-    color: #44AD41;
+    color: var(--v-ac);
 }
 
 .no-editorial-color {
-    color: #DE2121;
+    color: var(--v-wa);
 }
 
 .submissions-left {
-    color: $color_primary100;
+    color: var(--ink);
     font-weight: 600;
     text-align: center;
     margin-top: 0.5em;
 }
 
 .no-submissions-left {
-    color: red;
+    color: var(--v-wa-ink);
 }
 
 .organization-tags {
@@ -206,19 +215,20 @@ ul.problem-list {
 }
 
 .organization-tag {
-    box-shadow: inset 0 -0.1em 0 rgba($color_primary100, 0.12);
-    padding: 0.15em 0.3em;
-    border-radius: 0.15em;
+    padding: 0.15em 0.45em;
+    border-radius: var(--radius-1);
     font-weight: 600;
+    font-size: var(--fs-sm);
     margin-right: 0.45em;
     position: relative;
-    background-color: $color_primary25;
+    background-color: var(--panel-2);
+    border: 1px solid var(--line);
     transform: translateY(+35%);
     display: inline-block;
 }
 
 .organization-tag a {
-    color: $color_primary100;
+    color: var(--muted);
 }
 
 .pdf-icon {
@@ -246,7 +256,7 @@ ul.problem-list {
     font-size: 0.85em;
 
     a {
-        color: $color_primary50;
+        color: var(--faint);
         text-decoration: none;
     }
 }
@@ -265,7 +275,7 @@ ul.problem-list {
 
     .button {
         display: inline-block !important;
-        padding: 6px 12px;
+        padding: 6px 14px;
     }
 
     .submit-bar {
@@ -285,25 +295,28 @@ ul.problem-list {
     }
 
     #file_drag {
-        border: 2px dashed #999;
-        border-radius : 7px;
-        color: #999;
+        border: 2px dashed var(--line-strong);
+        border-radius: var(--radius-2);
+        color: var(--muted);
         cursor: pointer;
         display: block;
         padding: 1.5em;
         text-align: center;
-        transition: background 0.3s, color 0.3s;
+        transition: background-color var(--t-med) var(--ease),
+                    border-color var(--t-med) var(--ease),
+                    color var(--t-med) var(--ease);
 
         &:hover, &.hover {
-            background: #ddd;
+            background: var(--accent-soft);
+            border-color: var(--accent-line);
             border-style: solid;
-            box-shadow: inset 0 3px 4px #999;
+            color: var(--accent-strong);
         }
     }
 
     .helptext {
-        font-size: 13px;
-        color: #999;
+        font-size: var(--fs-sm);
+        color: var(--faint);
         border-width: 0 0 1px 0;
 
         &::before {
@@ -313,23 +326,28 @@ ul.problem-list {
             line-height: 1;
             content: "\f05a";
             padding-right: 5px;
-            font-size: 14px;
+            font-size: var(--fs-sm);
         }
     }
 
     .errorlist {
-        background: rgba(255, 0, 0, 0.3);
-        border: 3px dashed red;
-        border-right: none;
-        border-left: solid red;
-        padding: 0 1em 0.1em 2em;
+        list-style: none;
+        color: var(--v-wa-ink);
+        background: var(--v-wa-soft);
+        border: 1px solid $color_danger50;
+        border-left: 3px solid var(--v-wa);
+        border-radius: var(--radius-1);
+        padding: 0.4em 1em;
         margin: 0.3em 0 0.5em 0;
     }
 
     .errornote {
-        border: 3px dashed #ffc000;
-        border-left: solid #ffc000;
-        padding: 0.7em 2em;
+        color: var(--v-tle-ink);
+        background: var(--v-tle-soft);
+        border: 1px solid $color_warning50;
+        border-left: 3px solid var(--v-tle);
+        border-radius: var(--radius-1);
+        padding: 0.7em 1.5em;
         margin: 0 0 8px;
         font-size: 13px !important;
         font-weight: 400;
@@ -337,7 +355,7 @@ ul.problem-list {
 
     .required th::after {
         content: "*";
-        color: red;
+        color: var(--v-wa);
     }
 }
 
@@ -352,17 +370,18 @@ ul.problem-list {
     }
 
     .select2-results__option {
-        color: $color_problem_submit_select2 !important;
-        background: $color_primary0 !important;
+        color: var(--muted) !important;
+        background: var(--panel) !important;
     }
 
     .select2-results__option--highlighted {
         text-decoration: underline;
+        color: var(--accent-strong) !important;
     }
 
     .select2-results__option[aria-selected=true] {
         font-weight: bold;
-        color: $color_primary100 !important;
+        color: var(--ink) !important;
     }
 
     .select2-results__option {
@@ -386,9 +405,9 @@ ul.problem-list {
     }
 
     #result-version-info {
-        border-bottom: 1px solid $color_primary50;
+        border-bottom: 1px solid var(--line);
         margin: 0px 1em;
-        color: $color_problem_submit_select2;
+        color: var(--muted);
         font-weight: 600;
         padding: 0.2em 0;
         text-align: right;
@@ -420,6 +439,7 @@ ul.problem-list {
 #filter-form .form-label {
     margin-top: 0.5em;
     font-style: italic;
+    color: var(--muted);
 }
 
 #point-slider {
@@ -451,6 +471,11 @@ ul.problem-list {
         padding: 0 3px;
         font-size: 13px;
     }
+
+    // Accent recolor of the noUiSlider track fill
+    .noUi-connect {
+        background: var(--accent);
+    }
 }
 
 /* Admin action buttons in problem sidebar */
@@ -468,32 +493,145 @@ ul.problem-list {
     width: 100%;
     padding: 6px 10px;
     font-size: inherit;
-    font-weight: bold;
-    background: #f0f5ff;
-    color: #4a6fa5;
-    border: 1px solid #d0dff0;
-    border-radius: 6px;
+    font-weight: 600;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    border: 1px solid var(--accent-line);
+    border-radius: var(--radius-1);
     text-decoration: none;
-    transition: all 0.15s ease;
+    transition: background-color var(--t-fast) var(--ease),
+                border-color var(--t-fast) var(--ease),
+                color var(--t-fast) var(--ease);
     box-sizing: border-box;
+
     i {
         font-size: 0.9em;
     }
 
     &:hover {
-        background: #dce8f8;
-        border-color: #b0c8e8;
-        color: #2d5a8e;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        background: var(--accent-line);
+        border-color: var(--accent);
+        color: var(--accent-strong);
     }
 
     .badge {
-        background: #e74c3c;
+        background: var(--v-wa);
         color: #fff;
         padding: 0 5px;
-        border-radius: 8px;
+        border-radius: var(--radius-round);
         font-size: 0.8em;
         margin-left: 2px;
     }
+}
+
+/* ===== Problem detail page (moved from problem.html) ===== */
+
+.title-state {
+    font-size: 2em;
+    float: left;
+    width: 1.1em;
+    display: block;
+    margin-top: 0.16em;
+}
+
+.info-float a {
+    vertical-align: middle;
+}
+
+.problem-clarification {
+    border-bottom: 1px solid var(--line);
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.clarifications-area h2 {
+    margin-bottom: 20px;
+}
+
+.problem-clarification .body {
+    display: inline-block;
+    padding-left: 3em;
+}
+
+#content-right {
+    max-width: 12.5em;
+    min-width: 12.5em;
+}
+
+#problem-types, #allowed-langs, #available-judges {
+    padding-top: 1em;
+}
+
+.problem-info-entry {
+    padding-top: 0.5em;
+}
+
+#raw_problem {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    position: absolute;
+    left: -999em;
+}
+
+/* Problem detail tabs — flat, matches the global .tabs language */
+.problem-tabs {
+    margin-top: 2em;
+    border-bottom: 1px solid var(--line);
+}
+
+.problem-tabs ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 -1px;
+    display: flex;
+}
+
+.problem-tabs li {
+    margin-right: 2px;
+}
+
+.problem-tabs a {
+    display: block;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: var(--muted);
+    font-weight: 500;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    transition: color var(--t-fast) var(--ease),
+                border-color var(--t-fast) var(--ease);
+}
+
+.problem-tabs a:hover {
+    color: var(--ink);
+    border-bottom-color: var(--line-strong);
+    background: transparent;
+}
+
+.problem-tabs a.active {
+    background: transparent;
+    color: var(--accent-strong);
+    font-weight: 600;
+    border-bottom: 2px solid var(--accent);
+    margin-bottom: 0;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px 0;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.submit-tab-content {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 20px;
+    border-radius: var(--radius-2);
+    margin-top: 10px;
 }

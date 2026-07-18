@@ -154,6 +154,12 @@
                 var doing_ajax = false;
                 var first = parseInt(table.find('>tr:first-child').attr('id'));
 
+                var flash_row = function (row) {
+                    row.removeClass('row-updated');
+                    if (row.length) void row[0].offsetWidth;
+                    row.addClass('row-updated');
+                };
+
                 var update_submission = function (message, force) {
                     if (language_filter.length && 'language' in message &&
                         language_filter.indexOf(message.language) == -1)
@@ -192,9 +198,11 @@
                                     row.find('.col-state').html($temp.find('.col-state').html());
                                 } else {
                                     row.html(data);
+                                    flash_row(row);
                                 }
                             } else {
                                 row.html(data);
+                                flash_row(row);
                             }
                             register_time(row.find('.time-with-rel'));
                             if (!was_shown) {
@@ -319,21 +327,6 @@
         </style>
     {% endif %}
 
-    <style>
-        .total {
-            text-align: center;
-            margin-bottom: 0.5em;
-        }
-
-        #status-graph {
-            padding: 1em 0em;
-        }
-
-        #status-graph canvas {
-            display: block;
-            margin: 0 auto;
-        }
-    </style>
 {% endblock %}
 
 {% block body %}

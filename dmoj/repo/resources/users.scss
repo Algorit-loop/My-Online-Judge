@@ -70,11 +70,15 @@ span.organization {
     }
 
     th a {
-        color: $color_primary0;
+        color: var(--muted);
 
         &:link,
         &:visited {
-            color: $color_primary0;
+            color: var(--muted);
+        }
+
+        &:hover {
+            color: var(--accent-strong);
         }
     }
 }
@@ -141,7 +145,7 @@ img.user-gravatar {
 .user-list-avatar {
     border-radius: 50%;
     vertical-align: middle;
-    border: 2px solid #d8d8d8;
+    border: 2px solid var(--line);
     object-fit: cover;
     flex-shrink: 0;
 }
@@ -356,10 +360,11 @@ img.user-gravatar {
 #rating-tooltip {
     display: none;
     position: absolute;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(23, 27, 38, 0.94);
     color: white;
-    padding: 3px;
-    border-radius: 3px;
+    padding: 5px 8px;
+    border-radius: var(--radius-1);
+    box-shadow: var(--shadow-pop);
     transition: all .1s ease;
     pointer-events: none;
     transform: translate(-50%, 0);

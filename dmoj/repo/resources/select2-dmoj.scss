@@ -1,16 +1,34 @@
 @use "vars" as *;
 @use "select2/select2";
 
-/* Hack to make dropdown background follow theming */
+/* Dropdown panel */
 .select2-dropdown {
-    background-color: $color_primary0 !important;
-    border: 1px solid $color_primary33 !important;
-    color: $color_primary100 !important;
+    background-color: var(--panel) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: var(--radius-2) !important;
+    box-shadow: var(--shadow-pop);
+    overflow: hidden;
+    color: var(--ink) !important;
 }
 
 .select2-container--dmoj {
     @include select2.single;
     @include select2.multiple;
+
+    .select2-selection--single, .select2-selection--multiple {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-1);
+        background: var(--panel);
+        transition: border-color var(--t-fast) var(--ease),
+                    box-shadow var(--t-fast) var(--ease);
+    }
+
+    &.select2-container--focus, &.select2-container--open {
+        .select2-selection--single, .select2-selection--multiple {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+    }
 
     &.select2-container--open.select2-container--above {
         .select2-selection--single, .select2-selection--multiple {
@@ -26,11 +44,19 @@
         }
     }
 
+    .select2-selection__choice {
+        background-color: var(--accent-soft) !important;
+        border: 1px solid var(--accent-line) !important;
+        border-radius: var(--radius-round) !important;
+        color: var(--accent-strong);
+    }
+
     .select2-search--dropdown {
         .select2-search__field {
-            border: 1px solid $color_primary33;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-1);
             background-color: $color_select2_search_dropdown;
-            color: $color_primary100;
+            color: var(--ink);
         }
     }
 
@@ -40,7 +66,7 @@
             border: none;
             outline: 0;
             box-shadow: none;
-            color: $color_primary100;
+            color: var(--ink);
             -webkit-appearance: textfield;
         }
     }
@@ -48,7 +74,7 @@
     .select2-results > .select2-results__options {
         max-height: 200px;
         overflow-y: auto;
-        color: $color_primary100;
+        color: var(--ink);
     }
 
     .select2-results__option {
@@ -57,11 +83,12 @@
         }
 
         &[aria-disabled=true] {
-            color: $color_primary50;
+            color: var(--faint);
         }
 
         &[aria-selected=true] {
-            background-color: $color_primary25;
+            background-color: var(--accent-soft);
+            color: var(--accent-strong);
         }
 
         .select2-results__option {
@@ -99,7 +126,7 @@
     }
 
     .select2-results__option--highlighted[aria-selected] {
-        background-color: $highlight_blue;
+        background-color: var(--accent);
         color: white;
     }
 
@@ -107,5 +134,9 @@
         cursor: default;
         display: block;
         padding: 6px;
+        color: var(--faint);
+        font-size: var(--fs-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 }

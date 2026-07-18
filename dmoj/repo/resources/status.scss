@@ -1,44 +1,49 @@
 .AB {
-    background-color: #CCC;
-    color: black;
+    background-color: var(--v-ab-soft);
+    color: var(--v-ab-ink);
 }
 
 .AC {
-    background-color: #53f23f;
-    color: green;
+    background-color: var(--v-ac-soft);
+    color: var(--v-ac-ink);
 }
 
 ._AC {
-    background-color: #DFFF00;
-    color: green;
+    background-color: var(--v-pac-soft);
+    color: var(--v-pac-ink);
 }
 
 .WA {
-    background-color: #CCC;
-    color: #ef1b53;
+    background-color: var(--v-wa-soft);
+    color: var(--v-wa-ink);
 }
 
-.TLE, .MLE {
-    background-color: #CCC;
-    color: black;
+.TLE {
+    background-color: var(--v-tle-soft);
+    color: var(--v-tle-ink);
+}
+
+.MLE {
+    background-color: var(--v-mle-soft);
+    color: var(--v-mle-ink);
 }
 
 .OLE, .IR, .RTE, .OTH {
-    background-color: #FAB623;
-    color: black;
+    background-color: var(--v-rte-soft);
+    color: var(--v-rte-ink);
 }
 
 .CE {
-    background-color: #CCC;
-    color: black;
+    background-color: var(--v-ce-soft);
+    color: var(--v-ce-ink);
 }
 
 .IE {
-    background-color: red;
-    color: black;
+    background-color: var(--v-ie-soft);
+    color: var(--v-ie-ink);
 }
 
 .QU, .G {
-    background: white;
-    color: black;
+    background: var(--v-qu-soft);
+    color: var(--v-qu-ink);
 }

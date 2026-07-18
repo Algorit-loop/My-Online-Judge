@@ -44,17 +44,7 @@
         <link rel="stylesheet" href="{{ FONTAWESOME_CSS }}">
     {% endif %}
     {% compress css %}
-        {# TODO: once dark mode support is better, enable for all users by deleting the else branch #}
-        {% if perms.judge.test_site %}
-            {% if PREFERRED_STYLE_CSS is not none %}
-                <link rel="stylesheet" href="{{ static(PREFERRED_STYLE_CSS) }}">
-            {% else %}
-                <link rel="stylesheet" href="{{ static(LIGHT_STYLE_CSS) }}">
-                <link rel="stylesheet" href="{{ static(DARK_STYLE_CSS) }}" media="(prefers-color-scheme: dark)">
-            {% endif %}
-        {% else %}
-            <link rel="stylesheet" href="{{ static(LIGHT_STYLE_CSS) }}">
-        {% endif %}
+        <link rel="stylesheet" href="{{ static('style.css') }}">
         {% if INLINE_FONTAWESOME %}<link rel="stylesheet" href="{{ static('libs/fontawesome/font-awesome.css') }}">{% endif %}
         <link rel="stylesheet" href="{{ static('source_sans_pro.css') }}">
         <link rel="stylesheet" type="text/css" href="{{ static('libs/clipboard/tooltip.css') }}">
@@ -66,6 +56,10 @@
         <style>
             #nav-container {
                 background: #893e89 !important;
+            }
+
+            #nav-container a, #nav-container #user-links span, #nav-container #navicon {
+                color: #fff !important;
             }
         </style>
     {% endif %}
@@ -202,16 +196,16 @@
     <noscript>
         <style>
             #content {
-                margin: 80px auto auto;
+                margin: 96px auto 0;
             }
 
             #navigation {
-                top: 27px;
+                top: 28px;
             }
         </style>
     </noscript>
 </head>
-<body{% if perms.judge.test_site %} data-theme="{{ SITE_THEME_NAME }}"{% endif %}>
+<body>
 <svg width="0" height="0" style="display: block">
     <defs>
         <clipPath id="rating-clip"><circle cx="8" cy="8" r="7"/></clipPath>
@@ -263,9 +257,9 @@
 
         <span id="user-links">
             {% if request.user.is_superuser %}
-                <a href="{{ url('misc_config') }}" style="margin-right: 5px;">
+                <a href="{{ url('misc_config') }}" class="nav-icon-btn">
                     <span title="{{ _('Site settings') }}">
-                        <i class="fa fa-gear" style="color: rgb(200,200,200) ; font-size: 1.15em"></i>
+                        <i class="fa fa-gear"></i>
                     </span>
                 </a>
             {% endif %}
@@ -275,16 +269,16 @@
                 {% else %}
                     "/tickets/new?issue_url={{ request.build_absolute_uri()|urlencode }}"
                 {% endif %}
-            style="margin-right: 5px;">
+            class="nav-icon-btn">
                 <span title="{{ _('Report issue') }}">
-                    <i class="fa fa-exclamation-triangle" style="color: yellow;"></i>
+                    <i class="fa fa-exclamation-triangle"></i>
                 </span>
             </a>
-            <a id="flag_vi" href="#" onclick="submmit_language('vi')" style="margin-right: 5px; margin-top: 4px;">
-                <img src="{{ static('icons/vi_flag.svg') }}" alt="VI" height="24">
+            <a id="flag_vi" class="nav-icon-btn nav-flag" href="#" onclick="submmit_language('vi')">
+                <img src="{{ static('icons/vi_flag.svg') }}" alt="VI">
             </a>
-            <a id="flag_en" href="#" onclick="submmit_language('en')" style="margin-right: 5px; margin-top: 4px;">
-                <img src="{{ static('icons/gb_flag.svg') }}" alt="EN" height="24">
+            <a id="flag_en" class="nav-icon-btn nav-flag" href="#" onclick="submmit_language('en')">
+                <img src="{{ static('icons/gb_flag.svg') }}" alt="EN">
             </a>
             {% if request.user.is_authenticated %}
                 <ul>
@@ -295,7 +289,7 @@
                                 <span>{{ _('Hello, %(username)s.', username=bold(request.user.first_name or request.profile.display_name)) }}</span>
                             </span>
                         </a>
-                        <ul style="width: 150px">
+                        <ul>
                             {% if request.user.is_staff or request.user.is_superuser %}
                                 <li><a href="{{ url('admin:index') }}">{{ _('Admin') }}</a></li>
                             {% endif %}
@@ -384,9 +378,8 @@
 
     <footer>
         <span id="footer-content">
-            <br>
-            {{_('proudly powered by %(dmoj)s', dmoj=safe('<a style="color: #808080" href="https://dmoj.ca"><b>DMOJ</b></a>'))}} |
-            {{_('follow us on %(github)s', github=safe('<a style="color: #808080" href="https://github.com/Algorit-loop/BKDNOJv3"><b>Github</b></a>'))}}
+            {{_('proudly powered by %(dmoj)s', dmoj=safe('<a class="footer-link" href="https://dmoj.ca">DMOJ</a>'))}} |
+            {{_('follow us on %(github)s', github=safe('<a class="footer-link" href="https://github.com/Algorit-loop/BKDNOJv3">Github</a>'))}}
             {% if misc_config.footer %}
                 {{ misc_config.footer|safe }} |
             {% endif %}

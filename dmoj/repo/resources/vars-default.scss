@@ -1,30 +1,33 @@
-@use 'sass:color';
 @forward "vars-common";
 
-$is_light_theme: true;
+// ============================================================
+// BKDNOJ "technical dashboard" palette (light-only).
+// Legacy names below are consumed by the pre-redesign SCSS files;
+// keep their lightness ordering (0 = lightest ... 100 = darkest).
+// ============================================================
 
-$color_primary0: #fff;
-$color_primary5: #f8f8f8;   // light background
-$color_primary10: #eee;     // background
-$color_primary25: #ccc;     // border
-$color_primary33: #aaa;     // widget
-$color_primary50: #808080;
-$color_primary66: #555;     // tabs
-$color_primary75: #231f20;  // widget
-$color_primary90: #111;
-$color_primary100: #000;
+$color_primary0: #ffffff;
+$color_primary5: #f6f7f9;   // light background
+$color_primary10: #eef0f4;  // background
+$color_primary25: #dde1e8;  // border
+$color_primary33: #c3cad6;  // widget
+$color_primary50: #707888;
+$color_primary66: #4e5565;  // tabs
+$color_primary75: #2b3040;  // widget
+$color_primary90: #171b26;
+$color_primary100: #1c2130;
 
-$color_link50: #5b80b9;     // default (title)
-$color_link75: #1958c1;     // default
-$color_link100: #0645ad;    // hover
+$color_link50: #5aa2ef;     // default (title)
+$color_link75: #2472cf;     // default
+$color_link100: #1f64b8;    // hover
 $color_link200: #faa700;    // active
 
-$color_pageBg: color.adjust($color_primary5, $lightness: 10%);
+$color_pageBg: #ffffff;
 
 // custom one-off colours
-$color_contest_ranking_disqualified: #ffa8a8;
+$color_contest_ranking_disqualified: #fdeeee;
 
-$color_martor_resize_dragger: #e8e8e8;
+$color_martor_resize_dragger: #e8eaef;
 
 $color_rating_none: #999;
 $color_rating_newbie: #808080;
@@ -37,53 +40,130 @@ $color_rating_grandmaster: #ff0000;
 
 $color_select2_search_dropdown: $color_primary0;
 
-$color_user_submission_activity0: #ddd;
+$color_user_submission_activity0: #e4e7ec;
 $color_user_submission_activity1: #9be9a8;
 $color_user_submission_activity2: #40c463;
 $color_user_submission_activity3: #2f9c4c;
 $color_user_submission_activity4: #216e39;
 
-$color_info25: #def;
-$color_info50: #bdf;
-$color_info100: #368;
-$color_success25: #ded;
-$color_success50: #adb;
-$color_success100: #173;
-$color_warning25: #ffd;
-$color_warning50: #feb;
-$color_warning100: #863;
-$color_danger25: #edd;
-$color_danger50: #dbb;
-$color_danger100: #944;
+$color_info25: #eaf3fe;
+$color_info50: #bcd9f8;
+$color_info100: #1c5da8;
+$color_success25: #e9f9ef;
+$color_success50: #a7e3bf;
+$color_success100: #15803d;
+$color_warning25: #fdf3e2;
+$color_warning50: #f5d9a8;
+$color_warning100: #b45309;
+$color_danger25: #fdeeee;
+$color_danger50: #f2c2c2;
+$color_danger100: #b91c1c;
 
-$color_problem_submit_select2: #757575;
+$color_problem_submit_select2: #707888;
 
-$color_voted_mark: #0000ff;
+$color_voted_mark: #2472cf;
 
-// Blog-specific light mode colors
+// Blog light mode colors
 $color_blog_bg: #ffffff;
 $color_blog_card_bg: #ffffff;
-$color_blog_sidebar_bg: #f7f7f8;
-$color_blog_border: #dee2e6;
-$color_blog_text_primary: #202123;
-$color_blog_text_secondary: #565869;
-$color_blog_text_muted: #8e8ea0;
-$color_blog_text_tertiary: #6b7280;
-$color_blog_hover_bg: #ececf1;
-$color_blog_active_bg: #202123;
-$color_blog_accent: #1958c1;
-$color_blog_code_bg: #f7f7f7;
-$color_blog_blockquote_border: #292929;
-$color_blog_vote_active: #1a8917;
-$color_blog_tag_bg: #f3f4f6;
-$color_blog_tag_border: #e5e7eb;
-$color_blog_tag_text: #374151;
-$color_blog_tag_hover_bg: #e5e7eb;
-$color_blog_tag_hover_border: #d1d5db;
-$color_blog_tag_hover_text: #1f2937;
-$color_blog_tag_active_bg: #3b82f6;
-$color_blog_hero_bg: #eff6ff;
+$color_blog_sidebar_bg: #f6f7f9;
+$color_blog_border: #dde1e8;
+$color_blog_text_primary: #1c2130;
+$color_blog_text_secondary: #5b6474;
+$color_blog_text_muted: #8b93a3;
+$color_blog_text_tertiary: #5b6474;
+$color_blog_hover_bg: #f1f3f7;
+$color_blog_active_bg: #1c2130;
+$color_blog_accent: #2d8cf0;
+$color_blog_code_bg: #f1f3f7;
+$color_blog_blockquote_border: #c3cad6;
+$color_blog_vote_active: #15803d;
+$color_blog_tag_bg: #f1f3f7;
+$color_blog_tag_border: #dde1e8;
+$color_blog_tag_text: #4e5565;
+$color_blog_tag_hover_bg: #eaf3fe;
+$color_blog_tag_hover_border: #bcd9f8;
+$color_blog_tag_hover_text: #1f74d6;
+$color_blog_tag_active_bg: #2d8cf0;
+$color_blog_hero_bg: #eaf3fe;
 
 $path_to_root: '.';     // relative path from style.css to STATIC_ROOT
 
-@mixin vars-img {}
+// ============================================================
+// Design tokens ($tok-*) — single source of truth for the
+// redesign. tokens.scss re-emits these as :root custom
+// properties; new/rewritten CSS should consume var(--*).
+// ============================================================
+
+// Neutrals (cool gray)
+$tok-bg: #f6f7f9;
+$tok-panel: #ffffff;
+$tok-panel-2: #f1f3f7;
+$tok-ink: #1c2130;
+$tok-muted: #5b6474;
+$tok-faint: #8b93a3;
+$tok-line: #dde1e8;
+$tok-line-strong: #c3cad6;
+
+// Accent (fresh blue, per user: "xanh dương nhưng đừng đậm")
+$tok-accent: #2d8cf0;
+$tok-accent-strong: #1f74d6;
+$tok-accent-soft: #eaf3fe;
+$tok-accent-line: #bcd9f8;
+$tok-focus-ring: rgba(45, 140, 240, .35);
+
+// Verdicts: solid (bar fill) / ink (status text) / soft (bg tint)
+$tok-v-ac: #16a34a;
+$tok-v-ac-ink: #15803d;
+$tok-v-ac-soft: #e9f9ef;
+$tok-v-pac: #97a90c;          // _AC partial score
+$tok-v-pac-ink: #6f7d02;
+$tok-v-pac-soft: #f8fadf;
+$tok-v-wa: #dc2626;
+$tok-v-wa-ink: #b91c1c;
+$tok-v-wa-soft: #fdeeee;
+$tok-v-tle: #d97706;          // also SC
+$tok-v-tle-ink: #b45309;
+$tok-v-tle-soft: #fdf3e2;
+$tok-v-mle: #7c3aed;
+$tok-v-mle-ink: #6d28d9;
+$tok-v-mle-soft: #f3eefe;
+$tok-v-rte: #ea580c;          // RTE / IR / OLE / OTH
+$tok-v-rte-ink: #c2410c;
+$tok-v-rte-soft: #fdefe6;
+$tok-v-ce: #64748b;
+$tok-v-ce-ink: #475569;
+$tok-v-ce-soft: #eef1f5;
+$tok-v-ie: #be123c;
+$tok-v-ie-ink: #9f1239;
+$tok-v-ie-soft: #fce8ee;
+$tok-v-ab: #6b7280;
+$tok-v-ab-ink: #4b5563;
+$tok-v-ab-soft: #eff0f3;
+$tok-v-qu: #6366f1;           // queued / grading
+$tok-v-qu-ink: #4f46e5;
+$tok-v-qu-soft: #eef0fe;
+$tok-v-err: #8b93a3;          // generic result-bar-error
+$tok-v-err-ink: #5b6474;
+$tok-v-err-soft: #eff0f3;
+
+// Shape
+$tok-radius-1: 7px;           // buttons, inputs, chips
+$tok-radius-2: 9px;           // cards, tables, dropdowns, modals
+$tok-radius-round: 999px;
+
+// Elevation — dropdowns/modals ONLY; everything else uses borders
+$tok-shadow-pop: 0 8px 24px rgba(15, 20, 40, .12);
+
+// Motion
+$tok-t-fast: 120ms;
+$tok-t-med: 150ms;
+$tok-ease: cubic-bezier(.2, .6, .3, 1);
+
+// Type
+$tok-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+$tok-font-content: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+$tok-fs-base: 14px;
+$tok-fs-sm: 12.5px;
+$tok-fs-xs: 11.5px;
+$tok-fs-content: 15.5px;

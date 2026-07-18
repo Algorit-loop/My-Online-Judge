@@ -1,0 +1,88 @@
+@use "vars" as *;
+
+// Runtime design tokens. Values are derived from the $tok-* sass
+// variables in vars-default.scss so the two layers cannot drift.
+
+:root {
+    // Neutrals
+    --bg: #{$tok-bg};
+    --panel: #{$tok-panel};
+    --panel-2: #{$tok-panel-2};
+    --ink: #{$tok-ink};
+    --muted: #{$tok-muted};
+    --faint: #{$tok-faint};
+    --line: #{$tok-line};
+    --line-strong: #{$tok-line-strong};
+
+    // Accent
+    --accent: #{$tok-accent};
+    --accent-strong: #{$tok-accent-strong};
+    --accent-soft: #{$tok-accent-soft};
+    --accent-line: #{$tok-accent-line};
+    --focus-ring: #{$tok-focus-ring};
+
+    // Verdicts
+    --v-ac: #{$tok-v-ac};
+    --v-ac-ink: #{$tok-v-ac-ink};
+    --v-ac-soft: #{$tok-v-ac-soft};
+    --v-pac: #{$tok-v-pac};
+    --v-pac-ink: #{$tok-v-pac-ink};
+    --v-pac-soft: #{$tok-v-pac-soft};
+    --v-wa: #{$tok-v-wa};
+    --v-wa-ink: #{$tok-v-wa-ink};
+    --v-wa-soft: #{$tok-v-wa-soft};
+    --v-tle: #{$tok-v-tle};
+    --v-tle-ink: #{$tok-v-tle-ink};
+    --v-tle-soft: #{$tok-v-tle-soft};
+    --v-mle: #{$tok-v-mle};
+    --v-mle-ink: #{$tok-v-mle-ink};
+    --v-mle-soft: #{$tok-v-mle-soft};
+    --v-rte: #{$tok-v-rte};
+    --v-rte-ink: #{$tok-v-rte-ink};
+    --v-rte-soft: #{$tok-v-rte-soft};
+    --v-ce: #{$tok-v-ce};
+    --v-ce-ink: #{$tok-v-ce-ink};
+    --v-ce-soft: #{$tok-v-ce-soft};
+    --v-ie: #{$tok-v-ie};
+    --v-ie-ink: #{$tok-v-ie-ink};
+    --v-ie-soft: #{$tok-v-ie-soft};
+    --v-ab: #{$tok-v-ab};
+    --v-ab-ink: #{$tok-v-ab-ink};
+    --v-ab-soft: #{$tok-v-ab-soft};
+    --v-qu: #{$tok-v-qu};
+    --v-qu-ink: #{$tok-v-qu-ink};
+    --v-qu-soft: #{$tok-v-qu-soft};
+    --v-err: #{$tok-v-err};
+    --v-err-ink: #{$tok-v-err-ink};
+    --v-err-soft: #{$tok-v-err-soft};
+
+    // Shape & elevation
+    --radius-1: #{$tok-radius-1};
+    --radius-2: #{$tok-radius-2};
+    --radius-round: #{$tok-radius-round};
+    --shadow-pop: #{$tok-shadow-pop};
+
+    // Motion
+    --t-fast: #{$tok-t-fast};
+    --t-med: #{$tok-t-med};
+    --ease: #{$tok-ease};
+
+    // Type
+    --font-ui: #{$tok-font-ui};
+    --font-content: #{$tok-font-content};
+    --font-mono: #{$monospace-fonts};
+    --fs-base: #{$tok-fs-base};
+    --fs-sm: #{$tok-fs-sm};
+    --fs-xs: #{$tok-fs-xs};
+    --fs-content: #{$tok-fs-content};
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
