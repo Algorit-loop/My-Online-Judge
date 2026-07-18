@@ -250,7 +250,7 @@ class Problem(models.Model):
     )
 
     enable_new_ide = models.BooleanField(
-        verbose_name=_('Bật giao diện IDE mới'),
+        verbose_name=_('enable new IDE'),
         default=False,
         help_text=_('Enable the new IDE layout with code editor and custom testcase runner.'),
     )
@@ -660,6 +660,7 @@ class Problem(models.Model):
             ('upload_file_statement', _('Upload file-type statement')),
             ('change_public_visibility', _('Change is_public field')),
             ('change_manually_managed', _('Change is_manually_managed field')),
+            ('change_enable_new_ide', _('Change enable_new_ide field')),
             ('see_organization_problem', _('See organization-private problems')),
             ('import_polygon_package', _('Import Codeforces Polygon package')),
             ('edit_type_group_all_problem', _('Edit type and group for all problems')),

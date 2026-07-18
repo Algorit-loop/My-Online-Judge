@@ -197,6 +197,8 @@ class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
             fields += ('is_public',)
         if not request.user.has_perm('judge.change_manually_managed'):
             fields += ('is_manually_managed',)
+        if not request.user.has_perm('judge.change_enable_new_ide'):
+            fields += ('enable_new_ide',)
         if not request.user.has_perm('judge.problem_full_markup'):
             fields += ('is_full_markup',)
             if obj and obj.is_full_markup:

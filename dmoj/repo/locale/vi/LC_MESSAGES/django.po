@@ -8062,3 +8062,15 @@ msgid "This action cannot be undone."
 msgstr "Hành động này không thể hoàn tác."
 
 
+
+#: judge/models/problem.py
+msgid "enable new IDE"
+msgstr "bật giao diện IDE mới"
+
+#: judge/models/problem.py
+msgid "Enable the new IDE layout with code editor and custom testcase runner."
+msgstr "Bật giao diện IDE mới với trình soạn thảo code và công cụ chạy thử testcase tùy chỉnh."
+
+#: judge/models/problem.py
+msgid "Change enable_new_ide field"
+msgstr "Thay đổi trường enable_new_ide"
