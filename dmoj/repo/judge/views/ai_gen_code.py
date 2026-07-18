@@ -167,7 +167,8 @@ def ai_gen_code_view(request, problem):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     problem_obj = get_object_or_404(Problem, code=problem)
-    if not (request.user.is_superuser or problem_obj.is_editable_by(request.user)):
+    if not (problem_obj.is_editable_by(request.user)
+            and request.user.has_perm('judge.generate_testcase_ai')):
         return JsonResponse({'error': _('Permission denied')}, status=403)
 
     try:

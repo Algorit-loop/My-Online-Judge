@@ -730,9 +730,11 @@
             <a id="add-case-row-btn" href="#" class="button" onclick="document.getElementById('add-case-row').click(); return false;">
                 <i class="fa fa-plus"></i> {{ _('Add Testcase') }}
             </a>
-            <a href="{{ url('problem_generate_testcase', problem.code) }}" class="button" style="background: #3c8dbc; color: #fff; border-color: #3c8dbc;">
-                <i class="fa fa-magic"></i> {{ _('Generate Testcase with AI') }}
-            </a>
+            {% if perms.judge.generate_testcase_ai %}
+                <a href="{{ url('problem_generate_testcase', problem.code) }}" class="button" style="background: #3c8dbc; color: #fff; border-color: #3c8dbc;">
+                    <i class="fa fa-magic"></i> {{ _('Generate Testcase with AI') }}
+                </a>
+            {% endif %}
         </div>
         <table id="case-table" class="table">
             <thead>

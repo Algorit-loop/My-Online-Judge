@@ -29,7 +29,8 @@ def _safe_json(s):
 @login_required
 def generate_testcase_view(request, problem):
     problem_obj = get_object_or_404(Problem, code=problem)
-    if not problem_obj.is_editable_by(request.user):
+    if not (problem_obj.is_editable_by(request.user)
+            and request.user.has_perm('judge.generate_testcase_ai')):
         raise Http404()
 
     languages = list(
@@ -87,7 +88,8 @@ def generate_testcase_view(request, problem):
 class GensolStartView(LoginRequiredMixin, View):
     def post(self, request, problem):
         problem_obj = get_object_or_404(Problem, code=problem)
-        if not (request.user.is_superuser or problem_obj.is_editable_by(request.user)):
+        if not (problem_obj.is_editable_by(request.user)
+                and request.user.has_perm('judge.generate_testcase_ai')):
             return JsonResponse({'error': 'Permission denied'}, status=403)
 
         if problem_obj.is_manually_managed:

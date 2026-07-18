@@ -22,6 +22,13 @@ class AIAPIKeyAdmin(admin.ModelAdmin):
     readonly_fields = ('key_last4', 'key_ciphertext', 'added_at', 'last_used_at')
     inlines = [AIAPIKeyTestLogInline]
 
+    # Users manage their own keys via Settings; admin is view/delete oversight only.
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
     def masked_key(self, obj):
         return f'****{obj.key_last4}'
     masked_key.short_description = _('API Key')

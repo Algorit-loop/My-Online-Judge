@@ -59,3 +59,6 @@ class GensolJob(models.Model):
         verbose_name = _('gensol job')
         verbose_name_plural = _('gensol jobs')
         ordering = ['-created_date']
+        permissions = (
+            ('generate_testcase_ai', _('Use AI Generate Testcase')),
+        )
