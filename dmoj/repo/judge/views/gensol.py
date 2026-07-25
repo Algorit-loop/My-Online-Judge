@@ -26,6 +26,29 @@ def _safe_json(s):
     return s.replace('</', r'<\/')
 
 
+def _get_displayed_generator_source(problem_obj, latest_job=None):
+    """Generator source the page puts in the editor: the most recent AI generation, else the
+    generator from the last job. This is the single source of truth shared by the page render and
+    the start-job validation below, so the two can never drift apart.
+    """
+    if latest_job is None:
+        latest_job = GensolJob.objects.filter(problem=problem_obj).order_by('-created_date').first()
+
+    latest_gen_code = AIGenCode.objects.filter(problem=problem_obj).order_by('-created_at').first()
+    if latest_gen_code and (not latest_job or latest_gen_code.created_at > latest_job.created_date):
+        return latest_gen_code.generated_code
+    if latest_job:
+        return latest_job.generator_source
+    return None
+
+
+def _normalize_source(source):
+    """Normalize before comparing: ACE rewrites line endings and the client trims before POSTing,
+    so those differences are not meaningful edits.
+    """
+    return (source or '').replace('\r\n', '\n').replace('\r', '\n').strip()
+
+
 @login_required
 def generate_testcase_view(request, problem):
     problem_obj = get_object_or_404(Problem, code=problem)
@@ -43,18 +66,8 @@ def generate_testcase_view(request, problem):
         problem=problem_obj,
     ).select_related('solution_language', 'generator_language').order_by('-created_date').first()
 
-    # Get latest AI-generated code for this problem (from AIGenCode table)
-    latest_gen_code = AIGenCode.objects.filter(
-        problem=problem_obj,
-    ).order_by('-created_at').first()
-
     # Generator source: prefer AIGenCode (most recent AI generation), fall back to GensolJob
-    if latest_gen_code and (not latest_job or latest_gen_code.created_at > latest_job.created_date):
-        saved_generator = latest_gen_code.generated_code
-    elif latest_job:
-        saved_generator = latest_job.generator_source
-    else:
-        saved_generator = None
+    saved_generator = _get_displayed_generator_source(problem_obj, latest_job)
 
     # Zip size for a completed job, so a page reload can still show it (see gensol.py _finalize_job
     # for the live value posted over the websocket during an active run).
@@ -118,6 +131,18 @@ class GensolStartView(LoginRequiredMixin, View):
             return JsonResponse({'error': 'Solution language is required'}, status=400)
         if not isinstance(num_cases, int) or num_cases < 1 or num_cases > 50:
             return JsonResponse({'error': 'Number of cases must be between 1 and 50'}, status=400)
+
+        # The generator editor is read-only for non-superusers (see generate_testcase.html), so
+        # enforce that here too — otherwise the restriction is trivially bypassed by POSTing a
+        # hand-edited generator. They may still change it through "Generate with AI", which stores
+        # an AIGenCode row that _get_displayed_generator_source() then returns.
+        if not request.user.is_superuser:
+            displayed_generator = _get_displayed_generator_source(problem_obj)
+            if _normalize_source(generator_source) != _normalize_source(displayed_generator):
+                return JsonResponse({
+                    'error': 'You are not allowed to edit the generator code. '
+                             'Use "Generate with AI" to change it.',
+                }, status=403)
 
         # Validate languages
         try:
