@@ -4,8 +4,8 @@ from django.forms import ModelForm
 from django.urls import reverse_lazy
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _, ngettext
-from reversion.admin import VersionAdmin
 
+from judge.admin.version_diff import DiffVersionAdmin
 from judge.models import Comment
 from judge.widgets import AdminHeavySelect2Widget, AdminMartorWidget
 
@@ -19,7 +19,7 @@ class CommentForm(ModelForm):
         }
 
 
-class CommentAdmin(VersionAdmin):
+class CommentAdmin(DiffVersionAdmin):
     fieldsets = (
         (None, {'fields': ('author', 'page', 'parent', 'time', 'score', 'hidden')}),
         (_('Content'), {'fields': ('body',)}),

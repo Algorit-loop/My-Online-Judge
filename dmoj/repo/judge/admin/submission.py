@@ -13,8 +13,8 @@ from django.utils.decorators import method_decorator
 from django.utils.html import format_html
 from django.utils.translation import gettext, gettext_lazy as _, ngettext, pgettext
 from django.views.decorators.http import require_POST
-from reversion.admin import VersionAdmin
 
+from judge.admin.version_diff import DiffVersionAdmin
 from judge.models import ContestParticipation, ContestProblem, ContestSubmission, Profile, Submission, \
     SubmissionSource, SubmissionTestCase
 from judge.utils.raw_sql import use_straight_join
@@ -117,7 +117,7 @@ class SubmissionSourceInline(admin.StackedInline):
         return super().get_formset(request, obj, **kwargs)
 
 
-class SubmissionAdmin(VersionAdmin):
+class SubmissionAdmin(DiffVersionAdmin):
     readonly_fields = ('user', 'problem', 'date', 'judged_date')
     fields = ('user', 'problem', 'date', 'judged_date', 'locked_after', 'time', 'memory', 'points', 'language',
               'status', 'result', 'case_points', 'case_total', 'judged_on', 'error')

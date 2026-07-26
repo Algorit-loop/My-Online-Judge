@@ -19,11 +19,11 @@ msgstr ""
 
 #: dmoj/settings.py:70
 msgid "Normal User"
-msgstr ""
+msgstr "Thành viên thường"
 
 #: dmoj/settings.py:71
 msgid "Problem Setter"
-msgstr ""
+msgstr "Người ra đề"
 
 #: dmoj/settings.py:72
 msgid "Bedao Team"
@@ -31,11 +31,11 @@ msgstr ""
 
 #: dmoj/settings.py:73
 msgid "Staff"
-msgstr ""
+msgstr "Ban quản trị"
 
 #: dmoj/settings.py:74
 msgid "Banned User"
-msgstr ""
+msgstr "Thành viên bị cấm"
 
 #: dmoj/settings.py:75 templates/base.html:282 templates/comments/list.html:102
 #: templates/contest/contest-list-tabs.html:34
@@ -50,7 +50,7 @@ msgstr "Quản trị"
 
 #: dmoj/settings.py:76
 msgid "Teacher"
-msgstr ""
+msgstr "Giáo viên"
 
 #: dmoj/settings.py:533
 msgid "English"
@@ -1211,16 +1211,12 @@ msgid "end time"
 msgstr "thời gian kết thúc"
 
 #: judge/models/contest.py:89
-#, fuzzy
-#| msgid "creation time"
 msgid "registration start time"
-msgstr "thời gian tạo"
+msgstr "thời gian bắt đầu đăng ký"
 
 #: judge/models/contest.py:91
-#, fuzzy
-#| msgid "creation time"
 msgid "registration end time"
-msgstr "thời gian tạo"
+msgstr "thời gian kết thúc đăng ký"
 
 #: judge/models/contest.py:93 judge/models/problem.py:167
 #: judge/models/problem.py:654
@@ -1300,7 +1296,7 @@ msgstr "Báo cho thí sinh khi có thông báo mới."
 
 #: judge/models/contest.py:121
 msgid "rating floor"
-msgstr ""
+msgstr "rating sàn"
 
 #: judge/models/contest.py:122
 msgid "Do not rate users who have a lower rating."
@@ -1474,7 +1470,7 @@ msgstr ""
 
 #: judge/models/contest.py:173
 msgid "contest problem label script"
-msgstr ""
+msgstr "script nhãn bài của kỳ thi"
 
 #: judge/models/contest.py:174
 msgid ""
@@ -1485,7 +1481,7 @@ msgstr ""
 
 #: judge/models/contest.py:177
 msgid "contest lock"
-msgstr ""
+msgstr "khoá kỳ thi"
 
 #: judge/models/contest.py:178
 msgid ""
@@ -1494,7 +1490,7 @@ msgstr "Các bài nộp cho kỳ thi này sau ngày này sẽ không thể đư�
 
 #: judge/models/contest.py:180
 msgid "precision points"
-msgstr ""
+msgstr "độ chính xác điểm"
 
 #: judge/models/contest.py:182
 msgid "Number of digits to round points to."
@@ -1502,7 +1498,7 @@ msgstr ""
 
 #: judge/models/contest.py:183
 msgid "official ranking"
-msgstr ""
+msgstr "bảng xếp hạng chính thức"
 
 #: judge/models/contest.py:184
 msgid "Official ranking exported from CMS in CSV format."
@@ -1971,7 +1967,7 @@ msgstr "giấy phép"
 
 #: judge/models/problem.py:122
 msgid "Follow global setting"
-msgstr ""
+msgstr "Theo thiết lập chung"
 
 #: judge/models/problem.py:123 judge/models/problem.py:131
 msgid "Always visible"
@@ -2015,7 +2011,7 @@ msgstr "Tên đầy đủ của bài, được hiển thị trong danh sách bà
 
 #: judge/models/problem.py:146
 msgid "PDF statement URL"
-msgstr ""
+msgstr "đường dẫn đề PDF"
 
 #: judge/models/problem.py:147
 msgid ""
@@ -2061,7 +2057,7 @@ msgstr ""
 
 #: judge/models/problem.py:160
 msgid "testers"
-msgstr ""
+msgstr "người kiểm thử"
 
 #: judge/models/problem.py:162
 msgid "These users will be able to view the private problem, but not edit it."
@@ -2155,7 +2151,7 @@ msgstr "tỉ lệ giải được"
 
 #: judge/models/problem.py:201
 msgid "allow full markdown access"
-msgstr ""
+msgstr "cho phép dùng toàn bộ markdown"
 
 #: judge/models/problem.py:202
 msgid "submission source visibility"
@@ -2609,13 +2605,11 @@ msgstr "ngôn ngữ"
 
 #: judge/models/profile.py:178
 msgid "Ace theme"
-msgstr ""
+msgstr "giao diện Ace"
 
 #: judge/models/profile.py:179
-#, fuzzy
-#| msgid "Editor theme:"
 msgid "site theme"
-msgstr "Giao diện khung code:"
+msgstr "giao diện trang"
 
 #: judge/models/profile.py:180
 msgid "last access time"
@@ -2626,10 +2620,8 @@ msgid "last IP"
 msgstr "IP"
 
 #: judge/models/profile.py:182
-#, fuzzy
-#| msgid "authentication key"
 msgid "IP-based authentication"
-msgstr "mã xác thực"
+msgstr "xác thực theo IP"
 
 #: judge/models/profile.py:184
 msgid "badges"
@@ -2685,7 +2677,7 @@ msgstr "kỳ thi hiện tại"
 
 #: judge/models/profile.py:204
 msgid "math engine"
-msgstr ""
+msgstr "bộ dựng công thức toán"
 
 #: judge/models/profile.py:206
 msgid "The rendering engine used to render math."
@@ -2693,7 +2685,7 @@ msgstr "chọn công cụ để hiện công thức toán"
 
 #: judge/models/profile.py:207
 msgid "TOTP 2FA enabled"
-msgstr ""
+msgstr "đã bật 2FA TOTP"
 
 #: judge/models/profile.py:208
 msgid "Check to enable TOTP-based two-factor authentication."
@@ -2701,7 +2693,7 @@ msgstr ""
 
 #: judge/models/profile.py:209
 msgid "WebAuthn 2FA enabled"
-msgstr ""
+msgstr "đã bật 2FA WebAuthn"
 
 #: judge/models/profile.py:210
 msgid "Check to enable WebAuthn-based two-factor authentication."
@@ -2721,7 +2713,7 @@ msgstr "Mã TOTP cần rỗng hoặc base32"
 
 #: judge/models/profile.py:215
 msgid "scratch codes"
-msgstr ""
+msgstr "mã dự phòng"
 
 #: judge/models/profile.py:216
 msgid "JSON array of 16-character Base32-encoded codes for scratch codes."
@@ -2734,11 +2726,11 @@ msgstr ""
 
 #: judge/models/profile.py:222
 msgid "last TOTP timecode"
-msgstr ""
+msgstr "mã thời gian TOTP gần nhất"
 
 #: judge/models/profile.py:223
 msgid "API token"
-msgstr ""
+msgstr "token API"
 
 #: judge/models/profile.py:224
 msgid "64-character hex-encoded API access token."
@@ -2758,7 +2750,7 @@ msgstr "Ghi chú cho quản trị viên chấm lại cho thành viên này."
 
 #: judge/models/profile.py:230
 msgid "display name override"
-msgstr ""
+msgstr "tên hiển thị thay thế"
 
 #: judge/models/profile.py:231
 msgid "Name displayed in place of username."
@@ -2960,7 +2952,7 @@ msgstr "Phần mở rộng tập tin mã nguồn, ví dụ như, \"py\" hay \"cp
 
 #: judge/models/runtime.py:48
 msgid "File-only language"
-msgstr ""
+msgstr "ngôn ngữ chỉ nộp file"
 
 #: judge/models/runtime.py:49
 msgid "If this language is submitted using file or not"
@@ -3304,7 +3296,7 @@ msgstr "Tên nhóm tag"
 
 #: judge/models/tag.py:19
 msgid "Tag ID"
-msgstr ""
+msgstr "mã tag"
 
 #: judge/models/tag.py:20
 msgid "Tag name"
@@ -8074,3 +8066,139 @@ msgstr "Bật giao diện IDE mới với trình soạn thảo code và công c�
 #: judge/models/problem.py
 msgid "Change enable_new_ide field"
 msgstr "Thay đổi trường enable_new_ide"
+
+#: judge/utils/version_diff.py templates/admin/judge/object_history.html
+msgid "(empty)"
+msgstr "(trống)"
+
+msgid "Yes"
+msgstr "Có"
+
+msgid "No"
+msgstr "Không"
+
+msgid "#%(pk)s (deleted)"
+msgstr "#%(pk)s (đã xoá)"
+
+msgid "(field did not exist yet)"
+msgstr "(trường này chưa tồn tại)"
+
+msgid "%(fields)s and %(count)d more"
+msgstr "%(fields)s và %(count)d mục khác"
+
+msgid "Earliest recorded version"
+msgstr "Bản ghi sớm nhất"
+
+msgid "Saved without any change"
+msgstr "Lưu nhưng không thay đổi gì"
+
+msgid "Edited: %(fields)s"
+msgstr "Đã sửa: %(fields)s"
+
+msgid "Changes"
+msgstr "Thay đổi"
+
+msgid "Snapshot could not be read"
+msgstr "Không đọc được bản lưu"
+
+msgid "No tracked field changed"
+msgstr "Không có trường được theo dõi nào thay đổi"
+
+
+
+#: judge/models/
+msgid "penalty time format"
+msgstr "định dạng thời gian phạt"
+
+#: judge/models/
+msgid "problem label style"
+msgstr "kiểu nhãn bài"
+
+#: judge/models/
+msgid "rate disqualified"
+msgstr "tính rating cho người bị loại"
+
+#: judge/models/
+msgid "scoreboard cache timeout"
+msgstr "thời gian lưu đệm bảng điểm"
+
+#: judge/models/
+msgid "show submission list"
+msgstr "hiển thị danh sách bài nộp"
+
+#: judge/models/
+msgid "current consumed credit"
+msgstr "credit đã dùng"
+
+#: judge/models/
+msgid "member count"
+msgstr "số thành viên"
+
+#: judge/models/
+msgid "paid credit"
+msgstr "credit đã mua"
+
+#: judge/models/
+msgid "performance points"
+msgstr "điểm hiệu suất"
+
+#: judge/models/
+msgid "allow view feedback"
+msgstr "cho phép xem phản hồi"
+
+#: judge/models/
+msgid "scoring mode"
+msgstr "chế độ chấm điểm"
+
+#: judge/models/
+msgid "short circuit"
+msgstr "dừng chấm khi gặp test sai"
+
+#: judge/models/
+msgid "suggester"
+msgstr "người đề xuất"
+
+#: judge/models/
+msgid "ban reason"
+msgstr "lý do cấm"
+
+#: judge/models/
+msgid "contribution points"
+msgstr "điểm đóng góp"
+
+#: judge/models/
+msgid "vnoj points"
+msgstr "điểm vnoj"
+
+#: judge/models/
+msgid "current testcase"
+msgstr "test hiện tại"
+
+#: judge/models/
+msgid "total execution time"
+msgstr "tổng thời gian chạy"
+
+
+#: judge/models/problem.py
+msgid "Minutes"
+msgstr "Phút"
+
+#: judge/models/problem.py
+msgid "Numeric (1, 2, 3, …)"
+msgstr "Số (1, 2, 3, …)"
+
+#: judge/models/problem.py
+msgid "Alphabetic (A, B, C, …)"
+msgstr "Chữ cái (A, B, C, …)"
+
+#: judge/models/problem.py
+msgid "Short circuit (stop on first failure, all-or-nothing)"
+msgstr "Dừng sớm (dừng ở test sai đầu tiên, đúng hết mới có điểm)"
+
+#: judge/models/problem.py
+msgid "Partial (by subtask/batch — failed subtask = 0 points)"
+msgstr "Điểm thành phần (theo subtask/batch — subtask sai được 0 điểm)"
+
+#: judge/models/problem.py
+msgid "Partial (by testcase — each correct test earns points)"
+msgstr "Điểm thành phần (theo từng test — mỗi test đúng được điểm)"

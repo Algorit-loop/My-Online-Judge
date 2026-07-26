@@ -2,8 +2,8 @@ from django import forms
 from django.contrib import admin
 from django.forms import ModelForm
 from django.utils.translation import gettext_lazy as _
-from reversion.admin import VersionAdmin
 
+from judge.admin.version_diff import DiffVersionAdmin
 from judge.models import Tag, TagGroup, TagProblem
 from judge.utils.views import NoBatchDeleteMixin
 from judge.widgets import AdminHeavySelect2Widget
@@ -37,7 +37,7 @@ class TagDataInlineForm(ModelForm):
         }
 
 
-class TagAdmin(NoBatchDeleteMixin, VersionAdmin):
+class TagAdmin(NoBatchDeleteMixin, DiffVersionAdmin):
     fieldsets = (
         (None, {
             'fields': (
@@ -57,7 +57,7 @@ class TagAdmin(NoBatchDeleteMixin, VersionAdmin):
         return Tag.objects.all().distinct()
 
 
-class TagGroupAdmin(NoBatchDeleteMixin, VersionAdmin):
+class TagGroupAdmin(NoBatchDeleteMixin, DiffVersionAdmin):
     fieldsets = (
         (None, {
             'fields': (
@@ -84,7 +84,7 @@ class TagDataInline(admin.TabularInline):
     form = TagDataInlineForm
 
 
-class TagProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
+class TagProblemAdmin(NoBatchDeleteMixin, DiffVersionAdmin):
     fieldsets = (
         (None, {
             'fields': (

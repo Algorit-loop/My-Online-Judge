@@ -4,8 +4,8 @@ from django.forms import ModelForm
 from django.urls import reverse_lazy
 from django.utils.html import format_html
 from django.utils.translation import gettext, gettext_lazy as _, ngettext
-from reversion.admin import VersionAdmin
 
+from judge.admin.version_diff import DiffVersionAdmin
 from judge.models import Profile, WebAuthnCredential
 from judge.utils.views import NoBatchDeleteMixin
 from judge.widgets import AdminAceWidget, AdminMartorWidget, AdminSelect2MultipleWidget, AdminSelect2Widget
@@ -57,7 +57,7 @@ class WebAuthnInline(admin.TabularInline):
         return False
 
 
-class ProfileAdmin(NoBatchDeleteMixin, VersionAdmin):
+class ProfileAdmin(NoBatchDeleteMixin, DiffVersionAdmin):
     fields = ('user', 'display_rank', 'badges', 'display_badge', 'about', 'organizations', 'vnoj_points', 'timezone',
               'language', 'ace_theme', 'math_engine', 'last_access', 'ip', 'mute', 'is_unlisted', 'allow_tagging',
               'notes', 'username_display_override', 'ban_reason', 'is_totp_enabled', 'ip_auth', 'user_script',

@@ -3,8 +3,8 @@ from django.forms import ModelForm
 from django.urls import reverse_lazy
 from django.utils.html import format_html
 from django.utils.translation import gettext, gettext_lazy as _, ngettext
-from reversion.admin import VersionAdmin
 
+from judge.admin.version_diff import DiffVersionAdmin
 from judge.models import Organization
 from judge.widgets import AdminHeavySelect2MultipleWidget, AdminMartorWidget
 
@@ -17,7 +17,7 @@ class OrganizationForm(ModelForm):
         }
 
 
-class OrganizationAdmin(VersionAdmin):
+class OrganizationAdmin(DiffVersionAdmin):
     readonly_fields = ('creation_date', 'current_consumed_credit')
     fields = ('name', 'slug', 'short_name', 'is_open', 'is_unlisted', 'paid_credit',
               'current_consumed_credit', 'about', 'logo_override_image', 'slots', 'creation_date', 'admins')

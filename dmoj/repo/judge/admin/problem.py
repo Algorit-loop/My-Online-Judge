@@ -15,8 +15,8 @@ from django.urls import path, reverse_lazy
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext, gettext_lazy as _, ngettext
-from reversion.admin import VersionAdmin
 
+from judge.admin.version_diff import DiffVersionAdmin
 from judge.models import LanguageLimit, Problem, ProblemClarification, ProblemTranslation, Profile, Solution
 from judge.models.api_key import AIAPIKey, AI_PROVIDER_MODELS, VISION_PROVIDERS
 from judge.views.ai_tag_suggest import call_ai_suggest_tags
@@ -148,7 +148,7 @@ class ProblemTranslationInline(admin.StackedInline):
     has_add_permission = has_change_permission = has_delete_permission = has_permission_full_markup
 
 
-class ProblemAdmin(NoBatchDeleteMixin, VersionAdmin):
+class ProblemAdmin(NoBatchDeleteMixin, DiffVersionAdmin):
     fieldsets = (
         (None, {
             'fields': (

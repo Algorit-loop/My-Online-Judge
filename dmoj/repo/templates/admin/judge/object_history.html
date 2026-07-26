@@ -1,0 +1,115 @@
+{% extends "admin/object_history.html" %}
+{% load i18n %}
+
+{# Lives under admin/ on purpose: settings.TEMPLATES routes everything that does not start with #}
+{# admin/ to the Jinja2 engine, and this one has to stay a Django template so it can extend the #}
+{# admin base templates. #}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        /* Fixed layout is what keeps the monospace diff from stretching its cell: without it the
+           unwrapped <pre> widens the column and pushes the whole table off screen. */
+        #change-history { width: 100%; table-layout: fixed; }
+        #change-history th, #change-history td { vertical-align: top; word-break: break-word; }
+        #change-history thead th:nth-child(1) { width: 17%; }
+        #change-history thead th:nth-child(2) { width: 13%; }
+        #change-history thead th:nth-child(3) { width: 22%; }
+        #change-history thead th:nth-child(4) { width: 48%; }
+        #change-history .vd-action { font-weight: 600; }
+        #change-history details > summary { cursor: pointer; color: #417690; }
+        #change-history details[open] > summary { margin-bottom: 8px; }
+        #change-history .vd-none { color: #999; font-style: italic; }
+        .vd-field { margin: 0 0 10px; border: 1px solid #d5d5d5; border-radius: 4px; background: #fff; }
+        .vd-field:last-child { margin-bottom: 0; }
+        .vd-name {
+            display: block; padding: 5px 10px; font-weight: 600;
+            background: #f3f4f6; border-bottom: 1px solid #d5d5d5; border-radius: 3px 3px 0 0;
+        }
+        .vd-body { padding: 8px 10px; }
+        .vd-old, .vd-new { padding: 1px 5px; border-radius: 3px; font-family: monospace; word-break: break-word; }
+        .vd-old { background: #ffe0e0; text-decoration: line-through; }
+        .vd-new { background: #ddffdd; }
+        .vd-arrow { color: #999; margin: 0 5px; }
+        .vd-added, .vd-removed { display: block; font-family: monospace; }
+        .vd-added { color: #17692a; }
+        .vd-removed { color: #a12622; }
+        /* A revision that rewrites a whole statement produces a very long diff; keep it scrollable
+           inside its own box so one row cannot push the rest of the history off screen. */
+        .vd-diff { overflow: auto; max-height: 420px; background: #fafafa; border: 1px solid #e0e0e0; border-radius: 3px; }
+        .vd-diff pre { margin: 0; padding: 0; font-family: monospace; font-size: 12px; line-height: 1.45; }
+        .vd-diff .vd-line { display: block; padding: 0 8px; white-space: pre; }
+        .vd-diff .vd-add { background: #e6ffed; color: #17692a; }
+        .vd-diff .vd-del { background: #ffeef0; color: #a12622; }
+        .vd-diff .vd-hunk { background: #f1f8ff; color: #6a737d; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div id="content-main">
+        <p>{% blocktrans %}Choose a date from the list below to revert to a previous version of this object.{% endblocktrans %}</p>
+
+        <div class="module">
+            {% if action_list %}
+                <table id="change-history" class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th scope="col">{% trans 'Date/time' %}</th>
+                            <th scope="col">{% trans 'User' %}</th>
+                            <th scope="col">{% trans 'Action' %}</th>
+                            <th scope="col">{% trans 'Changes' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for action in action_list %}
+                            <tr>
+                                <th scope="row"><a href="{{ action.url }}">{{ action.revision.date_created|date:"DATETIME_FORMAT" }}</a></th>
+                                <td>
+                                    {% if action.revision.user %}
+                                        {{ action.revision.user.get_username }}
+                                        {% if action.revision.user.get_full_name %} ({{ action.revision.user.get_full_name }}){% endif %}
+                                    {% else %}
+                                        &mdash;
+                                    {% endif %}
+                                </td>
+                                <td class="vd-action">
+                                    {% firstof action.action_label action.revision.get_comment|linebreaksbr "" %}
+                                </td>
+                                <td>
+                                    {% if action.unreadable %}
+                                        <span class="vd-none">{% trans "Snapshot could not be read" %}</span>
+                                    {% elif action.changes %}
+                                        <details>
+                                            <summary>{{ action.summary }}</summary>
+                                            {% for change in action.changes %}
+                                                <div class="vd-field">
+                                                    <span class="vd-name">{{ change.label }}</span>
+                                                    <div class="vd-body">
+                                                        {% if change.kind == 'text' %}
+                                                            <div class="vd-diff"><pre>{% for line in change.diff_lines %}<span class="vd-line vd-{{ line.kind }}">{{ line.text }}</span>{% endfor %}</pre></div>
+                                                        {% elif change.kind == 'list' %}
+                                                            {% for name in change.added %}<span class="vd-added">+ {{ name }}</span>{% endfor %}
+                                                            {% for name in change.removed %}<span class="vd-removed">&minus; {{ name }}</span>{% endfor %}
+                                                        {% else %}
+                                                            <span class="vd-old">{{ change.old }}</span><span class="vd-arrow">&rarr;</span><span class="vd-new">{{ change.new }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </details>
+                                    {% elif action.is_initial %}
+                                        <span class="vd-none">&mdash;</span>
+                                    {% else %}
+                                        <span class="vd-none">{% trans "No tracked field changed" %}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>{% trans "This object doesn't have a change history. It probably wasn't added via this admin site." %}</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

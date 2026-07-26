@@ -9,8 +9,8 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
-from reversion.admin import VersionAdmin
 
+from judge.admin.version_diff import DiffVersionAdmin
 from judge.models import Judge, Problem
 from judge.widgets import AdminAceWidget, AdminMartorWidget
 
@@ -20,7 +20,7 @@ class LanguageForm(ModelForm):
         widgets = {'description': AdminMartorWidget}
 
 
-class LanguageAdmin(VersionAdmin):
+class LanguageAdmin(DiffVersionAdmin):
     fields = ('key', 'name', 'short_name', 'common_name', 'file_only', 'file_size_limit',
               'include_in_problem', 'ace', 'pygments', 'info', 'extension',
               'description', 'template')
@@ -67,7 +67,7 @@ class JudgeAdminForm(ModelForm):
         widgets = {'auth_key': GenerateKeyTextInput, 'description': AdminMartorWidget}
 
 
-class JudgeAdmin(VersionAdmin):
+class JudgeAdmin(DiffVersionAdmin):
     form = JudgeAdminForm
     readonly_fields = ('created', 'online', 'start_time', 'ping', 'load', 'last_ip', 'runtimes', 'problems',
                        'is_disabled')

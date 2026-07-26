@@ -7,8 +7,8 @@ from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from mptt.admin import DraggableMPTTAdmin
-from reversion.admin import VersionAdmin
 
+from judge.admin.version_diff import DiffVersionAdmin
 from judge.dblock import LockModel
 from judge.models import NavigationBar
 from judge.widgets import AdminHeavySelect2MultipleWidget, AdminHeavySelect2Widget, AdminMartorWidget
@@ -48,7 +48,7 @@ class FlatpageForm(OldFlatpageForm):
         widgets = {'content': AdminMartorWidget(attrs={'data-markdownfy-url': reverse_lazy('flatpage_preview')})}
 
 
-class FlatPageAdmin(VersionAdmin, OldFlatPageAdmin):
+class FlatPageAdmin(DiffVersionAdmin, OldFlatPageAdmin):
     form = FlatpageForm
 
 
@@ -76,7 +76,7 @@ class BlogPostForm(ModelForm):
         }
 
 
-class BlogPostAdmin(VersionAdmin):
+class BlogPostAdmin(DiffVersionAdmin):
     fieldsets = (
         (None, {'fields': ('title', 'slug', 'authors', 'organization', 'global_post', 'tags',
                            'visible', 'sticky', 'publish_on')}),
