@@ -55,11 +55,19 @@ class DiffVersionAdmin(VersionAdmin):
 
         entries = build_history(self.model, aligned, self.history_ignore_fields)
         for action, entry in zip(action_list, entries):
+            comment = action['revision'].get_comment()
             action['changes'] = entry['changes']
             action['summary'] = entry['summary']
             action['unreadable'] = entry['unreadable']
             action['is_initial'] = entry['is_initial']
-            action['action_label'] = describe_action(
-                action['revision'].get_comment(), entry['changes'], entry['is_initial'],
+            # An unreadable snapshot yields no changes, which describe_action would report as
+            # "saved without any change" — a claim we cannot actually make. Keep the stored comment
+            # and let the template say the snapshot could not be read.
+            action['action_label'] = comment if entry['unreadable'] else describe_action(
+                comment, entry['changes'], entry['is_initial'],
             )
+            # The generated label already spells the changed fields out, so repeating them under it
+            # would be noise; a preserved comment ("Rejudged") does not, and there the summary is
+            # the only hint of what the row contains before it is expanded.
+            action['show_summary'] = bool(entry['summary']) and entry['summary'] not in action['action_label']
         return response

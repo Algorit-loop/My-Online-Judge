@@ -12,14 +12,24 @@
            unwrapped <pre> widens the column and pushes the whole table off screen. */
         #change-history { width: 100%; table-layout: fixed; }
         #change-history th, #change-history td { vertical-align: top; word-break: break-word; }
-        #change-history thead th:nth-child(1) { width: 17%; }
-        #change-history thead th:nth-child(2) { width: 13%; }
-        #change-history thead th:nth-child(3) { width: 22%; }
-        #change-history thead th:nth-child(4) { width: 48%; }
+        #change-history thead th:nth-child(1) { width: 20%; }
+        #change-history thead th:nth-child(2) { width: 16%; }
+        #change-history thead th:nth-child(3) { width: 64%; }
         #change-history .vd-action { font-weight: 600; }
-        #change-history details > summary { cursor: pointer; color: #417690; }
-        #change-history details[open] > summary { margin-bottom: 8px; }
-        #change-history .vd-none { color: #999; font-style: italic; }
+        #change-history .vd-toggle { cursor: pointer; user-select: none; }
+        #change-history .vd-toggle:hover .vd-label { text-decoration: underline; }
+        #change-history .vd-toggle::before {
+            content: '\25B8'; display: inline-block; width: 1em; margin-left: -1em;
+            color: #417690; transition: transform .12s;
+        }
+        #change-history .vd-toggle[aria-expanded="true"]::before { transform: rotate(90deg); }
+        #change-history .vd-toggle { padding-left: calc(8px + 1em); }
+        #change-history .vd-sub { display: block; margin-top: 2px; font-weight: 400; color: #666; }
+        #change-history .vd-none { color: #999; font-style: italic; font-weight: 400; }
+        /* The expanded panel is its own row spanning the whole table, so a long diff gets the full
+           page width instead of being squeezed into one column. Its own background keeps it legible
+           regardless of how the admin stripes the rows around it. */
+        #change-history tr.vd-detail > td { background: #fbfbfb; border-top: 0; padding: 4px 14px 14px 32px; }
         .vd-field { margin: 0 0 10px; border: 1px solid #d5d5d5; border-radius: 4px; background: #fff; }
         .vd-field:last-child { margin-bottom: 0; }
         .vd-name {
@@ -57,7 +67,6 @@
                             <th scope="col">{% trans 'Date/time' %}</th>
                             <th scope="col">{% trans 'User' %}</th>
                             <th scope="col">{% trans 'Action' %}</th>
-                            <th scope="col">{% trans 'Changes' %}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -72,41 +81,66 @@
                                         &mdash;
                                     {% endif %}
                                 </td>
-                                <td class="vd-action">
-                                    {% firstof action.action_label action.revision.get_comment|linebreaksbr "" %}
-                                </td>
-                                <td>
-                                    {% if action.unreadable %}
-                                        <span class="vd-none">{% trans "Snapshot could not be read" %}</span>
-                                    {% elif action.changes %}
-                                        <details>
-                                            <summary>{{ action.summary }}</summary>
-                                            {% for change in action.changes %}
-                                                <div class="vd-field">
-                                                    <span class="vd-name">{{ change.label }}</span>
-                                                    <div class="vd-body">
-                                                        {% if change.kind == 'text' %}
-                                                            <div class="vd-diff"><pre>{% for line in change.diff_lines %}<span class="vd-line vd-{{ line.kind }}">{{ line.text }}</span>{% endfor %}</pre></div>
-                                                        {% elif change.kind == 'list' %}
-                                                            {% for name in change.added %}<span class="vd-added">+ {{ name }}</span>{% endfor %}
-                                                            {% for name in change.removed %}<span class="vd-removed">&minus; {{ name }}</span>{% endfor %}
-                                                        {% else %}
-                                                            <span class="vd-old">{{ change.old }}</span><span class="vd-arrow">&rarr;</span><span class="vd-new">{{ change.new }}</span>
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                            {% endfor %}
-                                        </details>
-                                    {% elif action.is_initial %}
-                                        <span class="vd-none">&mdash;</span>
-                                    {% else %}
-                                        <span class="vd-none">{% trans "No tracked field changed" %}</span>
-                                    {% endif %}
-                                </td>
+                                {% if action.changes %}
+                                    <td class="vd-action vd-toggle" role="button" tabindex="0"
+                                        aria-expanded="false" aria-controls="vd-detail-{{ forloop.counter }}">
+                                        <span class="vd-label">{% firstof action.action_label action.revision.get_comment|linebreaksbr "" %}</span>
+                                        {% if action.show_summary %}<span class="vd-sub">{{ action.summary }}</span>{% endif %}
+                                    </td>
+                                {% else %}
+                                    <td class="vd-action">
+                                        {% firstof action.action_label action.revision.get_comment|linebreaksbr "" %}
+                                        {% if action.unreadable %}
+                                            <span class="vd-none">{% trans "Snapshot could not be read" %}</span>
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
                             </tr>
+                            {% if action.changes %}
+                                <tr class="vd-detail" id="vd-detail-{{ forloop.counter }}" hidden>
+                                    <td colspan="3">
+                                        {% for change in action.changes %}
+                                            <div class="vd-field">
+                                                <span class="vd-name">{{ change.label }}</span>
+                                                <div class="vd-body">
+                                                    {% if change.kind == 'text' %}
+                                                        <div class="vd-diff"><pre>{% for line in change.diff_lines %}<span class="vd-line vd-{{ line.kind }}">{{ line.text }}</span>{% endfor %}</pre></div>
+                                                    {% elif change.kind == 'list' %}
+                                                        {% for name in change.added %}<span class="vd-added">+ {{ name }}</span>{% endfor %}
+                                                        {% for name in change.removed %}<span class="vd-removed">&minus; {{ name }}</span>{% endfor %}
+                                                    {% else %}
+                                                        <span class="vd-old">{{ change.old }}</span><span class="vd-arrow">&rarr;</span><span class="vd-new">{{ change.new }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        document.querySelectorAll('#change-history .vd-toggle').forEach(function (cell) {
+                            var detail = document.getElementById(cell.getAttribute('aria-controls'));
+                            if (!detail) return;
+                            function toggle() {
+                                var opening = detail.hasAttribute('hidden');
+                                if (opening) detail.removeAttribute('hidden');
+                                else detail.setAttribute('hidden', '');
+                                cell.setAttribute('aria-expanded', opening ? 'true' : 'false');
+                            }
+                            cell.addEventListener('click', toggle);
+                            cell.addEventListener('keydown', function (event) {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    toggle();
+                                }
+                            });
+                        });
+                    });
+                </script>
             {% else %}
                 <p>{% trans "This object doesn't have a change history. It probably wasn't added via this admin site." %}</p>
             {% endif %}
