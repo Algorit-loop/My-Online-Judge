@@ -28,8 +28,7 @@ def _safe_json(s):
 
 def _get_displayed_generator_source(problem_obj, latest_job=None):
     """Generator source the page puts in the editor: the most recent AI generation, else the
-    generator from the last job. This is the single source of truth shared by the page render and
-    the start-job validation below, so the two can never drift apart.
+    generator from the last job.
     """
     if latest_job is None:
         latest_job = GensolJob.objects.filter(problem=problem_obj).order_by('-created_date').first()
@@ -47,6 +46,29 @@ def _normalize_source(source):
     so those differences are not meaningful edits.
     """
     return (source or '').replace('\r\n', '\n').replace('\r', '\n').strip()
+
+
+def _is_allowed_generator_source(problem_obj, source):
+    """Whether a non-superuser may start a job with this generator.
+
+    The rule being enforced is "you did not hand-write it", not "it is the newest one", so this accepts
+    any generator the problem has legitimately had: every AI generation, plus the last job's. Comparing
+    against only the single most recent source would 403 an editor who loaded the page before a
+    co-editor pressed "Generate with AI" — and the error message would blame them for an edit they
+    never made. AIGenCode is deliberately not filtered by user: co-editors share one problem, and each
+    other's AI output is already what the editor shows them.
+    """
+    candidate = _normalize_source(source)
+    if not candidate:
+        return False
+
+    ai_sources = AIGenCode.objects.filter(problem=problem_obj).values_list('generated_code', flat=True)
+    if any(candidate == _normalize_source(code) for code in ai_sources):
+        return True
+
+    last_job_source = (GensolJob.objects.filter(problem=problem_obj)
+                       .order_by('-created_date').values_list('generator_source', flat=True).first())
+    return last_job_source is not None and candidate == _normalize_source(last_job_source)
 
 
 @login_required
@@ -137,8 +159,7 @@ class GensolStartView(LoginRequiredMixin, View):
         # hand-edited generator. They may still change it through "Generate with AI", which stores
         # an AIGenCode row that _get_displayed_generator_source() then returns.
         if not request.user.is_superuser:
-            displayed_generator = _get_displayed_generator_source(problem_obj)
-            if _normalize_source(generator_source) != _normalize_source(displayed_generator):
+            if not _is_allowed_generator_source(problem_obj, generator_source):
                 return JsonResponse({
                     'error': 'You are not allowed to edit the generator code. '
                              'Use "Generate with AI" to change it.',

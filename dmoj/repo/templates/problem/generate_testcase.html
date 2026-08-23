@@ -607,22 +607,20 @@
     document.getElementById('ai-gen-code-btn').addEventListener('click', function() {
         var numCases = parseInt(document.getElementById('gt-num-cases').value) || 0;
         if (numCases < 1 || numCases > 50) {
-            showError('gt-form-error', '{{ _("Number of cases must be 1-50.") }}');
+            alert('{{ _("Number of cases must be 1-50.") }}');
+            document.getElementById('gt-num-cases').focus();
             return;
         }
-        hideError('gt-form-error');
         var provider = document.getElementById('ai-gen-provider').value;
         var model = document.getElementById('ai-gen-model').value;
         if (!provider || !model) {
-            var errEl = document.getElementById('ai-gen-error');
-            errEl.textContent = '{{ _("Please select a provider and model.") }}';
-            errEl.style.display = 'block';
+            showError('ai-gen-error', '{{ _("Please select a provider and model.") }}');
             return;
         }
         var btn = this;
         var loadEl = document.getElementById('ai-gen-loading');
-        var errEl = document.getElementById('ai-gen-error');
-        btn.disabled = true; loadEl.style.display = 'inline'; errEl.style.display = 'none';
+        btn.disabled = true; loadEl.style.display = 'inline';
+        hideError('ai-gen-error');
 
         fetch(AI_GEN_URL, {
             method: 'POST', credentials: 'same-origin',
@@ -633,16 +631,14 @@
         .then(function(res) {
             btn.disabled = false; loadEl.style.display = 'none';
             if (res.s !== 200 || res.d.error) {
-                errEl.textContent = res.d.error || 'Unknown error';
-                errEl.style.display = 'block';
+                showError('ai-gen-error', res.d.error || '{{ _("Unknown error") }}');
                 return;
             }
             aceGenerator.getSession().setValue(res.d.code);
         })
         .catch(function(err) {
             btn.disabled = false; loadEl.style.display = 'none';
-            errEl.textContent = 'Network error: ' + err.message;
-            errEl.style.display = 'block';
+            showError('ai-gen-error', '{{ _("Network error") }}: ' + err.message);
         });
     });
 
@@ -658,7 +654,11 @@
 
         if (!genSource) { showError('gt-form-error', '{{ _("Generator code is required.") }}'); return; }
         if (!solSource) { showError('gt-form-error', '{{ _("Solution code is required.") }}'); return; }
-        if (numCases < 1 || numCases > 50) { showError('gt-form-error', '{{ _("Number of cases must be 1-50.") }}'); return; }
+        if (numCases < 1 || numCases > 50) {
+            alert('{{ _("Number of cases must be 1-50.") }}');
+            document.getElementById('gt-num-cases').focus();
+            return;
+        }
 
         var btn = document.getElementById('gt-start-btn');
         btn.disabled = true;
@@ -706,7 +706,7 @@
         })
         .catch(function(err) {
             btn.disabled = false;
-            showError('gt-form-error', 'Network error: ' + err.message);
+            showError('gt-form-error', '{{ _("Network error") }}: ' + err.message);
         });
     }
 
