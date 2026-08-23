@@ -34,6 +34,15 @@ def _cleanup_working_dir(job_id):
         logger.warning('Failed to cleanup gensol working dir: %s', working_dir)
 
 
+def _measure_zip(zip_buffer):
+    """Size of a freshly built zip, alongside the configured ceiling.
+
+    _build_zip() leaves the buffer seek()'d back to 0 so its caller can read() it, so zip_buffer.tell()
+    is always 0 by this point — the buffer length is what has to be measured.
+    """
+    return len(zip_buffer.getbuffer()), getattr(settings, 'GENSOL_MAX_ZIP_SIZE', 64 * 1024 * 1024)
+
+
 def save_testcase_output(job_id, step, position, output):
     """Save output from judge to working directory."""
     working_dir = _get_working_dir(job_id)
@@ -103,6 +112,19 @@ def _transition_to_solution(job):
         # Build zip from generated inputs + empty outputs
         zip_buffer = _build_zip(problem.code, job.num_cases, working_dir, include_outputs=False)
 
+        # Stop here if the inputs alone already bust the limit: adding outputs can only make the zip
+        # bigger, so running the solution over them would burn judge time to fail anyway. Checking only
+        # in _finalize_job would also leave this oversized input-only zip on the problem.
+        zip_size_bytes, max_size = _measure_zip(zip_buffer)
+        if zip_size_bytes > max_size:
+            error_msg = ('Generated input files are too large: %.1f MB (max %.1f MB). '
+                         'Generate fewer test cases, or make the generator produce smaller inputs.' % (
+                             zip_size_bytes / 1024 / 1024, max_size / 1024 / 1024))
+            GensolJob.objects.filter(id=job.id).update(status='ERROR', error_message=error_msg)
+            _post_event(job.id, {'type': 'error', 'message': error_msg})
+            _cleanup_working_dir(job.id)
+            return
+
         # Upload zip and regenerate init.yml
         _upload_zip_and_compile(problem, zip_buffer, job.num_cases)
 
@@ -137,12 +159,8 @@ def _finalize_job(job):
         # Build final zip with inputs + outputs
         zip_buffer = _build_zip(problem.code, job.num_cases, working_dir, include_outputs=True)
 
-        # _build_zip() leaves the buffer seek()'d back to 0 (so its caller can read() it), so
-        # zip_buffer.tell() is always 0 here — must measure via the buffer length instead.
-        zip_size_bytes = len(zip_buffer.getbuffer())
-
         # Check zip size
-        max_size = getattr(settings, 'GENSOL_MAX_ZIP_SIZE', 64 * 1024 * 1024)
+        zip_size_bytes, max_size = _measure_zip(zip_buffer)
         if zip_size_bytes > max_size:
             error_msg = 'Generated zip is too large: %.1f MB (max %.1f MB)' % (
                 zip_size_bytes / 1024 / 1024, max_size / 1024 / 1024)

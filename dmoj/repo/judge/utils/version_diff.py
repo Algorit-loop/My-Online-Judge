@@ -4,11 +4,14 @@ reversion already stores a full JSON snapshot of every tracked object on each sa
 model or migration is needed here: this module only *reads* those snapshots and diffs them. It is
 display-only — nothing in it writes to the database or touches the save path.
 """
+import datetime
 import difflib
 import json
 from collections import defaultdict
 
 from django.db import models
+from django.utils import formats, timezone
+from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.text import capfirst
 from django.utils.translation import gettext, gettext_lazy as _
 
@@ -136,6 +139,53 @@ def _name_of(names, related_model, pk):
     return names.get((related_model, pk)) or _('#%(pk)s (deleted)') % {'pk': pk}
 
 
+def _parse_temporal(field, value):
+    """The moment a snapshot string stands for, or None when the field is not a date/time one."""
+    if not isinstance(value, str):
+        return None
+    # DateTimeField subclasses DateField, so it has to be tested first.
+    if isinstance(field, models.DateTimeField):
+        return parse_datetime(value)
+    if isinstance(field, models.DateField):
+        return parse_date(value)
+    return None
+
+
+def _same_moment(field, old, new):
+    """True when two snapshot strings denote the same point in time despite differing as text.
+
+    reversion writes datetimes into the snapshot as ISO strings, and the various save paths render
+    the same instant differently — one in UTC with microseconds ("...T09:50:34.606Z"), another in
+    local time without them ("...T16:50:34+07:00"). On top of that the admin's datetime widget only
+    goes down to the second, so simply opening a change form and pressing save rewrites the field
+    with its sub-second part dropped: a difference in the database that is not an edit by anyone.
+    Comparing the parsed instants at second precision keeps those non-edits out of the history.
+    """
+    old_moment, new_moment = _parse_temporal(field, old), _parse_temporal(field, new)
+    if old_moment is None or new_moment is None:
+        return False
+    if isinstance(old_moment, datetime.datetime) and isinstance(new_moment, datetime.datetime):
+        # Comparing an aware datetime against a naive one raises; treat that as a real difference.
+        if timezone.is_aware(old_moment) != timezone.is_aware(new_moment):
+            return False
+        return old_moment.replace(microsecond=0) == new_moment.replace(microsecond=0)
+    return old_moment == new_moment
+
+
+def _render_temporal(moment):
+    """A date/time in the viewer's timezone, always with seconds.
+
+    Neither locale's DATETIME_FORMAT includes seconds, so formatting with it would render two
+    values a few seconds apart as the same text — the very confusion this rendering exists to
+    avoid. A numeric format is language-neutral and lines up for eyeball comparison.
+    """
+    if isinstance(moment, datetime.datetime):
+        if timezone.is_aware(moment):
+            moment = timezone.localtime(moment)
+        return formats.date_format(moment, 'd/m/Y H:i:s')
+    return formats.date_format(moment, 'd/m/Y')
+
+
 def _render_value(model, name, value, names):
     """A single scalar value as it should appear on screen."""
     if value is None:
@@ -144,6 +194,9 @@ def _render_value(model, name, value, names):
     field = _model_field(model, name)
     if _is_relation(field):
         return _name_of(names, field.related_model, value)
+    moment = _parse_temporal(field, value)
+    if moment is not None:
+        return _render_temporal(moment)
     if field is not None and field.choices:
         return dict(field.flatchoices).get(value, value)
     if isinstance(value, bool):
@@ -194,10 +247,10 @@ def diff_snapshots(model, old_fields, new_fields, names, ignored=()):
 
         new_value = new_fields[name]
         old_value = old_fields.get(name, EMPTY) if old_fields is not None else EMPTY
-        if old_value is not EMPTY and old_value == new_value:
+        field = _model_field(model, name)
+        if old_value is not EMPTY and (old_value == new_value or _same_moment(field, old_value, new_value)):
             continue
 
-        field = _model_field(model, name)
         label = _field_label(field, name)
 
         if isinstance(field, models.ManyToManyField):
