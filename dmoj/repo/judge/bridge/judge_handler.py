@@ -18,6 +18,7 @@ from judge.models import Judge, Language, LanguageLimit, Problem, Profile, \
 from judge.models.problem import ProblemTestcaseResultAccess
 from judge.models.run_submission import RunSubmission
 from judge.models.gensol_job import GENSOL_IN_PROGRESS_STATUSES, GensolJob
+from judge.utils.gensol import _cleanup_working_dir, on_gensol_error, on_gensol_grading_end, save_testcase_output
 from judge.utils.url import get_absolute_submission_file_url
 
 logger = logging.getLogger('judge.bridge')
@@ -122,6 +123,7 @@ class JudgeHandler(ZlibPacketHandler):
                     status='ERROR', error_message=disconnect_reason)
                 event.post('gensol_%s' % GensolJob.get_id_secret(self._working),
                            {'type': 'internal-error', 'message': disconnect_reason})
+                _cleanup_working_dir(self._working)
                 json_log.error(self._make_json_log(sub=self._working, action='close',
                                                    info='IE due to shutdown on gensol grading'))
             elif self._is_run:
@@ -455,6 +457,7 @@ class JudgeHandler(ZlibPacketHandler):
         json_log.error(self._make_json_log(packet, action='processing', info='wrong-acknowledge', expected=expected))
         if self._is_gensol:
             GensolJob.objects.filter(id=expected).update(status='ERROR', error_message='Wrong acknowledgement')
+            _cleanup_working_dir(expected)
         elif self._is_run:
             RunSubmission.objects.filter(id=expected).update(status='IE', result='IE', error=None)
         else:
@@ -737,7 +740,6 @@ class JudgeHandler(ZlibPacketHandler):
 
     def _on_gensol_grading_end(self, packet, gensol_step):
         """Handle grading-end for a GensolJob. Triggers next step or finalizes."""
-        from judge.utils.gensol import on_gensol_grading_end
         job_id = packet['submission-id']
         try:
             on_gensol_grading_end(job_id, gensol_step)
@@ -747,6 +749,7 @@ class JudgeHandler(ZlibPacketHandler):
                 status='ERROR', error_message='Internal error during gensol processing')
             event.post('gensol_%s' % GensolJob.get_id_secret(job_id),
                        {'type': 'internal-error', 'message': 'Internal error'})
+            _cleanup_working_dir(job_id)
 
     def on_compile_error(self, packet):
         logger.info('%s: Submission failed to compile: %s', self.name, packet['submission-id'])
@@ -760,6 +763,7 @@ class JudgeHandler(ZlibPacketHandler):
                 status='ERROR', error_message='Compile error: %s' % packet['log'][:2000])
             event.post('gensol_%s' % GensolJob.get_id_secret(id),
                        {'type': 'compile-error', 'log': packet['log']})
+            _cleanup_working_dir(id)
             json_log.info(self._make_json_log(packet, action='gensol-compile-error', log=packet['log'],
                                               finish=True))
             return
@@ -819,6 +823,7 @@ class JudgeHandler(ZlibPacketHandler):
                 status='ERROR', error_message='Internal error: %s' % packet['message'][:2000])
             event.post('gensol_%s' % GensolJob.get_id_secret(id),
                        {'type': 'internal-error', 'message': packet['message']})
+            _cleanup_working_dir(id)
             json_log.info(self._make_json_log(packet, action='gensol-internal-error', message=packet['message'],
                                               finish=True))
             return
@@ -851,6 +856,7 @@ class JudgeHandler(ZlibPacketHandler):
                 status='ERROR', error_message='Job was terminated')
             event.post('gensol_%s' % GensolJob.get_id_secret(packet['submission-id']),
                        {'type': 'aborted'})
+            _cleanup_working_dir(packet['submission-id'])
             json_log.info(self._make_json_log(packet, action='gensol-aborted', finish=True))
             return
 
@@ -999,8 +1005,6 @@ class JudgeHandler(ZlibPacketHandler):
 
     def _on_gensol_test_case(self, job_id, updates, max_position):
         """Handle test case results for a gensol job."""
-        from judge.utils.gensol import save_testcase_output, on_gensol_error
-
         # If the job already left an in-progress state (e.g. gensol_strict stopped grading after an earlier fatal
         # testcase, or the working dir was already cleaned up by on_gensol_error), these are stragglers: testcases
         # the judge marked SC (skipped) on its way to shutting down. Nothing to save, nothing new to report.
